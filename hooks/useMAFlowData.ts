@@ -14,6 +14,11 @@ export function useMAFlowData(getSortedInstIds: (tickerMap: Map<string, Processe
   const [maFlowData, setMAFlowData] = useState<Map<string, MAFlowData>>(new Map());
   const isFetchingMAFlowRef = useRef(false);
 
+  // Use ref to always access the latest getSortedInstIds
+  // This avoids stale closure issues when called from setTimeout/setInterval in the store
+  const getSortedInstIdsRef = useRef(getSortedInstIds);
+  getSortedInstIdsRef.current = getSortedInstIds;
+
   // Save MA Flow data to cache (debounced)
   const saveMAFlowCacheTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const saveMAFlowCacheDebounced = useCallback((maMap: Map<string, MAFlowData>) => {
@@ -44,12 +49,18 @@ export function useMAFlowData(getSortedInstIds: (tickerMap: Map<string, Processe
   }, [saveMAFlowCacheDebounced]);
 
   // Fetch MA Flow data for top instruments by market cap
-  const fetchMAFlowForVisible = useCallback(async (tickerMap: Map<string, ProcessedTicker>) => {
-    if (isFetchingMAFlowRef.current) return;
+  // Uses ref for getSortedInstIds to always get the latest version (avoids stale closure)
+  // Returns true if fetch was actually performed, false if skipped (no data / already fetching)
+  const fetchMAFlowForVisible = useCallback(async (tickerMap: Map<string, ProcessedTicker>): Promise<boolean> => {
+    if (isFetchingMAFlowRef.current) return false;
+
+    const instIds = getSortedInstIdsRef.current(tickerMap);
+    // Skip if no instruments available yet (e.g. marketCapData not loaded)
+    if (instIds.length === 0) return false;
+
     isFetchingMAFlowRef.current = true;
 
     try {
-      const instIds = getSortedInstIds(tickerMap);
       // Build a price map from live ticker data for accurate convergence calculation
       const tickerPrices = new Map<string, number>();
       tickerMap.forEach((ticker, instId) => {
@@ -64,10 +75,11 @@ export function useMAFlowData(getSortedInstIds: (tickerMap: Map<string, Processe
         updateMAFlowData,
         tickerPrices
       );
+      return true;
     } finally {
       isFetchingMAFlowRef.current = false;
     }
-  }, [getSortedInstIds, maFlowData, updateMAFlowData]);
+  }, [maFlowData, updateMAFlowData]);
 
   // Cleanup function
   const cleanup = useCallback(() => {

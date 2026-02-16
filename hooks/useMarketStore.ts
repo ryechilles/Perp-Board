@@ -160,6 +160,10 @@ export function useMarketStore() {
   // MA Flow data hook (extracted for cleaner separation of concerns)
   const maFlowHook = useMAFlowData(getMAFlowInstIds);
 
+  // Ref to always access latest fetchMAFlowForVisible (avoids stale closure in setTimeout/setInterval)
+  const fetchMAFlowRef = useRef(maFlowHook.fetchMAFlowForVisible);
+  fetchMAFlowRef.current = maFlowHook.fetchMAFlowForVisible;
+
   // Market cap cache helpers
   const saveMarketCapCacheLocal = useCallback((data: Map<string, MarketCapData>) => {
     setMarketCapCache(data);
@@ -249,19 +253,27 @@ export function useMarketStore() {
     intervalsRef.current.push(rsiTier3Interval);
 
     // Fetch MA Flow data after RSI (delayed to avoid API contention)
-    const initialMAFlowTimeout = setTimeout(() => {
+    // Uses ref to always call the latest version (avoids stale closure with empty marketCapData)
+    // Retries every 5s up to 6 times if marketCapData isn't ready yet
+    const tryFetchMAFlow = (retriesLeft: number) => {
       const currentTickers = dataManagerRef.current?.getTickers();
       if (currentTickers && currentTickers.size > 0) {
-        maFlowHook.fetchMAFlowForVisible(currentTickers);
+        fetchMAFlowRef.current(currentTickers).then((didFetch) => {
+          if (!didFetch && retriesLeft > 0) {
+            const retryTimeout = setTimeout(() => tryFetchMAFlow(retriesLeft - 1), 5000);
+            timeoutsRef.current.push(retryTimeout);
+          }
+        });
       }
-    }, MA_FLOW.INITIAL_FETCH_DELAY);
+    };
+    const initialMAFlowTimeout = setTimeout(() => tryFetchMAFlow(6), MA_FLOW.INITIAL_FETCH_DELAY);
     timeoutsRef.current.push(initialMAFlowTimeout);
 
     // Schedule MA Flow refresh (slower than RSI)
     const maFlowInterval = setInterval(() => {
       const currentTickers = dataManagerRef.current?.getTickers();
       if (currentTickers && currentTickers.size > 0) {
-        maFlowHook.fetchMAFlowForVisible(currentTickers);
+        fetchMAFlowRef.current(currentTickers);
       }
     }, MA_FLOW.REFRESH_INTERVAL);
     intervalsRef.current.push(maFlowInterval);
