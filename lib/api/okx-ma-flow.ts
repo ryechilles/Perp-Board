@@ -186,13 +186,13 @@ const TIMEFRAME_BARS: Record<string, string> = {
 };
 
 /**
- * Fetch MA data for a single instrument across all 4 timeframes
+ * Fetch MA data for a single instrument across 3 timeframes (4H, Daily, Weekly)
  * @param instId - The instrument ID (e.g., "BTC-USDT-SWAP")
  * @param currentPrice - The current ticker price from live data (more accurate than MA proxy)
  */
 export async function fetchMAForInstrument(instId: string, currentPrice: number): Promise<MAFlowData | null> {
   try {
-    // Fetch all 4 timeframes sequentially (to respect rate limits)
+    // Fetch 3 timeframes sequentially (to respect rate limits)
     const ma4h = await fetchMAsForTimeframe(instId, TIMEFRAME_BARS['4h']);
 
     await new Promise(r => setTimeout(r, 50));
@@ -201,9 +201,6 @@ export async function fetchMAForInstrument(instId: string, currentPrice: number)
     await new Promise(r => setTimeout(r, 50));
     const maWeekly = await fetchMAsForTimeframe(instId, TIMEFRAME_BARS['weekly']);
 
-    await new Promise(r => setTimeout(r, 50));
-    const maMonthly = await fetchMAsForTimeframe(instId, TIMEFRAME_BARS['monthly']);
-
     // Use ticker price for convergence calculation; fallback to MA7 only if ticker price unavailable
     const price = currentPrice > 0 ? currentPrice : (ma4h?.ma7 ?? maDaily?.ma7 ?? 0);
 
@@ -211,11 +208,11 @@ export async function fetchMAForInstrument(instId: string, currentPrice: number)
       ma4h,
       maDaily,
       maWeekly,
-      maMonthly,
+      maMonthly: null,
       convergence4h: ma4h ? calculateConvergence(ma4h.ma7, ma4h.ma30, ma4h.ma200, price) : null,
       convergenceDaily: maDaily ? calculateConvergence(maDaily.ma7, maDaily.ma30, maDaily.ma200, price) : null,
       convergenceWeekly: maWeekly ? calculateConvergence(maWeekly.ma7, maWeekly.ma30, maWeekly.ma200, price) : null,
-      convergenceMonthly: maMonthly ? calculateConvergence(maMonthly.ma7, maMonthly.ma30, maMonthly.ma200, price) : null,
+      convergenceMonthly: null,
       lastUpdated: Date.now(),
     };
   } catch (error) {

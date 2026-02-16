@@ -20,9 +20,8 @@ const TIMEFRAME_SECTIONS: {
   color: 'blue' | 'purple' | 'orange' | 'pink';
 }[] = [
   { key: '4h', label: '4H', dataKey: 'ma4h', convergenceKey: 'convergence4h', color: 'blue' },
-  { key: 'daily', label: 'Daily', dataKey: 'maDaily', convergenceKey: 'convergenceDaily', color: 'purple' },
+  { key: 'daily', label: '24H', dataKey: 'maDaily', convergenceKey: 'convergenceDaily', color: 'purple' },
   { key: 'weekly', label: 'Weekly', dataKey: 'maWeekly', convergenceKey: 'convergenceWeekly', color: 'orange' },
-  { key: 'monthly', label: 'Monthly', dataKey: 'maMonthly', convergenceKey: 'convergenceMonthly', color: 'pink' },
 ];
 
 // Section dot colors
