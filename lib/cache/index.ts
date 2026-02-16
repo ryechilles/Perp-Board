@@ -3,8 +3,8 @@
  * Provides consistent caching with TTL support for all app data
  */
 
-import { CACHE_KEYS, TIMING, APP_VERSION } from '../constants';
-import { RSIData, MarketCapData } from '../types';
+import { CACHE_KEYS, TIMING, MA_FLOW, APP_VERSION } from '../constants';
+import { RSIData, MarketCapData, MAFlowData } from '../types';
 
 // ===========================================
 // Types
@@ -36,6 +36,10 @@ export const CACHE_CONFIG: Record<string, CacheConfig> = {
   logo: {
     key: CACHE_KEYS.LOGO_CACHE,
     ttl: TIMING.CACHE_LOGO,
+  },
+  maFlow: {
+    key: CACHE_KEYS.MA_FLOW_CACHE,
+    ttl: MA_FLOW.CACHE_TTL,
   },
   favorites: {
     key: CACHE_KEYS.FAVORITES,
@@ -264,6 +268,28 @@ export function setColumnsCache<T>(columns: T): boolean {
 }
 
 // ===========================================
+// MA Flow Cache Helpers
+// ===========================================
+
+/**
+ * Get MA Flow data from cache
+ */
+export function getMAFlowCache(): Map<string, MAFlowData> | null {
+  const entry = getCache<Record<string, MAFlowData>>(CACHE_KEYS.MA_FLOW_CACHE);
+  if (!isCacheValid(entry, MA_FLOW.CACHE_TTL)) return null;
+  if (!entry) return null;
+  console.log(`[Cache] Loaded MA Flow cache (${getCacheAge(entry)}min old)`);
+  return new Map(Object.entries(entry.data));
+}
+
+/**
+ * Save MA Flow data to cache
+ */
+export function setMAFlowCache(data: Map<string, MAFlowData>): boolean {
+  return setCache(CACHE_KEYS.MA_FLOW_CACHE, Object.fromEntries(data));
+}
+
+// ===========================================
 // Hyperliquid-specific Cache Helpers
 // ===========================================
 
@@ -332,6 +358,7 @@ export function clearDataCache(): void {
     CACHE_KEYS.RSI_CACHE,
     CACHE_KEYS.MARKET_CAP_CACHE,
     CACHE_KEYS.LOGO_CACHE,
+    CACHE_KEYS.MA_FLOW_CACHE,
   ];
 
   dataCacheKeys.forEach(key => {

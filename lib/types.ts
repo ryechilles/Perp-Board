@@ -294,6 +294,19 @@ export interface TokenWithApr {
   logo?: string;
 }
 
+// MA Flow data for a single instrument (all timeframes)
+export interface MAFlowData {
+  ma4h: { ma7: number | null; ma30: number | null; ma200: number | null } | null;
+  maDaily: { ma7: number | null; ma30: number | null; ma200: number | null } | null;
+  maWeekly: { ma7: number | null; ma30: number | null; ma200: number | null } | null;
+  maMonthly: { ma7: number | null; ma30: number | null; ma200: number | null } | null;
+  convergence4h: number | null;
+  convergenceDaily: number | null;
+  convergenceWeekly: number | null;
+  convergenceMonthly: number | null;
+  lastUpdated: number;
+}
+
 // Store state
 export interface AppState {
   tickers: Map<string, ProcessedTicker>;
@@ -311,4 +324,5 @@ export interface AppState {
   status: 'connecting' | 'live' | 'error';
   lastUpdate: Date | null;
   rsiProgress: string;
+  maFlowData: Map<string, MAFlowData>;
 }

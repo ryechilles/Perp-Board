@@ -163,6 +163,44 @@ export const AHR999_ZONE_LEGEND = [
 ] as const;
 
 // ===========================================
+// MA Flow Configuration (Three-Line Convergence)
+// ===========================================
+export const MA_FLOW = {
+  // MA periods
+  PERIODS: [7, 30, 200] as const,
+
+  // Convergence threshold defaults (percentage)
+  DEFAULT_THRESHOLD: 5,        // 5%
+  THRESHOLD_MAX: 10,
+  THRESHOLD_MIN: 0.5,
+  THRESHOLD_STEP: 0.5,
+
+  // Candle requirements per timeframe
+  CANDLES_NEEDED: 200,         // For MA200
+
+  // Refresh & stale intervals (slower than RSI since MAs change slowly)
+  REFRESH_INTERVAL: 10 * 60 * 1000,   // 10 minutes
+  STALE_THRESHOLD: 10 * 60 * 1000,    // 10 minutes
+
+  // Fetch delay between instruments
+  FETCH_DELAY: 200,                    // 200ms
+
+  // Delay before starting MA fetch (after RSI)
+  INITIAL_FETCH_DELAY: 8000,           // 8 seconds
+
+  // Display limits
+  DISPLAY_LIMIT: 10,                   // Max items per widget
+
+  // Minimum candles for valid MA calculation
+  MIN_CANDLES_MA7: 7,
+  MIN_CANDLES_MA30: 30,
+  MIN_CANDLES_MA200: 200,
+
+  // Cache TTL
+  CACHE_TTL: 15 * 60 * 1000,          // 15 minutes
+} as const;
+
+// ===========================================
 // UI Configuration
 // ===========================================
 export const UI = {
@@ -206,6 +244,7 @@ export const CACHE_KEYS = {
   RSI_CACHE: 'okx-rsi-cache',
   MARKET_CAP_CACHE: 'okx-marketcap-cache',
   LOGO_CACHE: 'perp_board_logo_cache',
+  MA_FLOW_CACHE: 'okx-ma-flow-cache',
   // Hyperliquid-specific cache keys
   HL_FAVORITES: 'hl-favorites',
   HL_COLUMN_ORDER: 'hl-column-order',

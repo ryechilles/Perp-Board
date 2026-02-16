@@ -12,6 +12,9 @@ export { fetchTickersREST, fetchSpotSymbols, fetchListingDates, fetchFundingRate
 // OKX RSI
 export { fetchRSIForInstrument, fetchRSIBatch } from './okx-rsi';
 
+// OKX MA Flow (Three-Line Convergence)
+export { fetchMAForInstrument, fetchMAFlowBatch, calculateSMA, calculateConvergence } from './okx-ma-flow';
+
 // CoinGecko
 export { fetchMarketCapData } from './coingecko';
 

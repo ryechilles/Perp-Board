@@ -17,5 +17,6 @@ export {
   fetchFundingRates,
   fetchRSIForInstrument,
   fetchRSIBatch,
-  fetchMarketCapData
+  fetchMarketCapData,
+  fetchMAFlowBatch,
 } from './api';

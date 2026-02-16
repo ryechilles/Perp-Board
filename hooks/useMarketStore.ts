@@ -7,6 +7,7 @@ import {
   FundingRateData,
   ListingData,
   MarketCapData,
+  MAFlowData,
 } from '@/lib/types';
 import {
   OKXHybridDataManager,
@@ -14,15 +15,18 @@ import {
   fetchRSIBatch,
   fetchMarketCapData,
   fetchFundingRates,
-  fetchListingDates
+  fetchListingDates,
+  fetchMAFlowBatch,
 } from '@/lib/okx-api';
 import { isMemeToken, getRsiSignal } from '@/lib/utils';
-import { TIMING } from '@/lib/constants';
+import { TIMING, MA_FLOW } from '@/lib/constants';
 import {
   getRsiCache,
   setRsiCache,
   getMarketCapCache,
   setMarketCapCache,
+  getMAFlowCache,
+  setMAFlowCache,
   checkVersionAndClearCache,
 } from '@/lib/cache';
 
@@ -40,6 +44,7 @@ export function useMarketStore() {
   const [listingData, setListingData] = useState<Map<string, ListingData>>(new Map());
   const [marketCapData, setMarketCapData] = useState<Map<string, MarketCapData>>(new Map());
   const [spotSymbols, setSpotSymbols] = useState<Set<string>>(new Set());
+  const [maFlowData, setMAFlowData] = useState<Map<string, MAFlowData>>(new Map());
 
   // Composed hooks
   const columnsHook = useColumns();
@@ -58,6 +63,7 @@ export function useMarketStore() {
   // Refs for WebSocket and intervals
   const dataManagerRef = useRef<OKXHybridDataManager | null>(null);
   const isFetchingRsiRef = useRef(false);
+  const isFetchingMAFlowRef = useRef(false);
   const intervalsRef = useRef<NodeJS.Timeout[]>([]);
   const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
 
@@ -80,6 +86,14 @@ export function useMarketStore() {
     }
   }, []);
 
+  // Load MA Flow cache on mount
+  useEffect(() => {
+    const cachedMAFlow = getMAFlowCache();
+    if (cachedMAFlow && cachedMAFlow.size > 0) {
+      setMAFlowData(cachedMAFlow);
+    }
+  }, []);
+
   // Update RSI data for single instrument
   const updateRsiData = useCallback((instId: string, data: RSIData) => {
     setRsiData(prev => {
@@ -89,6 +103,27 @@ export function useMarketStore() {
       return newMap;
     });
   }, [saveRsiCacheDebounced]);
+
+  // Save MA Flow data to cache (debounced)
+  const saveMAFlowCacheTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const saveMAFlowCacheDebounced = useCallback((maMap: Map<string, MAFlowData>) => {
+    if (saveMAFlowCacheTimeoutRef.current) {
+      clearTimeout(saveMAFlowCacheTimeoutRef.current);
+    }
+    saveMAFlowCacheTimeoutRef.current = setTimeout(() => {
+      setMAFlowCache(maMap);
+    }, TIMING.RSI_CACHE_SAVE_DEBOUNCE);
+  }, []);
+
+  // Update MA Flow data for single instrument
+  const updateMAFlowData = useCallback((instId: string, data: MAFlowData) => {
+    setMAFlowData(prev => {
+      const newMap = new Map(prev);
+      newMap.set(instId, data);
+      saveMAFlowCacheDebounced(newMap);
+      return newMap;
+    });
+  }, [saveMAFlowCacheDebounced]);
 
   // Get sorted instrument IDs by market cap rank
   const getSortedInstIds = useCallback((tickerMap: Map<string, ProcessedTicker>) => {
@@ -141,6 +176,24 @@ export function useMarketStore() {
       isFetchingRsiRef.current = false;
     }
   }, [getSortedInstIds, rsiData, updateRsiData]);
+
+  // Fetch MA Flow data for visible instruments (Top 50 only)
+  const fetchMAFlowForVisible = useCallback(async (tickerMap: Map<string, ProcessedTicker>) => {
+    if (isFetchingMAFlowRef.current) return;
+    isFetchingMAFlowRef.current = true;
+
+    try {
+      const instIds = getSortedInstIds(tickerMap);
+      await fetchMAFlowBatch(
+        instIds,
+        maFlowData,
+        () => {}, // silent progress for MA Flow
+        updateMAFlowData
+      );
+    } finally {
+      isFetchingMAFlowRef.current = false;
+    }
+  }, [getSortedInstIds, maFlowData, updateMAFlowData]);
 
   // Market cap cache helpers
   const saveMarketCapCacheLocal = useCallback((data: Map<string, MarketCapData>) => {
@@ -230,6 +283,24 @@ export function useMarketStore() {
     }, TIMING.RSI_REFRESH_TIER3);
     intervalsRef.current.push(rsiTier3Interval);
 
+    // Fetch MA Flow data after RSI (delayed to avoid API contention)
+    const initialMAFlowTimeout = setTimeout(() => {
+      const currentTickers = dataManagerRef.current?.getTickers();
+      if (currentTickers && currentTickers.size > 0) {
+        fetchMAFlowForVisible(currentTickers);
+      }
+    }, MA_FLOW.INITIAL_FETCH_DELAY);
+    timeoutsRef.current.push(initialMAFlowTimeout);
+
+    // Schedule MA Flow refresh (slower than RSI)
+    const maFlowInterval = setInterval(() => {
+      const currentTickers = dataManagerRef.current?.getTickers();
+      if (currentTickers && currentTickers.size > 0) {
+        fetchMAFlowForVisible(currentTickers);
+      }
+    }, MA_FLOW.REFRESH_INTERVAL);
+    intervalsRef.current.push(maFlowInterval);
+
     // Refresh market cap
     const marketCapInterval = setInterval(async () => {
       const newMarketCap = await fetchMarketCapData();
@@ -245,7 +316,7 @@ export function useMarketStore() {
     }, TIMING.FUNDING_RATES_REFRESH);
     intervalsRef.current.push(fundingRatesInterval);
 
-  }, [fetchRsiForVisible, fetchRsiForTier, loadMarketCapCacheLocal, saveMarketCapCacheLocal]);
+  }, [fetchRsiForVisible, fetchRsiForTier, fetchMAFlowForVisible, loadMarketCapCacheLocal, saveMarketCapCacheLocal]);
 
   // Cleanup - clear all intervals, timeouts, and stop data manager
   const cleanup = useCallback(() => {
@@ -261,6 +332,12 @@ export function useMarketStore() {
     if (saveRsiCacheTimeoutRef.current) {
       clearTimeout(saveRsiCacheTimeoutRef.current);
       saveRsiCacheTimeoutRef.current = null;
+    }
+
+    // Clear MA Flow cache save timeout
+    if (saveMAFlowCacheTimeoutRef.current) {
+      clearTimeout(saveMAFlowCacheTimeoutRef.current);
+      saveMAFlowCacheTimeoutRef.current = null;
     }
 
     // Stop data manager (WebSocket + REST polling)
@@ -671,6 +748,7 @@ export function useMarketStore() {
     listingData,
     marketCapData,
     spotSymbols,
+    maFlowData,
     favorites: favoritesHook.favorites,
 
     // UI state from composed hooks
