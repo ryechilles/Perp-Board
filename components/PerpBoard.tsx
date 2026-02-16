@@ -19,13 +19,11 @@ import { BTCDominance } from '@/components/BTCDominance';
 import { EthBtcRatio } from '@/components/EthBtcRatio';
 import { Total2MiniChart } from '@/components/Total2MiniChart';
 import { MAFlowWidget } from '@/components/MAFlowWidget';
-import { MAFlowThreshold } from '@/components/MAFlowThreshold';
 import { TableHeader, TableRow } from '@/components/table';
 import { TabContainer, WidgetGrid } from '@/components/layout';
 import { Spinner } from '@/components/ui';
 import { ColumnKey } from '@/lib/types';
 import { COLUMN_DEFINITIONS } from '@/lib/utils';
-import { MA_FLOW } from '@/lib/constants';
 // Fixed column configuration
 const FIXED_COLUMNS: ColumnKey[] = ['favorite', 'rank', 'logo', 'symbol'];
 const FIXED_WIDTHS: Record<string, number> = {
@@ -59,7 +57,7 @@ const DEFAULT_WIDGET_ORDER: Record<string, string[]> = {
   funding: ['fundingMarket', 'fundingKiller'],
   altcoin: ['topGainers', 'vsBtc', 'ethBtcRatio', 'total2'],
   btc: ['btcDominance', 'ahr999'],
-  maflow: ['maFlowThreshold', 'maFlow4h', 'maFlowDaily', 'maFlowWeekly', 'maFlowMonthly'],
+  maflow: ['maFlow'],
 };
 
 export default function PerpBoard() {
@@ -83,14 +81,6 @@ export default function PerpBoard() {
     'btc',
     DEFAULT_WIDGET_ORDER.btc
   );
-  const [maFlowWidgetOrder, setMAFlowWidgetOrder] = useWidgetOrder(
-    'maflow',
-    DEFAULT_WIDGET_ORDER.maflow
-  );
-
-  // MA Flow threshold state
-  const [maFlowThreshold, setMAFlowThreshold] = useState<number>(MA_FLOW.DEFAULT_THRESHOLD);
-
   // URL state sync
   useUrlState(
     {
@@ -308,55 +298,18 @@ export default function PerpBoard() {
     ahr999: <AHR999Indicator />,
   }), []);
 
-  // Widget mapping for MA Flow tab
+  // Widget mapping for MA Flow tab (single combined widget)
   const maFlowWidgets: Record<string, ReactNode> = useMemo(() => ({
-    maFlowThreshold: (
-      <MAFlowThreshold
-        value={maFlowThreshold}
-        onChange={setMAFlowThreshold}
-      />
-    ),
-    maFlow4h: (
+    maFlow: (
       <MAFlowWidget
-        timeframe="4h"
         tickers={store.tickers}
         maFlowData={store.maFlowData}
         marketCapData={store.marketCapData}
-        threshold={maFlowThreshold}
         onTokenClick={handleTokenClick}
+        onGroupClick={handleGroupClick}
       />
     ),
-    maFlowDaily: (
-      <MAFlowWidget
-        timeframe="daily"
-        tickers={store.tickers}
-        maFlowData={store.maFlowData}
-        marketCapData={store.marketCapData}
-        threshold={maFlowThreshold}
-        onTokenClick={handleTokenClick}
-      />
-    ),
-    maFlowWeekly: (
-      <MAFlowWidget
-        timeframe="weekly"
-        tickers={store.tickers}
-        maFlowData={store.maFlowData}
-        marketCapData={store.marketCapData}
-        threshold={maFlowThreshold}
-        onTokenClick={handleTokenClick}
-      />
-    ),
-    maFlowMonthly: (
-      <MAFlowWidget
-        timeframe="monthly"
-        tickers={store.tickers}
-        maFlowData={store.maFlowData}
-        marketCapData={store.marketCapData}
-        threshold={maFlowThreshold}
-        onTokenClick={handleTokenClick}
-      />
-    ),
-  }), [maFlowThreshold, store.tickers, store.maFlowData, store.marketCapData]);
+  }), [store.tickers, store.maFlowData, store.marketCapData]);
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-muted">
@@ -471,20 +424,8 @@ export default function PerpBoard() {
                 </WidgetGrid>
               )}
 
-              {/* MA Flow Tab Widgets - Sortable */}
-              {activeTab === 'maflow' && (
-                <WidgetGrid
-                  variant="vertical"
-                  gap="md"
-                  sortable
-                  itemIds={maFlowWidgetOrder}
-                  onOrderChange={setMAFlowWidgetOrder}
-                >
-                  {maFlowWidgetOrder.map((id) => (
-                    <div key={id}>{maFlowWidgets[id]}</div>
-                  ))}
-                </WidgetGrid>
-              )}
+              {/* MA Flow Tab - Single Widget */}
+              {activeTab === 'maflow' && maFlowWidgets.maFlow}
             </div>
 
             {/* Data Table - flex-1 to fill remaining space */}
