@@ -52,10 +52,10 @@ interface MAFlowWidgetProps {
  * Get convergence pill style based on spread %
  */
 function getConvergencePillStyle(spread: number): string {
-  if (spread <= 1) return 'bg-green-500/15 text-green-600';
-  if (spread <= 2) return 'bg-emerald-500/15 text-emerald-600';
-  if (spread <= 3) return 'bg-teal-500/15 text-teal-600';
-  if (spread <= 5) return 'bg-yellow-500/15 text-yellow-700';
+  if (spread <= 0.5) return 'bg-green-500/15 text-green-600';
+  if (spread <= 1) return 'bg-emerald-500/15 text-emerald-600';
+  if (spread <= 2) return 'bg-teal-500/15 text-teal-600';
+  if (spread <= 3) return 'bg-yellow-500/15 text-yellow-700';
   return 'bg-orange-500/15 text-orange-600';
 }
 
@@ -206,9 +206,9 @@ export function MAFlowWidget({
             'Lower spread = tighter convergence = potential breakout',
             'OKX Perp Top 100 by Market Cap (excl. USDC)',
             <>
-              <span className="text-green-500">{'≤ 1%'}</span>{' extreme, '}
-              <span className="text-emerald-500">{'≤ 3%'}</span>{' tight, '}
-              <span className="text-yellow-600">{'≤ 5%'}</span>{' converging'}
+              <span className="text-green-500">{'≤ 0.5%'}</span>{' extreme, '}
+              <span className="text-emerald-500">{'≤ 1%'}</span>{' tight, '}
+              <span className="text-yellow-600">{'≤ 3%'}</span>{' converging'}
             </>,
           ]}
         />

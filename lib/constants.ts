@@ -170,7 +170,7 @@ export const MA_FLOW = {
   PERIODS: [7, 30, 200] as const,
 
   // Fixed convergence threshold (percentage) — no user customization
-  DEFAULT_THRESHOLD: 5,
+  DEFAULT_THRESHOLD: 3,
 
   // Candle requirements per timeframe
   CANDLES_NEEDED: 200,         // For MA200
