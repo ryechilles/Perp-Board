@@ -301,14 +301,11 @@ export default function PerpBoard() {
     ),
   }), [store.tickers, store.fundingRateData, store.marketCapData]);
 
-  // Get BTC price from tickers for AHR999
-  const btcPrice = store.tickers.get('BTC-USDT-SWAP')?.priceNum;
-
   // Widget mapping for BTC tab
   const btcWidgets: Record<string, ReactNode> = useMemo(() => ({
     btcDominance: <BTCDominance />,
-    ahr999: <AHR999Indicator btcPrice={btcPrice} />,
-  }), [btcPrice]);
+    ahr999: <AHR999Indicator />,
+  }), []);
 
   // Widget mapping for MA Flow tab (single combined widget)
   const maFlowWidgets: Record<string, ReactNode> = useMemo(() => ({

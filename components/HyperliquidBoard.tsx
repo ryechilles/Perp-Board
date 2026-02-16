@@ -292,14 +292,11 @@ export default function HyperliquidBoard() {
     total2: <Total2MiniChart />,
   }), [store.tickers, store.rsiData, store.marketCapData]);
 
-  // Get BTC price from tickers for AHR999
-  const btcPrice = store.tickers.get('BTC-USDT')?.priceNum;
-
   // Widget mapping for BTC tab (shared components, no exchange-specific data)
   const btcWidgets: Record<string, ReactNode> = useMemo(() => ({
     btcDominance: <BTCDominance />,
-    ahr999: <AHR999Indicator btcPrice={btcPrice} />,
-  }), [btcPrice]);
+    ahr999: <AHR999Indicator />,
+  }), []);
 
   // Widget mapping for HLP tab
   const hlpWidgets: Record<string, ReactNode> = useMemo(() => ({

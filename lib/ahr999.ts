@@ -145,15 +145,15 @@ async function fetchBTCHistoricalPrices(): Promise<number[]> {
 }
 
 // Main function to fetch and calculate AHR999
-// @param btcPrice - Current BTC price from live ticker data (avoids extra API call)
-export async function fetchAHR999Data(btcPrice?: number): Promise<AHR999Data | null> {
+// Uses latest historical price as current price (refreshed via proxy every 5 min)
+export async function fetchAHR999Data(): Promise<AHR999Data | null> {
   try {
     const historicalPrices = await fetchBTCHistoricalPrices();
 
-    // Use provided price or fallback to latest historical price
-    const currentPrice = btcPrice && btcPrice > 0
-      ? btcPrice
-      : (historicalPrices.length > 0 ? historicalPrices[historicalPrices.length - 1] : null);
+    // Use latest historical price as current price
+    const currentPrice = historicalPrices.length > 0
+      ? historicalPrices[historicalPrices.length - 1]
+      : null;
 
     if (!currentPrice || historicalPrices.length === 0) {
       return null;
