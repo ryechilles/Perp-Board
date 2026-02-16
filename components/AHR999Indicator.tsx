@@ -6,14 +6,18 @@ import { TooltipList } from '@/components/ui';
 import { fetchAHR999Data, getAHR999ZoneInfo, AHR999Data } from '@/lib/ahr999';
 import { AHR999_ZONE_COLORS, AHR999_ZONE_LEGEND } from '@/lib/constants';
 
-export function AHR999Indicator() {
+interface AHR999IndicatorProps {
+  btcPrice?: number;
+}
+
+export function AHR999Indicator({ btcPrice }: AHR999IndicatorProps) {
   const [data, setData] = useState<AHR999Data | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      const result = await fetchAHR999Data();
+      const result = await fetchAHR999Data(btcPrice);
       setData(result);
       setLoading(false);
     };
@@ -23,7 +27,7 @@ export function AHR999Indicator() {
     // Refresh every 5 minutes
     const interval = setInterval(loadData, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [btcPrice]);
 
   const zoneInfo = getAHR999ZoneInfo(data?.value ?? null);
 

@@ -124,55 +124,36 @@ function calculateGrowthValuation(): number {
   return valuation;
 }
 
-// Fetch BTC historical prices from CoinGecko (200 days)
+// Fetch BTC historical prices via server-side proxy (avoids CoinGecko rate limits)
 async function fetchBTCHistoricalPrices(): Promise<number[]> {
   try {
-    const response = await fetch(
-      'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=200&interval=daily'
-    );
+    const response = await fetch('/api/coingecko?type=history');
     if (!response.ok) {
-      console.error(`Failed to fetch BTC historical prices: HTTP ${response.status}`);
+      console.error(`[AHR999] Failed to fetch BTC historical prices: HTTP ${response.status}`);
       return [];
     }
     const data = await response.json();
 
     if (data.prices && Array.isArray(data.prices)) {
-      // Extract closing prices
       return data.prices.map((p: [number, number]) => p[1]);
     }
     return [];
   } catch (error) {
-    console.error('Failed to fetch BTC historical prices:', error);
+    console.error('[AHR999] Failed to fetch BTC historical prices:', error);
     return [];
   }
 }
 
-// Fetch current BTC price
-async function fetchCurrentBTCPrice(): Promise<number | null> {
-  try {
-    const response = await fetch(
-      'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd'
-    );
-    if (!response.ok) {
-      console.error(`Failed to fetch BTC price: HTTP ${response.status}`);
-      return null;
-    }
-    const data = await response.json();
-    return data.bitcoin?.usd || null;
-  } catch (error) {
-    console.error('Failed to fetch current BTC price:', error);
-    return null;
-  }
-}
-
 // Main function to fetch and calculate AHR999
-export async function fetchAHR999Data(): Promise<AHR999Data | null> {
+// @param btcPrice - Current BTC price from live ticker data (avoids extra API call)
+export async function fetchAHR999Data(btcPrice?: number): Promise<AHR999Data | null> {
   try {
-    // Fetch data in parallel
-    const [historicalPrices, currentPrice] = await Promise.all([
-      fetchBTCHistoricalPrices(),
-      fetchCurrentBTCPrice()
-    ]);
+    const historicalPrices = await fetchBTCHistoricalPrices();
+
+    // Use provided price or fallback to latest historical price
+    const currentPrice = btcPrice && btcPrice > 0
+      ? btcPrice
+      : (historicalPrices.length > 0 ? historicalPrices[historicalPrices.length - 1] : null);
 
     if (!currentPrice || historicalPrices.length === 0) {
       return null;
@@ -197,7 +178,7 @@ export async function fetchAHR999Data(): Promise<AHR999Data | null> {
       lastUpdated: Date.now()
     };
   } catch (error) {
-    console.error('Failed to calculate AHR999:', error);
+    console.error('[AHR999] Failed to calculate:', error);
     return null;
   }
 }
