@@ -148,7 +148,7 @@ export function useMarketStore() {
   // Used by MA Flow to ensure only Top N by market cap are processed
   const getMAFlowInstIds = useCallback((tickerMap: Map<string, ProcessedTicker>) => {
     return Array.from(tickerMap.values())
-      .filter(t => t.instId.includes('-USDT-') && marketCapData.has(t.baseSymbol))
+      .filter(t => t.instId.includes('-USDT-') && t.baseSymbol !== 'USDC' && marketCapData.has(t.baseSymbol))
       .sort((a, b) => {
         const rankA = marketCapData.get(a.baseSymbol)!.rank;
         const rankB = marketCapData.get(b.baseSymbol)!.rank;
