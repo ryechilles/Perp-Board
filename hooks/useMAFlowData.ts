@@ -43,7 +43,7 @@ export function useMAFlowData(getSortedInstIds: (tickerMap: Map<string, Processe
     });
   }, [saveMAFlowCacheDebounced]);
 
-  // Fetch MA Flow data for visible instruments (Top 50 only)
+  // Fetch MA Flow data for top instruments by market cap
   const fetchMAFlowForVisible = useCallback(async (tickerMap: Map<string, ProcessedTicker>) => {
     if (isFetchingMAFlowRef.current) return;
     isFetchingMAFlowRef.current = true;

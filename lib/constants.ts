@@ -185,6 +185,9 @@ export const MA_FLOW = {
   // Delay before starting MA fetch (after RSI)
   INITIAL_FETCH_DELAY: 8000,           // 8 seconds
 
+  // Token pool size (Top N by market cap)
+  TOKEN_COUNT: 100,
+
   // Display limits
   DISPLAY_LIMIT: 10,                   // Max items per widget
 

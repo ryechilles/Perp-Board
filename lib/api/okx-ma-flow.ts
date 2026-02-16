@@ -229,7 +229,7 @@ export async function fetchMAForInstrument(instId: string, currentPrice: number)
 // ===========================================
 
 /**
- * Batch fetch MA data for multiple instruments (Top 50 only)
+ * Batch fetch MA data for multiple instruments (Top N by market cap)
  * @param tickerPrices - Map of instId to current price from live ticker data
  */
 export async function fetchMAFlowBatch(
@@ -241,11 +241,11 @@ export async function fetchMAFlowBatch(
 ): Promise<void> {
   const now = Date.now();
 
-  // Only process Top 50
-  const top50 = instIds.slice(0, 50);
+  // Only process Top N by market cap (instIds are pre-sorted by market cap rank)
+  const topN = instIds.slice(0, MA_FLOW.TOKEN_COUNT);
 
   // Filter out instruments that still have fresh data
-  const toFetch = top50.filter(id => {
+  const toFetch = topN.filter(id => {
     const existing = existingData.get(id);
     if (!existing) return true;
     return now - existing.lastUpdated > MA_FLOW.STALE_THRESHOLD;
