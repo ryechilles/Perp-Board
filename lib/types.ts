@@ -294,12 +294,19 @@ export interface TokenWithApr {
   logo?: string;
 }
 
+// MA values for a single timeframe (shared across MA Flow components)
+export interface MAValues {
+  ma7: number | null;
+  ma30: number | null;
+  ma200: number | null;
+}
+
 // MA Flow data for a single instrument (all timeframes)
 export interface MAFlowData {
-  ma4h: { ma7: number | null; ma30: number | null; ma200: number | null } | null;
-  maDaily: { ma7: number | null; ma30: number | null; ma200: number | null } | null;
-  maWeekly: { ma7: number | null; ma30: number | null; ma200: number | null } | null;
-  maMonthly: { ma7: number | null; ma30: number | null; ma200: number | null } | null;
+  ma4h: MAValues | null;
+  maDaily: MAValues | null;
+  maWeekly: MAValues | null;
+  maMonthly: MAValues | null;
   convergence4h: number | null;
   convergenceDaily: number | null;
   convergenceWeekly: number | null;

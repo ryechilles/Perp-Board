@@ -1,12 +1,6 @@
-/**
- * OKX API Compatibility Layer
- * Re-exports all API functions from the split modules
- *
- * NOTE: This file is kept for backward compatibility.
- * New code should import directly from '@/lib/api'
- */
-
-// Re-export everything from the split API modules
+// DEPRECATED: Import directly from '@/lib/api' instead.
+// This file is kept only to avoid breaking external references.
+// Safe to delete once all imports are verified migrated.
 export {
   OKXHybridDataManager,
   type TickerUpdateCallback,

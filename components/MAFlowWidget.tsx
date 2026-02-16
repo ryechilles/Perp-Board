@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { Activity } from 'lucide-react';
 import { SmallWidget } from '@/components/widgets/base';
 import { TooltipList, TokenAvatar } from '@/components/ui';
-import { ProcessedTicker, MAFlowData, MarketCapData } from '@/lib/types';
+import { ProcessedTicker, MAFlowData, MarketCapData, MAValues } from '@/lib/types';
 import { formatPrice } from '@/lib/utils';
 import { MA_FLOW } from '@/lib/constants';
 
@@ -99,12 +99,6 @@ function SectionHeader({
 // Type-safe accessor for MA values by timeframe key
 type MATimeframeKey = 'ma4h' | 'maDaily' | 'maWeekly' | 'maMonthly';
 type ConvergenceKey = 'convergence4h' | 'convergenceDaily' | 'convergenceWeekly' | 'convergenceMonthly';
-
-interface MAValues {
-  ma7: number | null;
-  ma30: number | null;
-  ma200: number | null;
-}
 
 /**
  * Check if MA values have at least 2 valid (non-null) entries

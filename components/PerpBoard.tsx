@@ -82,6 +82,10 @@ export default function PerpBoard() {
     'btc',
     DEFAULT_WIDGET_ORDER.btc
   );
+  const [maflowWidgetOrder, setMaflowWidgetOrder] = useWidgetOrder(
+    'maflow',
+    DEFAULT_WIDGET_ORDER.maflow
+  );
   // URL state sync
   useUrlState(
     {
@@ -430,8 +434,20 @@ export default function PerpBoard() {
                 </WidgetGrid>
               )}
 
-              {/* MA Flow Tab - Single Widget */}
-              {activeTab === 'maflow' && maFlowWidgets.maFlow}
+              {/* MA Flow Tab Widgets - Sortable (consistent pattern) */}
+              {activeTab === 'maflow' && (
+                <WidgetGrid
+                  variant="vertical"
+                  gap="md"
+                  sortable
+                  itemIds={maflowWidgetOrder}
+                  onOrderChange={setMaflowWidgetOrder}
+                >
+                  {maflowWidgetOrder.map((id) => (
+                    <div key={id}>{maFlowWidgets[id]}</div>
+                  ))}
+                </WidgetGrid>
+              )}
               </ErrorBoundary>
             </div>
 

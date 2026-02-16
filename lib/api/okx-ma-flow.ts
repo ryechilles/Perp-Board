@@ -4,8 +4,8 @@
  * across 4H, Daily, Weekly, Monthly timeframes
  */
 
-import { MAFlowData } from '../types';
-import { Mutex, RateLimiter } from '../utils';
+import { MAFlowData, MAValues } from '../types';
+import { Mutex, RateLimiter } from '../concurrency';
 import { API, RATE_LIMIT, MA_FLOW } from '../constants';
 
 const OKX_REST_BASE = API.OKX_REST_BASE;
@@ -156,19 +156,13 @@ async function fetchCandlesWithPagination(
 // Per-Timeframe MA Calculation
 // ===========================================
 
-interface TimeframeMAResult {
-  ma7: number | null;
-  ma30: number | null;
-  ma200: number | null;
-}
-
 /**
  * Fetch candles and calculate MAs for a single timeframe
  */
 async function fetchMAsForTimeframe(
   instId: string,
   bar: string
-): Promise<TimeframeMAResult | null> {
+): Promise<MAValues | null> {
   const closes = await fetchCandlesWithPagination(instId, bar, MA_FLOW.CANDLES_NEEDED);
   if (!closes || closes.length < MA_FLOW.MIN_CANDLES_MA7) return null;
 
