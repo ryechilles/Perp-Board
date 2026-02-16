@@ -20,12 +20,14 @@ export class OKXHybridDataManager {
   private onUpdate: TickerUpdateCallback;
   private onStatus: StatusCallback;
   private top50InstIds: string[] = [];
+  private top50Set: Set<string> = new Set(); // O(1) lookup instead of Array.includes
   private allInstIds: string[] = [];
   private restPollInterval: NodeJS.Timeout | null = null;
   private wsReconnectTimeout: NodeJS.Timeout | null = null;
   private pingInterval: NodeJS.Timeout | null = null;
   private isRunning = false;
   private wsConnected = false;
+  private wsLastUpdateTime: Map<string, number> = new Map(); // Track WS update timestamps
 
   constructor(onUpdate: TickerUpdateCallback, onStatus: StatusCallback) {
     this.onUpdate = onUpdate;
@@ -81,6 +83,7 @@ export class OKXHybridDataManager {
 
         // TOP 50 for WebSocket
         this.top50InstIds = usdtSwaps.slice(0, UI.TOP50_COUNT).map(t => t.instId);
+        this.top50Set = new Set(this.top50InstIds);
         this.allInstIds = usdtSwaps.map(t => t.instId);
 
         this.onUpdate(new Map(this.tickers));
@@ -146,9 +149,11 @@ export class OKXHybridDataManager {
 
           // Handle ticker data
           if (data.arg?.channel === 'tickers' && data.data) {
+            const now = Date.now();
             data.data.forEach((ticker: OKXTicker) => {
               const processed = processTicker(ticker);
               this.tickers.set(ticker.instId, processed);
+              this.wsLastUpdateTime.set(ticker.instId, now);
             });
             this.onUpdate(new Map(this.tickers));
             this.onStatus('live', new Date());
@@ -211,15 +216,18 @@ export class OKXHybridDataManager {
           let updated = false;
           const currentInstIds = new Set<string>();
 
+          const now = Date.now();
           data.data.forEach((ticker: OKXTicker) => {
             if (ticker.instId.endsWith('-USDT-SWAP')) {
               currentInstIds.add(ticker.instId);
-              // Only update non-TOP 50 via REST (TOP 50 updated by WebSocket)
-              if (!this.wsConnected || !this.top50InstIds.includes(ticker.instId)) {
-                const processed = processTicker(ticker);
-                this.tickers.set(ticker.instId, processed);
-                updated = true;
+              // Skip TOP 50 instruments that have recent WS updates (within last 10s)
+              if (this.wsConnected && this.top50Set.has(ticker.instId)) {
+                const lastWsUpdate = this.wsLastUpdateTime.get(ticker.instId) ?? 0;
+                if (now - lastWsUpdate < 10000) return; // WS data is fresh, skip REST
               }
+              const processed = processTicker(ticker);
+              this.tickers.set(ticker.instId, processed);
+              updated = true;
             }
           });
 

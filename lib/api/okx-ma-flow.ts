@@ -53,8 +53,26 @@ export function calculateConvergence(
 // Candle Fetching with Pagination
 // ===========================================
 
+// Fetch timeout in milliseconds
+const FETCH_TIMEOUT_MS = 10000;
+const MAX_RETRIES = 2;
+
 /**
- * Fetch candles from OKX with pagination support
+ * Fetch with AbortController timeout
+ */
+async function fetchWithTimeout(url: string, timeoutMs: number = FETCH_TIMEOUT_MS): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/**
+ * Fetch candles from OKX with pagination support, retry logic, and timeout
  * OKX returns max 100 candles per request, newest first
  * Uses `after` param to fetch older data
  */
@@ -66,46 +84,60 @@ async function fetchCandlesWithPagination(
   const allCandles: string[][] = [];
   let after: string | undefined;
   const maxPerRequest = 100;
-  let attempts = 0;
-  const maxAttempts = Math.ceil(needed / maxPerRequest) + 1;
+  let pageAttempts = 0;
+  const maxPageAttempts = Math.ceil(needed / maxPerRequest) + 1;
 
-  while (allCandles.length < needed && attempts < maxAttempts) {
-    attempts++;
+  while (allCandles.length < needed && pageAttempts < maxPageAttempts) {
+    pageAttempts++;
 
-    await maMutex.acquire();
-    try {
-      await maRateLimiter.waitForSlot();
-
-      let url = `${OKX_REST_BASE}/market/candles?instId=${instId}&bar=${bar}&limit=${maxPerRequest}`;
-      if (after) {
-        url += `&after=${after}`;
+    let success = false;
+    for (let retry = 0; retry <= MAX_RETRIES; retry++) {
+      if (retry > 0) {
+        // Back-off delay before retry
+        await new Promise(r => setTimeout(r, 500 * retry));
       }
 
-      const response = await fetch(url);
-      if (!response.ok) {
-        console.warn(`[MA Flow] HTTP error for ${instId} ${bar}: ${response.status}`);
+      await maMutex.acquire();
+      try {
+        await maRateLimiter.waitForSlot();
+
+        let url = `${OKX_REST_BASE}/market/candles?instId=${instId}&bar=${bar}&limit=${maxPerRequest}`;
+        if (after) {
+          url += `&after=${after}`;
+        }
+
+        const response = await fetchWithTimeout(url);
+        if (!response.ok) {
+          console.warn(`[MA Flow] HTTP ${response.status} for ${instId} ${bar} (attempt ${retry + 1})`);
+          continue; // Will retry after mutex release in finally
+        }
+
+        const data = await response.json();
+        if (data.code !== '0' || !data.data || data.data.length === 0) {
+          success = true; // Not an error, just no more data
+          break;
+        }
+
+        const candles = data.data as string[][];
+        allCandles.push(...candles);
+        success = true;
+
+        // If we got fewer than requested, there's no more data
+        if (candles.length < maxPerRequest) break;
+
+        // Set `after` to the oldest timestamp for next page
+        after = candles[candles.length - 1][0];
         break;
+      } catch (error) {
+        const isTimeout = error instanceof DOMException && error.name === 'AbortError';
+        console.warn(`[MA Flow] ${isTimeout ? 'Timeout' : 'Fetch failed'} for ${instId} ${bar} (attempt ${retry + 1}):`, error);
+        // Will retry after mutex release in finally
+      } finally {
+        maMutex.release();
       }
-
-      const data = await response.json();
-      if (data.code !== '0' || !data.data || data.data.length === 0) {
-        break;
-      }
-
-      const candles = data.data as string[][];
-      allCandles.push(...candles);
-
-      // If we got fewer than requested, there's no more data
-      if (candles.length < maxPerRequest) break;
-
-      // Set `after` to the oldest timestamp for next page
-      after = candles[candles.length - 1][0];
-    } catch (error) {
-      console.warn(`[MA Flow] Fetch failed for ${instId} ${bar}:`, error);
-      break;
-    } finally {
-      maMutex.release();
     }
+
+    if (!success) break;
 
     // Small delay between pagination requests
     if (allCandles.length < needed) {
@@ -161,8 +193,10 @@ const TIMEFRAME_BARS: Record<string, string> = {
 
 /**
  * Fetch MA data for a single instrument across all 4 timeframes
+ * @param instId - The instrument ID (e.g., "BTC-USDT-SWAP")
+ * @param currentPrice - The current ticker price from live data (more accurate than MA proxy)
  */
-export async function fetchMAForInstrument(instId: string): Promise<MAFlowData | null> {
+export async function fetchMAForInstrument(instId: string, currentPrice: number): Promise<MAFlowData | null> {
   try {
     // Fetch all 4 timeframes sequentially (to respect rate limits)
     const ma4h = await fetchMAsForTimeframe(instId, TIMEFRAME_BARS['4h']);
@@ -176,20 +210,18 @@ export async function fetchMAForInstrument(instId: string): Promise<MAFlowData |
     await new Promise(r => setTimeout(r, 50));
     const maMonthly = await fetchMAsForTimeframe(instId, TIMEFRAME_BARS['monthly']);
 
-    // Get current price from the most recent close
-    // We'll compute convergence with the latest MA7 as proxy for current price
-    // (more accurate price comes from the ticker data in the store)
-    const currentPrice = ma4h?.ma7 ?? maDaily?.ma7 ?? 0;
+    // Use ticker price for convergence calculation; fallback to MA7 only if ticker price unavailable
+    const price = currentPrice > 0 ? currentPrice : (ma4h?.ma7 ?? maDaily?.ma7 ?? 0);
 
     return {
       ma4h,
       maDaily,
       maWeekly,
       maMonthly,
-      convergence4h: ma4h ? calculateConvergence(ma4h.ma7, ma4h.ma30, ma4h.ma200, currentPrice) : null,
-      convergenceDaily: maDaily ? calculateConvergence(maDaily.ma7, maDaily.ma30, maDaily.ma200, currentPrice) : null,
-      convergenceWeekly: maWeekly ? calculateConvergence(maWeekly.ma7, maWeekly.ma30, maWeekly.ma200, currentPrice) : null,
-      convergenceMonthly: maMonthly ? calculateConvergence(maMonthly.ma7, maMonthly.ma30, maMonthly.ma200, currentPrice) : null,
+      convergence4h: ma4h ? calculateConvergence(ma4h.ma7, ma4h.ma30, ma4h.ma200, price) : null,
+      convergenceDaily: maDaily ? calculateConvergence(maDaily.ma7, maDaily.ma30, maDaily.ma200, price) : null,
+      convergenceWeekly: maWeekly ? calculateConvergence(maWeekly.ma7, maWeekly.ma30, maWeekly.ma200, price) : null,
+      convergenceMonthly: maMonthly ? calculateConvergence(maMonthly.ma7, maMonthly.ma30, maMonthly.ma200, price) : null,
       lastUpdated: Date.now(),
     };
   } catch (error) {
@@ -204,12 +236,14 @@ export async function fetchMAForInstrument(instId: string): Promise<MAFlowData |
 
 /**
  * Batch fetch MA data for multiple instruments (Top 50 only)
+ * @param tickerPrices - Map of instId to current price from live ticker data
  */
 export async function fetchMAFlowBatch(
   instIds: string[],
   existingData: Map<string, MAFlowData>,
   onProgress: (text: string) => void,
-  onUpdate: (instId: string, data: MAFlowData) => void
+  onUpdate: (instId: string, data: MAFlowData) => void,
+  tickerPrices?: Map<string, number>
 ): Promise<void> {
   const now = Date.now();
 
@@ -232,7 +266,8 @@ export async function fetchMAFlowBatch(
     const instId = toFetch[i];
     onProgress(`MA Flow: ${i + 1}/${toFetch.length}`);
 
-    const maData = await fetchMAForInstrument(instId);
+    const currentPrice = tickerPrices?.get(instId) ?? 0;
+    const maData = await fetchMAForInstrument(instId, currentPrice);
     if (maData) {
       onUpdate(instId, maData);
     }

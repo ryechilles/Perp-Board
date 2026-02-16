@@ -11,12 +11,18 @@ import { MA_FLOW } from '@/lib/constants';
 // Fixed threshold (no user customization)
 const THRESHOLD = MA_FLOW.DEFAULT_THRESHOLD;
 
-// Timeframe sections config
-const TIMEFRAME_SECTIONS = [
-  { key: '4h', label: '4H', dataKey: 'ma4h' as const, convergenceKey: 'convergence4h' as const, color: 'blue' as const },
-  { key: 'daily', label: 'Daily', dataKey: 'maDaily' as const, convergenceKey: 'convergenceDaily' as const, color: 'purple' as const },
-  { key: 'weekly', label: 'Weekly', dataKey: 'maWeekly' as const, convergenceKey: 'convergenceWeekly' as const, color: 'orange' as const },
-  { key: 'monthly', label: 'Monthly', dataKey: 'maMonthly' as const, convergenceKey: 'convergenceMonthly' as const, color: 'pink' as const },
+// Timeframe sections config with proper types
+const TIMEFRAME_SECTIONS: {
+  key: string;
+  label: string;
+  dataKey: 'ma4h' | 'maDaily' | 'maWeekly' | 'maMonthly';
+  convergenceKey: 'convergence4h' | 'convergenceDaily' | 'convergenceWeekly' | 'convergenceMonthly';
+  color: 'blue' | 'purple' | 'orange' | 'pink';
+}[] = [
+  { key: '4h', label: '4H', dataKey: 'ma4h', convergenceKey: 'convergence4h', color: 'blue' },
+  { key: 'daily', label: 'Daily', dataKey: 'maDaily', convergenceKey: 'convergenceDaily', color: 'purple' },
+  { key: 'weekly', label: 'Weekly', dataKey: 'maWeekly', convergenceKey: 'convergenceWeekly', color: 'orange' },
+  { key: 'monthly', label: 'Monthly', dataKey: 'maMonthly', convergenceKey: 'convergenceMonthly', color: 'pink' },
 ];
 
 // Section dot colors
@@ -90,30 +96,47 @@ function SectionHeader({
   );
 }
 
+// Type-safe accessor for MA values by timeframe key
+type MATimeframeKey = 'ma4h' | 'maDaily' | 'maWeekly' | 'maMonthly';
+type ConvergenceKey = 'convergence4h' | 'convergenceDaily' | 'convergenceWeekly' | 'convergenceMonthly';
+
+interface MAValues {
+  ma7: number | null;
+  ma30: number | null;
+  ma200: number | null;
+}
+
 /**
- * Get converging tokens for a specific timeframe
+ * Check if MA values have at least 2 valid (non-null) entries
  */
-function getConvergingTokens(
+function hasValidMAs(maValues: MAValues | null): maValues is MAValues {
+  if (!maValues) return false;
+  const validCount = [maValues.ma7, maValues.ma30, maValues.ma200].filter(v => v !== null).length;
+  return validCount >= 2;
+}
+
+/**
+ * Get converging tokens for a specific timeframe, returning both
+ * the display-limited list and the total count (single pass)
+ */
+function getConvergingTokensWithCount(
   maFlowData: Map<string, MAFlowData>,
   tickers: Map<string, ProcessedTicker>,
   marketCapData: Map<string, MarketCapData>,
-  dataKey: keyof MAFlowData,
-  convergenceKey: keyof MAFlowData,
-): ConvergingToken[] {
+  dataKey: MATimeframeKey,
+  convergenceKey: ConvergenceKey,
+): { tokens: ConvergingToken[]; totalCount: number } {
   const results: ConvergingToken[] = [];
 
   maFlowData.forEach((maData, instId) => {
-    const ticker = tickers.get(instId);
-    if (!ticker) return;
-
-    const convergence = maData[convergenceKey] as number | null;
+    const convergence = maData[convergenceKey];
     if (convergence === null || convergence > THRESHOLD) return;
 
-    const maValues = maData[dataKey] as { ma7: number | null; ma30: number | null; ma200: number | null } | null;
-    if (!maValues) return;
+    const maValues = maData[dataKey];
+    if (!hasValidMAs(maValues)) return;
 
-    const validCount = [maValues.ma7, maValues.ma30, maValues.ma200].filter(v => v !== null).length;
-    if (validCount < 2) return;
+    const ticker = tickers.get(instId);
+    if (!ticker) return;
 
     results.push({
       symbol: ticker.baseSymbol,
@@ -125,7 +148,10 @@ function getConvergingTokens(
   });
 
   results.sort((a, b) => a.convergence - b.convergence);
-  return results.slice(0, MA_FLOW.DISPLAY_LIMIT);
+  return {
+    tokens: results.slice(0, MA_FLOW.DISPLAY_LIMIT),
+    totalCount: results.length,
+  };
 }
 
 export function MAFlowWidget({
@@ -135,31 +161,15 @@ export function MAFlowWidget({
   onTokenClick,
   onGroupClick,
 }: MAFlowWidgetProps) {
-  // Compute converging tokens for all 4 timeframes
+  // Compute converging tokens + total counts for all 4 timeframes in a single pass
   const sections = useMemo(() => {
-    return TIMEFRAME_SECTIONS.map(tf => ({
-      ...tf,
-      tokens: getConvergingTokens(maFlowData, tickers, marketCapData, tf.dataKey, tf.convergenceKey),
-    }));
-  }, [maFlowData, tickers, marketCapData]);
-
-  // Count all converging tokens for each timeframe (before display limit)
-  const allCounts = useMemo(() => {
     return TIMEFRAME_SECTIONS.map(tf => {
-      let count = 0;
-      maFlowData.forEach((maData) => {
-        const convergence = maData[tf.convergenceKey] as number | null;
-        if (convergence !== null && convergence <= THRESHOLD) {
-          const maValues = maData[tf.dataKey] as { ma7: number | null; ma30: number | null; ma200: number | null } | null;
-          if (maValues) {
-            const validCount = [maValues.ma7, maValues.ma30, maValues.ma200].filter(v => v !== null).length;
-            if (validCount >= 2) count++;
-          }
-        }
-      });
-      return count;
+      const { tokens, totalCount } = getConvergingTokensWithCount(
+        maFlowData, tickers, marketCapData, tf.dataKey, tf.convergenceKey
+      );
+      return { ...tf, tokens, totalCount };
     });
-  }, [maFlowData]);
+  }, [maFlowData, tickers, marketCapData]);
 
   const isLoading = tickers.size === 0 || maFlowData.size === 0;
 
@@ -212,11 +222,11 @@ export function MAFlowWidget({
       }
     >
       <div className="space-y-4">
-        {sections.map((section, sIdx) => (
+        {sections.map((section) => (
           <div key={section.key}>
             <SectionHeader
               title={section.label}
-              count={allCounts[sIdx]}
+              count={section.totalCount}
               color={section.color}
               isLoading={isLoading}
               onClick={() => onGroupClick?.(section.tokens.map(t => t.symbol))}

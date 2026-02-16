@@ -367,7 +367,9 @@ export class Mutex {
   release(): void {
     if (this.queue.length > 0) {
       const next = this.queue.shift();
-      if (next) next();
+      // Defer next() to avoid synchronous lock state inconsistency
+      // Without this, the next acquirer runs before release() completes its stack frame
+      if (next) Promise.resolve().then(next);
     } else {
       this.locked = false;
     }

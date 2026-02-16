@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useMemo, ReactNode } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback, ReactNode } from 'react';
 import { useMarketStore } from '@/hooks/useMarketStore';
 import { useUrlState } from '@/hooks/useUrlState';
 import { useWidgetOrder } from '@/hooks/useWidgetOrder';
@@ -19,6 +19,7 @@ import { BTCDominance } from '@/components/BTCDominance';
 import { EthBtcRatio } from '@/components/EthBtcRatio';
 import { Total2MiniChart } from '@/components/Total2MiniChart';
 import { MAFlowWidget } from '@/components/MAFlowWidget';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { TableHeader, TableRow } from '@/components/table';
 import { TabContainer, WidgetGrid } from '@/components/layout';
 import { Spinner } from '@/components/ui';
@@ -118,18 +119,22 @@ export default function PerpBoard() {
     };
   }, []);
 
+  // Scroll handler wrapped in useCallback to avoid unnecessary re-creation
+  const handleScroll = useCallback(() => {
+    const container = tableContainerRef.current;
+    if (container) {
+      setIsScrolled(container.scrollLeft > 0);
+    }
+  }, []);
+
   // Monitor horizontal scroll for sticky column shadow
   useEffect(() => {
     const container = tableContainerRef.current;
     if (!container) return;
 
-    const handleScroll = () => {
-      setIsScrolled(container.scrollLeft > 0);
-    };
-
     container.addEventListener('scroll', handleScroll);
     return () => container.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [handleScroll]);
 
   const filteredData = store.getFilteredData();
   const { avgRsi7, avgRsi14 } = store.getRsiAverages();
@@ -364,6 +369,7 @@ export default function PerpBoard() {
           <div className="flex flex-col lg:flex-row flex-1 gap-4 overflow-hidden">
             {/* Widgets - Desktop: fixed width sidebar, Mobile: above table */}
             <div className="lg:w-[320px] flex-shrink-0 lg:overflow-y-auto lg:pr-2 space-y-4">
+              <ErrorBoundary>
               {/* RSI Tab Widgets - Sortable */}
               {activeTab === 'rsi' && (
                 <WidgetGrid
@@ -426,6 +432,7 @@ export default function PerpBoard() {
 
               {/* MA Flow Tab - Single Widget */}
               {activeTab === 'maflow' && maFlowWidgets.maFlow}
+              </ErrorBoundary>
             </div>
 
             {/* Data Table - flex-1 to fill remaining space */}
