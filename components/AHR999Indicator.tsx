@@ -6,22 +6,35 @@ import { TooltipList } from '@/components/ui';
 import { fetchAHR999Data, getAHR999ZoneInfo, AHR999Data } from '@/lib/ahr999';
 import { AHR999_ZONE_COLORS, AHR999_ZONE_LEGEND } from '@/lib/constants';
 
+// Module-level cache to avoid refetching on every tab switch (component remount)
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+let cachedData: AHR999Data | null = null;
+let cachedAt = 0;
+
 export function AHR999Indicator() {
-  const [data, setData] = useState<AHR999Data | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<AHR999Data | null>(cachedData);
+  const [loading, setLoading] = useState(!cachedData);
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       const result = await fetchAHR999Data();
+      cachedData = result;
+      cachedAt = Date.now();
       setData(result);
       setLoading(false);
     };
 
-    loadData();
+    // Use cache if still fresh
+    if (cachedData && Date.now() - cachedAt < CACHE_TTL) {
+      setData(cachedData);
+      setLoading(false);
+    } else {
+      loadData();
+    }
 
     // Refresh every 5 minutes
-    const interval = setInterval(loadData, 5 * 60 * 1000);
+    const interval = setInterval(loadData, CACHE_TTL);
     return () => clearInterval(interval);
   }, []);
 
