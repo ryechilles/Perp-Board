@@ -1,10 +1,10 @@
 /**
- * Unified Cache Manager
+ * Unified Cache Manager with Factory Pattern
  * Provides consistent caching with TTL support for all app data
  */
 
 import { CACHE_KEYS, TIMING, MA_FLOW, APP_VERSION } from '../constants';
-import { RSIData, MarketCapData, MAFlowData } from '../types';
+import { RSIData, MarketCapData, MAFlowData, ColumnVisibility, Filters } from '../types';
 
 // ===========================================
 // Types
@@ -20,44 +20,11 @@ interface CacheConfig {
   ttl: number; // Time to live in milliseconds
 }
 
-// ===========================================
-// Cache Configurations
-// ===========================================
-
-export const CACHE_CONFIG: Record<string, CacheConfig> = {
-  rsi: {
-    key: CACHE_KEYS.RSI_CACHE,
-    ttl: TIMING.CACHE_RSI,
-  },
-  marketCap: {
-    key: CACHE_KEYS.MARKET_CAP_CACHE,
-    ttl: TIMING.CACHE_MARKET_CAP,
-  },
-  logo: {
-    key: CACHE_KEYS.LOGO_CACHE,
-    ttl: TIMING.CACHE_LOGO,
-  },
-  maFlow: {
-    key: CACHE_KEYS.MA_FLOW_CACHE,
-    ttl: MA_FLOW.CACHE_TTL,
-  },
-  favorites: {
-    key: CACHE_KEYS.FAVORITES,
-    ttl: Infinity, // Never expires
-  },
-  columns: {
-    key: CACHE_KEYS.COLUMNS,
-    ttl: Infinity,
-  },
-  columnOrder: {
-    key: CACHE_KEYS.COLUMN_ORDER,
-    ttl: Infinity,
-  },
-  filters: {
-    key: CACHE_KEYS.FILTERS,
-    ttl: Infinity,
-  },
-};
+// Generic cache interface returned by factories
+interface CacheApi<T> {
+  get(): T | null;
+  set(data: T): boolean;
+}
 
 // ===========================================
 // Core Cache Functions
@@ -150,187 +117,99 @@ export function getCacheAge(entry: CacheEntry<unknown> | null): number {
 }
 
 // ===========================================
-// Specialized Cache Helpers
+// Cache Factory Functions
 // ===========================================
 
 /**
- * Get RSI data from cache
+ * Factory for creating Map<string, T> caches with TTL
+ * Handles serialization: Map <-> Object
  */
-export function getRsiCache(): Map<string, RSIData> | null {
-  const entry = getCache<Record<string, RSIData>>(CACHE_KEYS.RSI_CACHE);
-  if (!isCacheValid(entry, TIMING.CACHE_RSI)) return null;
-
-  if (!entry) return null;
-  console.log(`[Cache] Loaded RSI cache (${getCacheAge(entry)}min old)`);
-  return new Map(Object.entries(entry.data));
+export function createMapCache<T>(key: string, ttl: number): CacheApi<Map<string, T>> {
+  return {
+    get(): Map<string, T> | null {
+      const entry = getCache<Record<string, T>>(key);
+      if (!isCacheValid(entry, ttl)) return null;
+      if (!entry) return null;
+      console.log(`[Cache] Loaded ${key} cache (${getCacheAge(entry)}min old)`);
+      return new Map(Object.entries(entry.data));
+    },
+    set(data: Map<string, T>): boolean {
+      return setCache(key, Object.fromEntries(data));
+    },
+  };
 }
 
 /**
- * Save RSI data to cache
+ * Factory for creating value caches with TTL
+ * Handles any serializable T type
  */
-export function setRsiCache(data: Map<string, RSIData>): boolean {
-  return setCache(CACHE_KEYS.RSI_CACHE, Object.fromEntries(data));
+export function createValueCache<T>(key: string, ttl: number): CacheApi<T> {
+  return {
+    get(): T | null {
+      const entry = getCache<T>(key);
+      if (!isCacheValid(entry, ttl)) return null;
+      if (!entry) return null;
+      console.log(`[Cache] Loaded ${key} cache (${getCacheAge(entry)}min old)`);
+      return entry.data;
+    },
+    set(data: T): boolean {
+      return setCache(key, data);
+    },
+  };
 }
 
 /**
- * Get Market Cap data from cache
+ * Factory for creating array caches (no TTL - infinite)
  */
-export function getMarketCapCache(): Map<string, MarketCapData> | null {
-  const entry = getCache<Record<string, MarketCapData>>(CACHE_KEYS.MARKET_CAP_CACHE);
-  if (!isCacheValid(entry, TIMING.CACHE_MARKET_CAP)) return null;
-
-  if (!entry) return null;
-  console.log(`[Cache] Loaded market cap cache (${getCacheAge(entry)}min old)`);
-  return new Map(Object.entries(entry.data)) as Map<string, MarketCapData>;
-}
-
-/**
- * Save Market Cap data to cache
- */
-export function setMarketCapCache(data: Map<string, MarketCapData>): boolean {
-  return setCache(CACHE_KEYS.MARKET_CAP_CACHE, Object.fromEntries(data));
-}
-
-/**
- * Get Logo cache
- */
-export function getLogoCache(): Record<string, string> {
-  const entry = getCache<Record<string, string>>(CACHE_KEYS.LOGO_CACHE);
-  if (!isCacheValid(entry, TIMING.CACHE_LOGO) || !entry) return {};
-  return entry.data;
-}
-
-/**
- * Save Logo cache
- */
-export function setLogoCache(logos: Record<string, string>): boolean {
-  return setCache(CACHE_KEYS.LOGO_CACHE, logos);
-}
-
-/**
- * Get favorites from cache
- */
-export function getFavoritesCache(): string[] {
-  const entry = getCache<string[]>(CACHE_KEYS.FAVORITES);
-  return entry?.data ?? [];
-}
-
-/**
- * Save favorites to cache
- */
-export function setFavoritesCache(favorites: string[]): boolean {
-  return setCache(CACHE_KEYS.FAVORITES, favorites);
-}
-
-/**
- * Get column order from cache
- */
-export function getColumnOrderCache(): string[] | null {
-  const entry = getCache<string[]>(CACHE_KEYS.COLUMN_ORDER);
-  return entry?.data ?? null;
-}
-
-/**
- * Save column order to cache
- */
-export function setColumnOrderCache(order: string[]): boolean {
-  return setCache(CACHE_KEYS.COLUMN_ORDER, order);
-}
-
-/**
- * Get filters from cache
- */
-export function getFiltersCache<T>(): T | null {
-  const entry = getCache<T>(CACHE_KEYS.FILTERS);
-  return entry?.data ?? null;
-}
-
-/**
- * Save filters to cache
- */
-export function setFiltersCache<T>(filters: T): boolean {
-  return setCache(CACHE_KEYS.FILTERS, filters);
-}
-
-/**
- * Get columns visibility from cache
- */
-export function getColumnsCache<T>(): T | null {
-  const entry = getCache<T>(CACHE_KEYS.COLUMNS);
-  return entry?.data ?? null;
-}
-
-/**
- * Save columns visibility to cache
- */
-export function setColumnsCache<T>(columns: T): boolean {
-  return setCache(CACHE_KEYS.COLUMNS, columns);
+export function createArrayCache<T>(key: string): CacheApi<T[]> {
+  return {
+    get(): T[] {
+      const entry = getCache<T[]>(key);
+      return entry?.data ?? [];
+    },
+    set(data: T[]): boolean {
+      return setCache(key, data);
+    },
+  };
 }
 
 // ===========================================
-// MA Flow Cache Helpers
+// Cache Instances
 // ===========================================
 
-/**
- * Get MA Flow data from cache
- */
-export function getMAFlowCache(): Map<string, MAFlowData> | null {
-  const entry = getCache<Record<string, MAFlowData>>(CACHE_KEYS.MA_FLOW_CACHE);
-  if (!isCacheValid(entry, MA_FLOW.CACHE_TTL)) return null;
-  if (!entry) return null;
-  console.log(`[Cache] Loaded MA Flow cache (${getCacheAge(entry)}min old)`);
-  return new Map(Object.entries(entry.data));
-}
+// Map caches (with TTL, serializes Map<->Object)
+export const rsiCache = createMapCache<RSIData>(CACHE_KEYS.RSI_CACHE, TIMING.CACHE_RSI);
+export const hlRsiCache = createMapCache<RSIData>(CACHE_KEYS.HL_RSI_CACHE, TIMING.CACHE_RSI);
+export const marketCapCache = createMapCache<MarketCapData>(CACHE_KEYS.MARKET_CAP_CACHE, TIMING.CACHE_MARKET_CAP);
+export const maFlowCache = createMapCache<MAFlowData>(CACHE_KEYS.MA_FLOW_CACHE, MA_FLOW.CACHE_TTL);
 
-/**
- * Save MA Flow data to cache
- */
-export function setMAFlowCache(data: Map<string, MAFlowData>): boolean {
-  return setCache(CACHE_KEYS.MA_FLOW_CACHE, Object.fromEntries(data));
-}
+// Value caches (with TTL)
+export const logoCache = createValueCache<Record<string, string>>(CACHE_KEYS.LOGO_CACHE, TIMING.CACHE_LOGO);
+export const columnsCache = createValueCache<ColumnVisibility>(CACHE_KEYS.COLUMNS, Infinity);
+export const hlColumnsCache = createValueCache<ColumnVisibility>(CACHE_KEYS.HL_COLUMNS, Infinity);
+export const filtersCache = createValueCache<Filters>(CACHE_KEYS.FILTERS, Infinity);
+
+// Array caches (no TTL)
+export const favoritesCache = createArrayCache<string>(CACHE_KEYS.FAVORITES);
+export const hlFavoritesCache = createArrayCache<string>(CACHE_KEYS.HL_FAVORITES);
+export const columnOrderCache = createArrayCache<string>(CACHE_KEYS.COLUMN_ORDER);
+export const hlColumnOrderCache = createArrayCache<string>(CACHE_KEYS.HL_COLUMN_ORDER);
 
 // ===========================================
-// Hyperliquid-specific Cache Helpers
+// Convenience Wrappers (still used by API modules)
 // ===========================================
 
-export function getHlRsiCache(): Map<string, RSIData> | null {
-  const entry = getCache<Record<string, RSIData>>(CACHE_KEYS.HL_RSI_CACHE);
-  if (!isCacheValid(entry, TIMING.CACHE_RSI)) return null;
-  if (!entry) return null;
-  console.log(`[Cache] Loaded HL RSI cache (${getCacheAge(entry)}min old)`);
-  return new Map(Object.entries(entry.data));
-}
+// Market Cap Cache
+export const getMarketCapCache = () => marketCapCache.get();
+export const setMarketCapCache = (data: Map<string, MarketCapData>) => marketCapCache.set(data);
 
-export function setHlRsiCache(data: Map<string, RSIData>): boolean {
-  return setCache(CACHE_KEYS.HL_RSI_CACHE, Object.fromEntries(data));
-}
+// MA Flow Cache
+export const getMAFlowCache = () => maFlowCache.get();
+export const setMAFlowCache = (data: Map<string, MAFlowData>) => maFlowCache.set(data);
 
-export function getHlFavoritesCache(): string[] {
-  const entry = getCache<string[]>(CACHE_KEYS.HL_FAVORITES);
-  return entry?.data ?? [];
-}
-
-export function setHlFavoritesCache(favorites: string[]): boolean {
-  return setCache(CACHE_KEYS.HL_FAVORITES, favorites);
-}
-
-export function getHlColumnOrderCache(): string[] | null {
-  const entry = getCache<string[]>(CACHE_KEYS.HL_COLUMN_ORDER);
-  return entry?.data ?? null;
-}
-
-export function setHlColumnOrderCache(order: string[]): boolean {
-  return setCache(CACHE_KEYS.HL_COLUMN_ORDER, order);
-}
-
-export function getHlColumnsCache<T>(): T | null {
-  const entry = getCache<T>(CACHE_KEYS.HL_COLUMNS);
-  return entry?.data ?? null;
-}
-
-export function setHlColumnsCache<T>(columns: T): boolean {
-  return setCache(CACHE_KEYS.HL_COLUMNS, columns);
-}
+// Logo Cache
+export const getLogoCache = () => logoCache.get() ?? {};
+export const setLogoCache = (logos: Record<string, string>) => logoCache.set(logos);
 
 // ===========================================
 // Cache Management
@@ -437,4 +316,22 @@ export function getAppVersion(): string {
 export function getStoredVersion(): string | null {
   if (!isBrowser()) return null;
   return localStorage.getItem(CACHE_KEYS.APP_VERSION);
+}
+
+// ===========================================
+// Exchange Cache Selector
+// ===========================================
+
+/**
+ * Get the appropriate cache instances for a given exchange
+ */
+export function getCacheForExchange(exchange: 'okx' | 'hyperliquid') {
+  const isHL = exchange === 'hyperliquid';
+  return {
+    rsi: isHL ? hlRsiCache : rsiCache,
+    columns: isHL ? hlColumnsCache : columnsCache,
+    columnOrder: isHL ? hlColumnOrderCache : columnOrderCache,
+    favorites: isHL ? hlFavoritesCache : favoritesCache,
+    filters: filtersCache, // shared across exchanges
+  };
 }

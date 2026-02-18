@@ -2,12 +2,13 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { Filters, SortConfig } from '@/lib/types';
-import { getFiltersCache, setFiltersCache } from '@/lib/cache';
+import { getCacheForExchange } from '@/lib/cache';
 
 /**
  * Hook for managing filters, sorting, search, and view mode
  */
-export function useFilters(onFilterChange?: () => void) {
+export function useFilters(exchange: 'okx' | 'hyperliquid' = 'okx', onFilterChange?: () => void) {
+  const cache = getCacheForExchange(exchange);
   const [filters, setFiltersState] = useState<Filters>({});
   const [sort, setSort] = useState<SortConfig>({ column: 'rank', direction: 'asc' });
   const [view, setViewState] = useState<'market' | 'favorites'>('market');
@@ -15,28 +16,28 @@ export function useFilters(onFilterChange?: () => void) {
 
   // Load filters from cache on mount
   useEffect(() => {
-    const savedFilters = getFiltersCache<Filters>();
+    const savedFilters = cache.filters.get() as Filters | null;
     if (savedFilters) {
       setFiltersState(savedFilters);
     }
-  }, []);
+  }, [cache]);
 
   // Update filters with cache persistence
   const setFilters = useCallback((newFilters: Filters | ((prev: Filters) => Filters)) => {
     setFiltersState(prev => {
       const resolved = typeof newFilters === 'function' ? newFilters(prev) : newFilters;
-      setFiltersCache(resolved);
+      cache.filters.set(resolved);
       return resolved;
     });
     onFilterChange?.();
-  }, [onFilterChange]);
+  }, [cache, onFilterChange]);
 
   // Clear all filters
   const clearFilters = useCallback(() => {
     setFiltersState({});
-    setFiltersCache({});
+    cache.filters.set({});
     onFilterChange?.();
-  }, [onFilterChange]);
+  }, [cache, onFilterChange]);
 
   // Check if any filters are active
   const hasActiveFilters = useCallback(() => {

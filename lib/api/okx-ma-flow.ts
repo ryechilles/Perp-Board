@@ -41,7 +41,6 @@ export function calculateConvergence(
   ma7: number | null,
   ma30: number | null,
   ma200: number | null,
-  _currentPrice?: number
 ): number | null {
   // Require all 3 valid MAs for true three-line convergence (三线粘合)
   if (ma7 === null || ma30 === null || ma200 === null) return null;
@@ -214,9 +213,9 @@ export async function fetchMAForInstrument(instId: string, currentPrice: number)
       maDaily,
       maWeekly,
       maMonthly: null,
-      convergence4h: ma4h ? calculateConvergence(ma4h.ma7, ma4h.ma30, ma4h.ma200, price) : null,
-      convergenceDaily: maDaily ? calculateConvergence(maDaily.ma7, maDaily.ma30, maDaily.ma200, price) : null,
-      convergenceWeekly: maWeekly ? calculateConvergence(maWeekly.ma7, maWeekly.ma30, maWeekly.ma200, price) : null,
+      convergence4h: ma4h ? calculateConvergence(ma4h.ma7, ma4h.ma30, ma4h.ma200) : null,
+      convergenceDaily: maDaily ? calculateConvergence(maDaily.ma7, maDaily.ma30, maDaily.ma200) : null,
+      convergenceWeekly: maWeekly ? calculateConvergence(maWeekly.ma7, maWeekly.ma30, maWeekly.ma200) : null,
       convergenceMonthly: null,
       lastUpdated: Date.now(),
     };

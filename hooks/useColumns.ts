@@ -5,12 +5,7 @@ import { ColumnVisibility, ColumnKey } from '@/lib/types';
 import { isMobile } from '@/lib/utils';
 import { DEFAULT_COLUMN_ORDER, getDefaultColumns } from '@/lib/defaults';
 import { FIXED_COLUMNS } from '@/lib/constants';
-import {
-  getColumnOrderCache,
-  setColumnOrderCache,
-  getColumnsCache,
-  setColumnsCache,
-} from '@/lib/cache';
+import { getCacheForExchange } from '@/lib/cache';
 
 // Get default columns based on device
 const DEFAULT_COLUMNS: ColumnVisibility = getDefaultColumns(isMobile());
@@ -18,15 +13,16 @@ const DEFAULT_COLUMNS: ColumnVisibility = getDefaultColumns(isMobile());
 /**
  * Hook for managing column visibility and order
  */
-export function useColumns() {
+export function useColumns(exchange: 'okx' | 'hyperliquid' = 'okx') {
+  const cache = getCacheForExchange(exchange);
   const [columns, setColumns] = useState<ColumnVisibility>(DEFAULT_COLUMNS);
   const [columnOrder, setColumnOrder] = useState<ColumnKey[]>(DEFAULT_COLUMN_ORDER);
 
   // Load saved column settings from cache on mount
   useEffect(() => {
     // Load saved column order
-    const savedColumnOrder = getColumnOrderCache();
-    if (savedColumnOrder && Array.isArray(savedColumnOrder)) {
+    const savedColumnOrder = cache.columnOrder.get();
+    if (savedColumnOrder && savedColumnOrder.length > 0) {
       const savedSet = new Set(savedColumnOrder);
       const defaultSet = new Set(DEFAULT_COLUMN_ORDER);
 
@@ -43,24 +39,24 @@ export function useColumns() {
       const finalOrder: ColumnKey[] = [...fixedCols, ...nonFixedPart as ColumnKey[], ...newColumns];
 
       setColumnOrder(finalOrder);
-      setColumnOrderCache(finalOrder);
+      cache.columnOrder.set(finalOrder);
     }
 
     // Load saved columns visibility
-    const savedColumns = getColumnsCache<ColumnVisibility>();
+    const savedColumns = cache.columns.get();
     if (savedColumns) {
       setColumns(savedColumns);
     } else {
       const defaultCols = getDefaultColumns(isMobile());
       setColumns(defaultCols);
     }
-  }, []);
+  }, [cache]);
 
   // Update single column visibility
   const updateColumn = useCallback((col: keyof ColumnVisibility, visible: boolean) => {
     setColumns(prev => {
       const updated = { ...prev, [col]: visible };
-      setColumnsCache(updated);
+      cache.columns.set(updated);
       return updated;
     });
 
@@ -71,13 +67,13 @@ export function useColumns() {
           const rankIndex = prev.indexOf('rank');
           const newOrder = [...prev];
           newOrder.splice(rankIndex + 1, 0, 'logo');
-          setColumnOrderCache(newOrder);
+          cache.columnOrder.set(newOrder);
           return newOrder;
         }
         return prev;
       });
     }
-  }, []);
+  }, [cache]);
 
   // Update column order (for drag and drop)
   const updateColumnOrder = useCallback((newOrder: ColumnKey[]) => {
@@ -86,8 +82,8 @@ export function useColumns() {
     const finalOrder: ColumnKey[] = [...fixedCols, ...nonFixedOrder];
 
     setColumnOrder(finalOrder);
-    setColumnOrderCache(finalOrder);
-  }, []);
+    cache.columnOrder.set(finalOrder);
+  }, [cache]);
 
   // Move a column to a new position
   const moveColumn = useCallback((dragKey: ColumnKey, hoverKey: ColumnKey) => {
@@ -106,10 +102,10 @@ export function useColumns() {
       newOrder.splice(dragIndex, 1);
       newOrder.splice(hoverIndex, 0, dragKey);
 
-      setColumnOrderCache(newOrder);
+      cache.columnOrder.set(newOrder);
       return newOrder;
     });
-  }, []);
+  }, [cache]);
 
   // Set columns to preset configuration
   const setColumnsPreset = useCallback((preset: 'all' | 'none' | 'default') => {
@@ -140,19 +136,19 @@ export function useColumns() {
     }
 
     setColumns(newColumns);
-    setColumnsCache(newColumns);
-  }, []);
+    cache.columns.set(newColumns);
+  }, [cache]);
 
   // Direct setter for URL state sync
   const setColumnsDirectly = useCallback((newColumns: ColumnVisibility) => {
     setColumns(newColumns);
-    setColumnsCache(newColumns);
-  }, []);
+    cache.columns.set(newColumns);
+  }, [cache]);
 
   const setColumnOrderDirectly = useCallback((newOrder: ColumnKey[]) => {
     setColumnOrder(newOrder);
-    setColumnOrderCache(newOrder);
-  }, []);
+    cache.columnOrder.set(newOrder);
+  }, [cache]);
 
   return {
     columns,

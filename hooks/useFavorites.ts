@@ -1,21 +1,22 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { getFavoritesCache, setFavoritesCache } from '@/lib/cache';
+import { getCacheForExchange } from '@/lib/cache';
 
 /**
  * Hook for managing favorite tokens
  */
-export function useFavorites() {
+export function useFavorites(exchange: 'okx' | 'hyperliquid' = 'okx') {
+  const cache = getCacheForExchange(exchange);
   const [favorites, setFavorites] = useState<string[]>([]);
 
   // Load favorites from cache on mount
   useEffect(() => {
-    const savedFavorites = getFavoritesCache();
-    if (savedFavorites.length > 0) {
+    const savedFavorites = cache.favorites.get();
+    if (savedFavorites && savedFavorites.length > 0) {
       setFavorites(savedFavorites);
     }
-  }, []);
+  }, [cache]);
 
   // Toggle favorite status for a token
   const toggleFavorite = useCallback((instId: string) => {
@@ -23,10 +24,10 @@ export function useFavorites() {
       const newFavorites = prev.includes(instId)
         ? prev.filter(f => f !== instId)
         : [...prev, instId];
-      setFavoritesCache(newFavorites);
+      cache.favorites.set(newFavorites);
       return newFavorites;
     });
-  }, []);
+  }, [cache]);
 
   // Check if a token is favorited
   const isFavorite = useCallback((instId: string) => {
@@ -36,8 +37,8 @@ export function useFavorites() {
   // Direct setter for URL state sync
   const setFavoritesDirectly = useCallback((newFavorites: string[]) => {
     setFavorites(newFavorites);
-    setFavoritesCache(newFavorites);
-  }, []);
+    cache.favorites.set(newFavorites);
+  }, [cache]);
 
   return {
     favorites,

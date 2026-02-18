@@ -333,3 +333,51 @@ export interface AppState {
   rsiProgress: string;
   maFlowData: Map<string, MAFlowData>;
 }
+
+// ===========================================
+// Exchange Adapter Types
+// ===========================================
+
+/**
+ * Common data manager interface (OKXHybridDataManager / HyperliquidDataManager)
+ */
+export interface DataManager {
+  start(): Promise<void>;
+  stop(): void;
+  getTickers(): Map<string, ProcessedTicker>;
+}
+
+/**
+ * Callback types shared across data managers
+ */
+export type TickerUpdateCallback = (tickers: Map<string, ProcessedTicker>) => void;
+export type StatusUpdateCallback = (status: 'connecting' | 'live' | 'error', time?: Date) => void;
+
+/**
+ * Exchange adapter configuration
+ * Each exchange provides a thin adapter implementing this interface.
+ */
+export interface ExchangeAdapter {
+  exchange: 'okx' | 'hyperliquid';
+  createDataManager(onUpdate: TickerUpdateCallback, onStatus: StatusUpdateCallback): DataManager;
+  fetchRSIBatch(
+    ids: string[],
+    existing: Map<string, RSIData>,
+    onProgress: (text: string) => void,
+    onUpdate: (id: string, data: RSIData) => void,
+    tier?: 'top50' | 'tier2' | 'tier3' | 'all'
+  ): Promise<void>;
+  fetchInitialData(): Promise<{
+    spotSymbols: Set<string>;
+    listingData?: Map<string, ListingData>;
+    fundingRateData?: Map<string, FundingRateData>;
+  }>;
+  extractFundingFromTickers?(tickers: Map<string, ProcessedTicker>): Map<string, FundingRateData>;
+  spotSymbolFormat: 'base-usdt' | 'base';
+  defaultSettlementInterval: number;
+  features: {
+    maFlow: boolean;
+    listingDates: boolean;
+    separateFundingFetch: boolean;
+  };
+}
