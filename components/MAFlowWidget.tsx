@@ -100,12 +100,11 @@ type MATimeframeKey = 'ma4h' | 'maDaily' | 'maWeekly' | 'maMonthly';
 type ConvergenceKey = 'convergence4h' | 'convergenceDaily' | 'convergenceWeekly' | 'convergenceMonthly';
 
 /**
- * Check if MA values have at least 2 valid (non-null) entries
+ * Check if all 3 MA values are valid (non-null) for true three-line convergence
  */
 function hasValidMAs(maValues: MAValues | null): maValues is MAValues {
   if (!maValues) return false;
-  const validCount = [maValues.ma7, maValues.ma30, maValues.ma200].filter(v => v !== null).length;
-  return validCount >= 2;
+  return maValues.ma7 !== null && maValues.ma30 !== null && maValues.ma200 !== null;
 }
 
 /**
@@ -202,7 +201,7 @@ export function MAFlowWidget({
             'Detects three-line convergence (三线粘合)',
             'MA lines: SMA 7, SMA 30, SMA 200',
             `Threshold: spread ≤ ${THRESHOLD}%`,
-            'Spread % = (max MA - min MA) / price × 100',
+            'Spread % = (max MA - min MA) / avg(MAs) × 100',
             'Lower spread = tighter convergence = potential breakout',
             'OKX Perp Top 100 by Market Cap (excl. USDC)',
             <>

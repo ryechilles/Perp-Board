@@ -32,21 +32,26 @@ export function calculateSMA(closes: number[], period: number): number | null {
 
 /**
  * Calculate convergence spread percentage
- * spread % = (max(MA7, MA30, MA200) - min(MA7, MA30, MA200)) / currentPrice * 100
+ * spread % = (max(MA7, MA30, MA200) - min(MA7, MA30, MA200)) / avg(MAs) * 100
+ * Uses the average of the MA values as denominator (not currentPrice) to avoid
+ * distortion when price diverges significantly from the moving averages.
+ * Requires all 3 MAs to be valid for true three-line convergence detection.
  */
 export function calculateConvergence(
   ma7: number | null,
   ma30: number | null,
   ma200: number | null,
-  currentPrice: number
+  _currentPrice?: number
 ): number | null {
-  // Need at least 2 valid MAs for convergence
-  const validMAs = [ma7, ma30, ma200].filter((v): v is number => v !== null);
-  if (validMAs.length < 2 || currentPrice <= 0) return null;
+  // Require all 3 valid MAs for true three-line convergence (三线粘合)
+  if (ma7 === null || ma30 === null || ma200 === null) return null;
 
-  const maxMA = Math.max(...validMAs);
-  const minMA = Math.min(...validMAs);
-  return ((maxMA - minMA) / currentPrice) * 100;
+  const avgMA = (ma7 + ma30 + ma200) / 3;
+  if (avgMA <= 0) return null;
+
+  const maxMA = Math.max(ma7, ma30, ma200);
+  const minMA = Math.min(ma7, ma30, ma200);
+  return ((maxMA - minMA) / avgMA) * 100;
 }
 
 // ===========================================
