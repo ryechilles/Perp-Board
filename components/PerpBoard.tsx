@@ -157,6 +157,7 @@ export default function PerpBoard() {
             tickers={store.tickers}
             maFlowData={store.maFlowData}
             marketCapData={store.marketCapData}
+            listingData={store.listingData}
             onTokenClick={handleTokenClick}
             onGroupClick={handleGroupClick}
           />
@@ -166,7 +167,7 @@ export default function PerpBoard() {
   }), [
     avgRsi7, avgRsi14,
     store.tickers, store.rsiData, store.marketCapData,
-    store.fundingRateData, store.maFlowData,
+    store.fundingRateData, store.maFlowData, store.listingData,
     rsiWidgetOrder, setRsiWidgetOrder,
     fundingWidgetOrder, setFundingWidgetOrder,
     altcoinWidgetOrder, setAltcoinWidgetOrder,

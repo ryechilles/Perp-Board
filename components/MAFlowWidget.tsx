@@ -4,9 +4,13 @@ import { useMemo } from 'react';
 import { Activity } from 'lucide-react';
 import { SmallWidget } from '@/components/widgets/base';
 import { TooltipList, TokenAvatar } from '@/components/ui';
-import { ProcessedTicker, MAFlowData, MarketCapData, MAValues } from '@/lib/types';
+import { ProcessedTicker, MAFlowData, MarketCapData, MAValues, ListingData } from '@/lib/types';
 import { formatPrice } from '@/lib/utils';
 import { MA_FLOW } from '@/lib/constants';
+
+// Minimum listing age in days to be included in MA Flow
+const MIN_LISTING_DAYS = 180;
+const MIN_LISTING_MS = MIN_LISTING_DAYS * 24 * 60 * 60 * 1000;
 
 // Fixed threshold (no user customization)
 const THRESHOLD = MA_FLOW.DEFAULT_THRESHOLD;
@@ -44,6 +48,7 @@ interface MAFlowWidgetProps {
   tickers: Map<string, ProcessedTicker>;
   maFlowData: Map<string, MAFlowData>;
   marketCapData: Map<string, MarketCapData>;
+  listingData: Map<string, ListingData>;
   onTokenClick?: (symbol: string) => void;
   onGroupClick?: (symbols: string[]) => void;
 }
@@ -115,10 +120,12 @@ function getConvergingTokensWithCount(
   maFlowData: Map<string, MAFlowData>,
   tickers: Map<string, ProcessedTicker>,
   marketCapData: Map<string, MarketCapData>,
+  listingData: Map<string, ListingData>,
   dataKey: MATimeframeKey,
   convergenceKey: ConvergenceKey,
 ): { tokens: ConvergingToken[]; totalCount: number } {
   const results: ConvergingToken[] = [];
+  const now = Date.now();
 
   maFlowData.forEach((maData, instId) => {
     const convergence = maData[convergenceKey];
@@ -129,6 +136,10 @@ function getConvergingTokensWithCount(
 
     const ticker = tickers.get(instId);
     if (!ticker) return;
+
+    // Filter out tokens listed less than 180 days ago
+    const listing = listingData.get(instId);
+    if (listing && (now - listing.listTime) < MIN_LISTING_MS) return;
 
     results.push({
       symbol: ticker.baseSymbol,
@@ -150,6 +161,7 @@ export function MAFlowWidget({
   tickers,
   maFlowData,
   marketCapData,
+  listingData,
   onTokenClick,
   onGroupClick,
 }: MAFlowWidgetProps) {
@@ -157,11 +169,11 @@ export function MAFlowWidget({
   const sections = useMemo(() => {
     return TIMEFRAME_SECTIONS.map(tf => {
       const { tokens, totalCount } = getConvergingTokensWithCount(
-        maFlowData, tickers, marketCapData, tf.dataKey, tf.convergenceKey
+        maFlowData, tickers, marketCapData, listingData, tf.dataKey, tf.convergenceKey
       );
       return { ...tf, tokens, totalCount };
     });
-  }, [maFlowData, tickers, marketCapData]);
+  }, [maFlowData, tickers, marketCapData, listingData]);
 
   const isLoading = tickers.size === 0 || maFlowData.size === 0;
 
@@ -203,7 +215,7 @@ export function MAFlowWidget({
             `Threshold: spread ≤ ${THRESHOLD}%`,
             'Spread % = (max MA - min MA) / avg(MAs) × 100',
             'Lower spread = tighter convergence = potential breakout',
-            'OKX Perp Top 100 by Market Cap (excl. USDC)',
+            `OKX Perp Top 100 by Market Cap (excl. USDC, listed ≥ ${MIN_LISTING_DAYS}d)`,
             <>
               <span className="text-green-500">{'≤ 0.5%'}</span>{' extreme, '}
               <span className="text-emerald-500">{'≤ 1%'}</span>{' tight, '}
