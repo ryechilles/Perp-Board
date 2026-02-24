@@ -146,6 +146,8 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
   const maFlowHook = useMAFlowData(getMAFlowInstIds);
   const fetchMAFlowRef = useRef(maFlowHook.fetchMAFlowForVisible);
   fetchMAFlowRef.current = maFlowHook.fetchMAFlowForVisible;
+  const pruneMAFlowRef = useRef(maFlowHook.pruneEntries);
+  pruneMAFlowRef.current = maFlowHook.pruneEntries;
 
   // Initialize
   const initialize = useCallback(async () => {
@@ -180,6 +182,40 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
         const funding = adapter.extractFundingFromTickers(newTickers);
         setFundingRateData(funding);
       }
+
+      // Prune orphaned entries from dependent maps when instruments are delisted.
+      // Uses functional updaters to avoid stale closures; returns prev ref if
+      // nothing changed (React bails out, no extra re-render).
+      const validKeys = new Set(newTickers.keys());
+
+      setRsiData(prev => {
+        let hasOrphans = false;
+        for (const key of prev.keys()) {
+          if (!validKeys.has(key)) { hasOrphans = true; break; }
+        }
+        if (!hasOrphans) return prev;
+        const pruned = new Map<string, RSIData>();
+        for (const [k, v] of prev) {
+          if (validKeys.has(k)) pruned.set(k, v);
+        }
+        return pruned;
+      });
+
+      setListingData(prev => {
+        let hasOrphans = false;
+        for (const key of prev.keys()) {
+          if (!validKeys.has(key)) { hasOrphans = true; break; }
+        }
+        if (!hasOrphans) return prev;
+        const pruned = new Map<string, ListingData>();
+        for (const [k, v] of prev) {
+          if (validKeys.has(k)) pruned.set(k, v);
+        }
+        return pruned;
+      });
+
+      // MA Flow data is managed by its own hook — prune via ref
+      pruneMAFlowRef.current(validKeys);
     };
 
     const handleStatusUpdate = (newStatus: 'connecting' | 'live' | 'error', time?: Date) => {

@@ -81,6 +81,23 @@ export function useMAFlowData(getSortedInstIds: (tickerMap: Map<string, Processe
     }
   }, [maFlowData, updateMAFlowData]);
 
+  // Remove orphaned entries for delisted instruments
+  const pruneEntries = useCallback((validKeys: Set<string>) => {
+    setMAFlowData(prev => {
+      let hasOrphans = false;
+      for (const key of prev.keys()) {
+        if (!validKeys.has(key)) { hasOrphans = true; break; }
+      }
+      if (!hasOrphans) return prev; // No change, no re-render
+      const pruned = new Map<string, MAFlowData>();
+      for (const [key, value] of prev) {
+        if (validKeys.has(key)) pruned.set(key, value);
+      }
+      saveMAFlowCacheDebounced(pruned);
+      return pruned;
+    });
+  }, [saveMAFlowCacheDebounced]);
+
   // Cleanup function
   const cleanup = useCallback(() => {
     if (saveMAFlowCacheTimeoutRef.current) {
@@ -92,6 +109,7 @@ export function useMAFlowData(getSortedInstIds: (tickerMap: Map<string, Processe
   return {
     maFlowData,
     fetchMAFlowForVisible,
+    pruneEntries,
     cleanup,
   };
 }
