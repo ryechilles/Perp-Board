@@ -298,7 +298,7 @@ export interface TokenWithApr {
 export interface MAValues {
   ma7: number | null;
   ma30: number | null;
-  ma120: number | null;
+  ma200: number | null;
 }
 
 // MA Flow data for a single instrument (all timeframes)

@@ -1,6 +1,6 @@
 /**
  * OKX MA Flow (Three-Line Convergence) calculation
- * Fetches candle data and calculates MA7, MA30, MA120 convergence
+ * Fetches candle data and calculates MA7, MA30, MA200 convergence
  * across 4H, Daily, Weekly, Monthly timeframes
  */
 
@@ -32,7 +32,7 @@ export function calculateSMA(closes: number[], period: number): number | null {
 
 /**
  * Calculate convergence spread percentage
- * spread % = (max(MA7, MA30, MA120) - min(MA7, MA30, MA120)) / avg(MAs) * 100
+ * spread % = (max(MA7, MA30, MA200) - min(MA7, MA30, MA200)) / avg(MAs) * 100
  * Uses the average of the MA values as denominator (not currentPrice) to avoid
  * distortion when price diverges significantly from the moving averages.
  * Requires all 3 MAs to be valid for true three-line convergence detection.
@@ -40,16 +40,16 @@ export function calculateSMA(closes: number[], period: number): number | null {
 export function calculateConvergence(
   ma7: number | null,
   ma30: number | null,
-  ma120: number | null,
+  ma200: number | null,
 ): number | null {
   // Require all 3 valid MAs for true three-line convergence (三线粘合)
-  if (ma7 === null || ma30 === null || ma120 === null) return null;
+  if (ma7 === null || ma30 === null || ma200 === null) return null;
 
-  const avgMA = (ma7 + ma30 + ma120) / 3;
+  const avgMA = (ma7 + ma30 + ma200) / 3;
   if (avgMA <= 0) return null;
 
-  const maxMA = Math.max(ma7, ma30, ma120);
-  const minMA = Math.min(ma7, ma30, ma120);
+  const maxMA = Math.max(ma7, ma30, ma200);
+  const minMA = Math.min(ma7, ma30, ma200);
   return ((maxMA - minMA) / avgMA) * 100;
 }
 
@@ -173,7 +173,7 @@ async function fetchMAsForTimeframe(
   return {
     ma7: calculateSMA(closes, 7),
     ma30: calculateSMA(closes, 30),
-    ma120: calculateSMA(closes, 120),
+    ma200: calculateSMA(closes, 120),
   };
 }
 
@@ -213,9 +213,9 @@ export async function fetchMAForInstrument(instId: string, currentPrice: number)
       maDaily,
       maWeekly,
       maMonthly: null,
-      convergence4h: ma4h ? calculateConvergence(ma4h.ma7, ma4h.ma30, ma4h.ma120) : null,
-      convergenceDaily: maDaily ? calculateConvergence(maDaily.ma7, maDaily.ma30, maDaily.ma120) : null,
-      convergenceWeekly: maWeekly ? calculateConvergence(maWeekly.ma7, maWeekly.ma30, maWeekly.ma120) : null,
+      convergence4h: ma4h ? calculateConvergence(ma4h.ma7, ma4h.ma30, ma4h.ma200) : null,
+      convergenceDaily: maDaily ? calculateConvergence(maDaily.ma7, maDaily.ma30, maDaily.ma200) : null,
+      convergenceWeekly: maWeekly ? calculateConvergence(maWeekly.ma7, maWeekly.ma30, maWeekly.ma200) : null,
       convergenceMonthly: null,
       lastUpdated: Date.now(),
     };

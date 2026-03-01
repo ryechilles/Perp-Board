@@ -109,7 +109,7 @@ type ConvergenceKey = 'convergence4h' | 'convergenceDaily' | 'convergenceWeekly'
  */
 function hasValidMAs(maValues: MAValues | null): maValues is MAValues {
   if (!maValues) return false;
-  return maValues.ma7 !== null && maValues.ma30 !== null && maValues.ma120 !== null;
+  return maValues.ma7 !== null && maValues.ma30 !== null && maValues.ma200 !== null;
 }
 
 /**
@@ -205,13 +205,13 @@ export function MAFlowWidget({
     <SmallWidget
       title="MA Flow"
       icon={<Activity className="w-4 h-4" />}
-      subtitle={`MA7/30/120 convergence ≤ ${THRESHOLD}%`}
+      subtitle={`MA7/30/200 convergence ≤ ${THRESHOLD}%`}
       loading={isLoading}
       tooltip={
         <TooltipList
           items={[
             'Detects three-line convergence (三线粘合)',
-            'MA lines: SMA 7, SMA 30, SMA 120',
+            'MA lines: SMA 7, SMA 30, SMA 200',
             `Threshold: spread ≤ ${THRESHOLD}%`,
             'Spread % = (max MA - min MA) / avg(MAs) × 100',
             'Lower spread = tighter convergence = potential breakout',

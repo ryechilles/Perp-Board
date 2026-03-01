@@ -167,13 +167,13 @@ export const AHR999_ZONE_LEGEND = [
 // ===========================================
 export const MA_FLOW = {
   // MA periods
-  PERIODS: [7, 30, 120] as const,
+  PERIODS: [7, 30, 200] as const,
 
   // Fixed convergence threshold (percentage) — no user customization
   DEFAULT_THRESHOLD: 3,
 
   // Candle requirements per timeframe
-  CANDLES_NEEDED: 120,         // For MA120
+  CANDLES_NEEDED: 200,         // For MA200
 
   // Refresh & stale intervals (slower than RSI since MAs change slowly)
   REFRESH_INTERVAL: 10 * 60 * 1000,   // 10 minutes
@@ -194,7 +194,7 @@ export const MA_FLOW = {
   // Minimum candles for valid MA calculation
   MIN_CANDLES_MA7: 7,
   MIN_CANDLES_MA30: 30,
-  MIN_CANDLES_MA120: 120,
+  MIN_CANDLES_MA200: 200,
 
   // Cache TTL
   CACHE_TTL: 15 * 60 * 1000,          // 15 minutes
