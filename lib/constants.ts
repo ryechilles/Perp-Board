@@ -62,6 +62,7 @@ export const TIMING = {
 
   // Debounce
   RSI_CACHE_SAVE_DEBOUNCE: 2000,         // 2 seconds
+  MA_FLOW_CACHE_SAVE_DEBOUNCE: 2000,     // 2 seconds
   URL_UPDATE_DEBOUNCE: 300,              // 300ms
 } as const;
 

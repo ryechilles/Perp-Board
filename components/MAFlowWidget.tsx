@@ -19,12 +19,12 @@ const THRESHOLD = MA_FLOW.DEFAULT_THRESHOLD;
 const TIMEFRAME_SECTIONS: {
   key: string;
   label: string;
-  dataKey: 'ma4h' | 'maDaily' | 'maWeekly' | 'maMonthly';
-  convergenceKey: 'convergence4h' | 'convergenceDaily' | 'convergenceWeekly' | 'convergenceMonthly';
-  color: 'blue' | 'purple' | 'orange' | 'pink';
+  dataKey: 'ma4h' | 'maDaily' | 'maWeekly';
+  convergenceKey: 'convergence4h' | 'convergenceDaily' | 'convergenceWeekly';
+  color: 'blue' | 'purple' | 'orange';
 }[] = [
   { key: '4h', label: '4H', dataKey: 'ma4h', convergenceKey: 'convergence4h', color: 'blue' },
-  { key: 'daily', label: '24H', dataKey: 'maDaily', convergenceKey: 'convergenceDaily', color: 'purple' },
+  { key: 'daily', label: 'Daily', dataKey: 'maDaily', convergenceKey: 'convergenceDaily', color: 'purple' },
   { key: 'weekly', label: 'Weekly', dataKey: 'maWeekly', convergenceKey: 'convergenceWeekly', color: 'orange' },
 ];
 
@@ -33,7 +33,6 @@ const DOT_COLORS: Record<string, string> = {
   blue: 'bg-blue-500',
   purple: 'bg-purple-500',
   orange: 'bg-orange-500',
-  pink: 'bg-pink-500',
 };
 
 interface ConvergingToken {

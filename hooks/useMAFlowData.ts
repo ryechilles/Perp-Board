@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { ProcessedTicker, MAFlowData } from '@/lib/types';
 import { fetchMAFlowBatch } from '@/lib/api';
-import { MA_FLOW, TIMING } from '@/lib/constants';
+import { TIMING } from '@/lib/constants';
 import { getMAFlowCache, setMAFlowCache } from '@/lib/cache';
 
 /**
@@ -27,7 +27,7 @@ export function useMAFlowData(getSortedInstIds: (tickerMap: Map<string, Processe
     }
     saveMAFlowCacheTimeoutRef.current = setTimeout(() => {
       setMAFlowCache(maMap);
-    }, TIMING.RSI_CACHE_SAVE_DEBOUNCE);
+    }, TIMING.MA_FLOW_CACHE_SAVE_DEBOUNCE);
   }, []);
 
   // Load MA Flow cache on mount
@@ -48,8 +48,12 @@ export function useMAFlowData(getSortedInstIds: (tickerMap: Map<string, Processe
     });
   }, [saveMAFlowCacheDebounced]);
 
+  // Use ref to always access the latest maFlowData (avoids stale closure during long batch fetches)
+  const maFlowDataRef = useRef(maFlowData);
+  maFlowDataRef.current = maFlowData;
+
   // Fetch MA Flow data for top instruments by market cap
-  // Uses ref for getSortedInstIds to always get the latest version (avoids stale closure)
+  // Uses refs for getSortedInstIds and maFlowData to always get the latest version (avoids stale closure)
   // Returns true if fetch was actually performed, false if skipped (no data / already fetching)
   const fetchMAFlowForVisible = useCallback(async (tickerMap: Map<string, ProcessedTicker>): Promise<boolean> => {
     if (isFetchingMAFlowRef.current) return false;
@@ -61,25 +65,17 @@ export function useMAFlowData(getSortedInstIds: (tickerMap: Map<string, Processe
     isFetchingMAFlowRef.current = true;
 
     try {
-      // Build a price map from live ticker data for accurate convergence calculation
-      const tickerPrices = new Map<string, number>();
-      tickerMap.forEach((ticker, instId) => {
-        if (ticker.priceNum > 0) {
-          tickerPrices.set(instId, ticker.priceNum);
-        }
-      });
       await fetchMAFlowBatch(
         instIds,
-        maFlowData,
+        maFlowDataRef.current,
         () => {}, // silent progress for MA Flow
         updateMAFlowData,
-        tickerPrices
       );
       return true;
     } finally {
       isFetchingMAFlowRef.current = false;
     }
-  }, [maFlowData, updateMAFlowData]);
+  }, [updateMAFlowData]);
 
   // Remove orphaned entries for delisted instruments
   const pruneEntries = useCallback((validKeys: Set<string>) => {

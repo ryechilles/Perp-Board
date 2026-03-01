@@ -173,7 +173,7 @@ async function fetchMAsForTimeframe(
   return {
     ma7: calculateSMA(closes, 7),
     ma30: calculateSMA(closes, 30),
-    ma200: calculateSMA(closes, 120),
+    ma200: calculateSMA(closes, 200),
   };
 }
 
@@ -192,9 +192,8 @@ const TIMEFRAME_BARS: Record<string, string> = {
 /**
  * Fetch MA data for a single instrument across 3 timeframes (4H, Daily, Weekly)
  * @param instId - The instrument ID (e.g., "BTC-USDT-SWAP")
- * @param currentPrice - The current ticker price from live data (more accurate than MA proxy)
  */
-export async function fetchMAForInstrument(instId: string, currentPrice: number): Promise<MAFlowData | null> {
+export async function fetchMAForInstrument(instId: string): Promise<MAFlowData | null> {
   try {
     // Fetch 3 timeframes sequentially (to respect rate limits)
     const ma4h = await fetchMAsForTimeframe(instId, TIMEFRAME_BARS['4h']);
@@ -204,9 +203,6 @@ export async function fetchMAForInstrument(instId: string, currentPrice: number)
 
     await new Promise(r => setTimeout(r, 50));
     const maWeekly = await fetchMAsForTimeframe(instId, TIMEFRAME_BARS['weekly']);
-
-    // Use ticker price for convergence calculation; fallback to MA7 only if ticker price unavailable
-    const price = currentPrice > 0 ? currentPrice : (ma4h?.ma7 ?? maDaily?.ma7 ?? 0);
 
     return {
       ma4h,
@@ -231,14 +227,12 @@ export async function fetchMAForInstrument(instId: string, currentPrice: number)
 
 /**
  * Batch fetch MA data for multiple instruments (Top N by market cap)
- * @param tickerPrices - Map of instId to current price from live ticker data
  */
 export async function fetchMAFlowBatch(
   instIds: string[],
   existingData: Map<string, MAFlowData>,
   onProgress: (text: string) => void,
   onUpdate: (instId: string, data: MAFlowData) => void,
-  tickerPrices?: Map<string, number>
 ): Promise<void> {
   const now = Date.now();
 
@@ -261,8 +255,7 @@ export async function fetchMAFlowBatch(
     const instId = toFetch[i];
     onProgress(`MA Flow: ${i + 1}/${toFetch.length}`);
 
-    const currentPrice = tickerPrices?.get(instId) ?? 0;
-    const maData = await fetchMAForInstrument(instId, currentPrice);
+    const maData = await fetchMAForInstrument(instId);
     if (maData) {
       onUpdate(instId, maData);
     }
