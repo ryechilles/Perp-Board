@@ -200,7 +200,7 @@ export function ExchangeBoard({
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-muted">
       {/* Header */}
-      <div className="bg-card shadow-sm">
+      <div className="bg-card ring-1 ring-gray-950/[0.05] dark:ring-white/[0.05]">
         <Header />
       </div>
 
@@ -264,7 +264,7 @@ export function ExchangeBoard({
             </div>
 
             {/* Data Table */}
-            <div className="bg-card rounded-xl border flex flex-col flex-1 overflow-hidden">
+            <div className="bg-card rounded-xl ring-1 ring-gray-950/[0.10] dark:ring-white/[0.10] shadow-sm flex flex-col flex-1 overflow-hidden">
               <div
                 ref={tableContainerRef}
                 className="flex-1 overflow-auto"

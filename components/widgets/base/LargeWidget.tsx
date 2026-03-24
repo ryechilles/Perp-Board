@@ -68,8 +68,8 @@ export function LargeWidget({
       className={cn(
         // Base styles - flat card matching PillButton style
         'bg-card rounded-xl',
-        // Subtle border and shadow for definition
-        'border border shadow-sm',
+        // Subtle ring instead of border+shadow to avoid muddy edges
+        'ring-1 ring-gray-950/[0.10] dark:ring-white/[0.10] shadow-sm',
         // Size constraints
         'min-w-[400px] flex-1',
         // Flex layout

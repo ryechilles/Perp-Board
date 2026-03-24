@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -61,7 +63,9 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    font-weight: 450;
+    font-optical-sizing: auto;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -167,4 +171,24 @@ tr {
 td[style*="position: sticky"],
 th[style*="position: sticky"] {
   background-color: inherit;
+}
+
+/* Inter Variable: tighter tracking for large text */
+h1, h2, h3, .text-lg, .text-xl, .text-2xl, .text-3xl {
+  letter-spacing: -0.02em;
+  font-weight: 550;
+}
+
+/* Inter Variable: medium weight for semibold overrides */
+.font-semibold {
+  font-weight: 550;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+/* ch-based max-width utility for readable text columns */
+.max-w-prose-ch {
+  max-width: 65ch;
 }
