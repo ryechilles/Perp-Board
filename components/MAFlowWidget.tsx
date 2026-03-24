@@ -122,7 +122,7 @@ function getConvergingTokensWithCount(
   listingData: Map<string, ListingData>,
   dataKey: MATimeframeKey,
   convergenceKey: ConvergenceKey,
-): { tokens: ConvergingToken[]; totalCount: number } {
+): { tokens: ConvergingToken[]; allSymbols: string[]; totalCount: number } {
   const results: ConvergingToken[] = [];
   const now = Date.now();
 
@@ -152,6 +152,7 @@ function getConvergingTokensWithCount(
   results.sort((a, b) => a.convergence - b.convergence);
   return {
     tokens: results.slice(0, MA_FLOW.DISPLAY_LIMIT),
+    allSymbols: results.map(t => t.symbol),
     totalCount: results.length,
   };
 }
@@ -167,10 +168,10 @@ export function MAFlowWidget({
   // Compute converging tokens + total counts for all 4 timeframes in a single pass
   const sections = useMemo(() => {
     return TIMEFRAME_SECTIONS.map(tf => {
-      const { tokens, totalCount } = getConvergingTokensWithCount(
+      const { tokens, allSymbols, totalCount } = getConvergingTokensWithCount(
         maFlowData, tickers, marketCapData, listingData, tf.dataKey, tf.convergenceKey
       );
-      return { ...tf, tokens, totalCount };
+      return { ...tf, tokens, allSymbols, totalCount };
     });
   }, [maFlowData, tickers, marketCapData, listingData]);
 
@@ -232,7 +233,7 @@ export function MAFlowWidget({
               count={section.totalCount}
               color={section.color}
               isLoading={isLoading}
-              onClick={() => onGroupClick?.(section.tokens.map(t => t.symbol))}
+              onClick={() => onGroupClick?.(section.allSymbols)}
             />
             <div className="space-y-1">
               {section.tokens.length > 0 ? (
