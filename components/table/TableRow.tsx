@@ -22,6 +22,7 @@ import {
   formatListDate,
   formatSettlementInterval,
   getRsiSignal,
+  getAdxSignal,
 } from '@/lib/utils';
 import { ChangeWithSparkline } from '@/components/Sparkline';
 
@@ -366,6 +367,23 @@ export function TableRow({
             </span>
           </td>
         );
+
+      case 'adx': {
+        const adxSignal = getAdxSignal(rsi?.adx14);
+        const hasAdxData = rsi?.adx14 != null && adxSignal.label !== '--';
+        return (
+          <td key={key} className={`${baseClass} align-middle group/adx`}>
+            <div className="inline-flex flex-col items-center justify-center">
+              <span className={`inline-block px-2 py-0.5 rounded-md text-[13px] font-semibold whitespace-nowrap ${adxSignal.pillStyle}`}>
+                {adxSignal.label}
+              </span>
+              <span className={`text-[10px] text-muted-foreground tabular-nums leading-none mt-0.5 whitespace-nowrap h-0 overflow-hidden group-hover/adx:h-auto ${hasAdxData ? '' : 'invisible'}`}>
+                {rsi?.adx14 != null ? rsi.adx14.toFixed(1) : '--'}
+              </span>
+            </div>
+          </td>
+        );
+      }
 
       case 'listDate':
         return (

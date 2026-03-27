@@ -4,7 +4,7 @@
  */
 
 import { RSIData } from '../types';
-import { calculateRSI, calculate7DChange, Mutex, RateLimiter } from '../utils';
+import { calculateRSI, calculateADX, calculate7DChange, Mutex, RateLimiter } from '../utils';
 import { API, TIMING, RATE_LIMIT } from '../constants';
 
 const OKX_REST_BASE = API.OKX_REST_BASE;
@@ -33,6 +33,7 @@ export async function fetchRSIForInstrument(instId: string): Promise<RSIData | n
     let rsi14: number | null = null;
     let rsiW7: number | null = null;
     let rsiW14: number | null = null;
+    let adx14: number | null = null;
     let change1h: number | null = null;
     let change4h: number | null = null;
     let change7d: number | null = null;
@@ -47,6 +48,11 @@ export async function fetchRSIForInstrument(instId: string): Promise<RSIData | n
       rsi7 = calculateRSI(closes, 7);
       rsi14 = calculateRSI(closes, 14);
       change7d = calculate7DChange(candles.map((c: string[]) => c.map(parseFloat)));
+
+      // Calculate ADX from daily OHLC candles
+      // OKX candle format: [ts, open, high, low, close, vol, volCcy, volCcyQuote, confirm]
+      const ohlcCandles = candles.map((c: string[]) => c.map(parseFloat));
+      adx14 = calculateADX(ohlcCandles);
 
       // Save last 7 days of closes for sparkline (from daily candles)
       sparkline7d = closes.slice(-7);
@@ -132,6 +138,7 @@ export async function fetchRSIForInstrument(instId: string): Promise<RSIData | n
       rsi14,
       rsiW7,
       rsiW14,
+      adx14,
       change1h,
       change4h,
       change7d,

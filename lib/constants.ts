@@ -99,6 +99,20 @@ export const RSI = {
 } as const;
 
 // ===========================================
+// ADX Configuration (5-level trend strength)
+// ===========================================
+export const ADX = {
+  NO_TREND: 20,       // 0-20: No trend / ranging
+  FORMING: 25,        // 20-25: Trend may be forming
+  TRENDING: 50,       // 25-50: Clear trend, suitable for trend-following
+  STRONG: 75,         // 50-75: Very strong trend
+  // 75+: Extreme trend, may be nearing exhaustion
+
+  // ADX uses 14-period by default
+  PERIOD: 14,
+} as const;
+
+// ===========================================
 // Funding Rate Configuration
 // ===========================================
 export const FUNDING = {

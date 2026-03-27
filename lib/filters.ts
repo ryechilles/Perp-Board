@@ -408,6 +408,7 @@ const SORT_EXTRACTORS: Record<string, (t: ProcessedTicker, ctx: SortExtractorCon
   rsi14: (t, ctx) => ctx.rsiData.get(t.instId)?.rsi14 ?? 0,
   rsiW7: (t, ctx) => ctx.rsiData.get(t.instId)?.rsiW7 ?? 0,
   rsiW14: (t, ctx) => ctx.rsiData.get(t.instId)?.rsiW14 ?? 0,
+  adx: (t, ctx) => ctx.rsiData.get(t.instId)?.adx14 ?? 0,
   hasSpot: (t, ctx) => {
     const spotKey = ctx.spotSymbolFormat === 'base-usdt' ? `${t.baseSymbol}-USDT` : t.baseSymbol;
     return ctx.spotSymbols.has(spotKey) ? 1 : 0;

@@ -10,7 +10,7 @@
  */
 
 import { RSIData, HyperliquidCandle } from '../types';
-import { calculateRSI, calculate7DChange, Mutex, RateLimiter } from '../utils';
+import { calculateRSI, calculateADX, calculate7DChange, Mutex, RateLimiter } from '../utils';
 import { API, TIMING, RATE_LIMIT } from '../constants';
 
 const HL_REST = API.HYPERLIQUID_REST;
@@ -110,6 +110,7 @@ export async function fetchHyperliquidRSIForInstrument(coin: string): Promise<RS
     let rsi14: number | null = null;
     let rsiW7: number | null = null;
     let rsiW14: number | null = null;
+    let adx14: number | null = null;
     let change1h: number | null = null;
     let change4h: number | null = null;
     let change7d: number | null = null;
@@ -121,6 +122,10 @@ export async function fetchHyperliquidRSIForInstrument(coin: string): Promise<RS
       rsi7 = calculateRSI(closes, 7);
       rsi14 = calculateRSI(closes, 14);
       change7d = calculate7DChange(dailyCandles);
+
+      // Calculate ADX from daily OHLC candles
+      // Hyperliquid candle format: [timestamp, open, high, low, close, volume]
+      adx14 = calculateADX(dailyCandles);
 
       // Save last 7 days of closes for sparkline
       sparkline7d = closes.slice(-7);
@@ -196,6 +201,7 @@ export async function fetchHyperliquidRSIForInstrument(coin: string): Promise<RS
       rsi14,
       rsiW7,
       rsiW14,
+      adx14,
       change1h,
       change4h,
       change7d,
