@@ -23,7 +23,7 @@ export function TablePagination({
   const endItem = Math.min(currentPage * pageSize, totalItems);
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-t border flex-shrink-0">
+    <div className="flex items-center justify-between px-4 py-3 border-t border-gray-950/[0.10] dark:border-white/[0.10] flex-shrink-0">
       <div className="flex items-center gap-3">
         <span className="text-xs text-muted-foreground">
           {startItem}-{endItem} of {totalItems}

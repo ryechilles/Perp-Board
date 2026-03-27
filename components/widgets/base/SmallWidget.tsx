@@ -94,7 +94,7 @@ export function SmallWidget({
       )}
     >
       {/* Header */}
-      <CardHeader className="flex flex-row items-center justify-between px-4 py-3 border-b space-y-0">
+      <CardHeader className="flex flex-row items-center justify-between px-4 py-3 border-b border-gray-950/[0.10] dark:border-white/[0.10] space-y-0">
         <div className="flex items-center gap-2 min-w-0">
           {icon && (
             <span className="text-muted-foreground flex-shrink-0">{icon}</span>
@@ -143,7 +143,7 @@ export function SmallWidget({
 
             {/* Inline Tooltip - auto height */}
             {tooltip && showTooltip && (
-              <div className="mt-4 pt-3 border-t">
+              <div className="mt-4 pt-3 border-t border-gray-950/[0.10] dark:border-white/[0.10]">
                 <div className="text-[11px] text-muted-foreground space-y-1">
                   {tooltip}
                 </div>

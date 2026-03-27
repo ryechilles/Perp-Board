@@ -78,7 +78,7 @@ export function LargeWidget({
       )}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-950/[0.10] dark:border-white/[0.10]">
         <div className="flex items-center gap-3 min-w-0">
           {icon && (
             <span className="text-muted-foreground flex-shrink-0">{icon}</span>
@@ -116,7 +116,7 @@ export function LargeWidget({
 
       {/* Footer */}
       {footer && (
-        <div className="px-5 py-3 border-t border text-sm text-muted-foreground">
+        <div className="px-5 py-3 border-t border-gray-950/[0.10] dark:border-white/[0.10] text-sm text-muted-foreground">
           {footer}
         </div>
       )}

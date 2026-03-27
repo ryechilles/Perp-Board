@@ -90,7 +90,7 @@ export function HLPVault() {
           </div>
 
           {/* PnL Grid */}
-          <div className="border-t pt-3">
+          <div className="border-t border-gray-950/[0.10] dark:border-white/[0.10] pt-3">
             <div className="text-[11px] text-muted-foreground mb-2">PnL</div>
             <div className="grid grid-cols-3 gap-2">
               <div>

@@ -350,7 +350,7 @@ export function Controls({
       >
         <div className="h-full flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center justify-between p-4 border-b border-gray-950/[0.10] dark:border-white/[0.10]">
             <Tabs value={customizeTab} onValueChange={(v) => setCustomizeTab(v as 'columns' | 'filters')}>
               <TabsList>
                 <TabsTrigger

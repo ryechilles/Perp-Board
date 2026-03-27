@@ -92,7 +92,7 @@ export function Footer({ exchange = 'okx' }: FooterProps) {
   const Logo = referral.logo;
 
   return (
-    <div className="border-t py-4 flex items-center justify-between">
+    <div className="border-t border-gray-950/[0.10] dark:border-white/[0.10] py-4 flex items-center justify-between">
       <span className="text-xs text-muted-foreground">
         Copyright © {currentYear}
       </span>

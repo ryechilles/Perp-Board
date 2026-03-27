@@ -170,7 +170,7 @@ export function PillButtonGroup<T extends string = string>(props: PillButtonGrou
 
             {/* Tooltip - using shadcn card-like styling */}
             {option.tooltip && isHovered && (
-              <div className="absolute top-full left-0 mt-2 z-50 rounded-md border bg-popover p-3 text-popover-foreground shadow-md whitespace-nowrap animate-in fade-in-0 zoom-in-95">
+              <div className="absolute top-full left-0 mt-2 z-50 rounded-md border border-gray-950/[0.10] dark:border-white/[0.10] bg-popover p-3 text-popover-foreground shadow-md whitespace-nowrap animate-in fade-in-0 zoom-in-95">
                 {typeof option.tooltip === 'string' ? (
                   <>
                     <div className="text-[11px] font-medium text-muted-foreground mb-1">Filter Criteria</div>

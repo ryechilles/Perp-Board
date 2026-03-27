@@ -83,7 +83,7 @@ function SectionHeader({
 
   return (
     <div
-      className={`flex items-center justify-between mb-3 pb-2 border-b ${
+      className={`flex items-center justify-between mb-3 pb-2 border-b border-gray-950/[0.10] dark:border-white/[0.10] ${
         canClick ? 'cursor-pointer hover:opacity-80' : ''
       }`}
       onClick={() => canClick && onClick()}

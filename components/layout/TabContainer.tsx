@@ -230,7 +230,7 @@ export function TabContainer({
     <TabContext.Provider value={{ activeTab, setActiveTab: handleTabChange }}>
       <div className={cn('flex flex-col', className)}>
         {/* Tab List */}
-        <div className="flex items-center gap-1 border-b border">
+        <div className="flex items-center gap-1 border-b border-gray-950/[0.10] dark:border-white/[0.10]">
           {tabs.map((tab) => (
             <button
               key={tab.id}

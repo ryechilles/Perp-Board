@@ -417,7 +417,7 @@ export function TableRow({
   };
 
   return (
-    <tr className="hover:bg-muted/50 border-b border group">
+    <tr className="hover:bg-muted/50 border-b border-gray-950/[0.10] dark:border-white/[0.10] group">
       {visibleColumns.map(renderCell)}
     </tr>
   );
