@@ -13,7 +13,8 @@ import {
   SortConfig,
   RsiSignalType,
 } from './types';
-import { MEME_TOKENS, RSI } from './constants';
+import { MEME_TOKENS } from './constants';
+import { getRsiSignal } from './utils';
 
 // ===========================================
 // Filter Context
@@ -71,42 +72,6 @@ export function applyRsiFilter(
     return rsiValue > threshold;
   }
   return true;
-}
-
-// ===========================================
-// RSI Signal Helper
-// ===========================================
-
-/**
- * Determine RSI signal based on rsi7 and rsi14 values
- * Returns a 9-state system matching pill colors
- */
-export function getRsiSignal(rsi7: number | null, rsi14: number | null): { signal: RsiSignalType; level: number } {
-  if (rsi7 === null || rsi7 === undefined || rsi14 === null || rsi14 === undefined) {
-    return { signal: 'neutral', level: 5 };
-  }
-
-  const avgRsi = (rsi7 + rsi14) / 2;
-
-  if (avgRsi < RSI.EXTREME_OVERSOLD) {
-    return { signal: 'extreme-oversold', level: 1 };
-  } else if (avgRsi < RSI.OVERSOLD) {
-    return { signal: 'oversold', level: 2 };
-  } else if (avgRsi < RSI.VERY_WEAK) {
-    return { signal: 'very-weak', level: 3 };
-  } else if (avgRsi < RSI.WEAK) {
-    return { signal: 'weak', level: 4 };
-  } else if (avgRsi < RSI.NEUTRAL_HIGH) {
-    return { signal: 'neutral', level: 5 };
-  } else if (avgRsi < RSI.STRONG) {
-    return { signal: 'strong', level: 6 };
-  } else if (avgRsi < RSI.VERY_STRONG) {
-    return { signal: 'very-strong', level: 7 };
-  } else if (avgRsi < RSI.OVERBOUGHT) {
-    return { signal: 'overbought', level: 8 };
-  } else {
-    return { signal: 'extreme-overbought', level: 9 };
-  }
 }
 
 // ===========================================

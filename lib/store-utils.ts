@@ -7,34 +7,6 @@
 import { ProcessedTicker, RSIData, MarketCapData } from './types';
 
 // ===========================================
-// RSI Filter
-// ===========================================
-
-/**
- * Apply RSI filter with support for range (~), less-than (<), and greater-than (>)
- * Examples: "30~70", "<30", ">70"
- */
-export function applyRsiFilter(
-  rsiValue: number | null | undefined,
-  filterValue: string
-): boolean {
-  if (rsiValue === null || rsiValue === undefined) return false;
-  if (filterValue.includes('~')) {
-    const [minStr, maxStr] = filterValue.split('~');
-    const min = minStr ? parseInt(minStr) : 0;
-    const max = maxStr ? parseInt(maxStr) : 100;
-    return rsiValue >= min && rsiValue <= max;
-  } else if (filterValue.startsWith('<')) {
-    const threshold = parseInt(filterValue.slice(1));
-    return rsiValue < threshold;
-  } else if (filterValue.startsWith('>')) {
-    const threshold = parseInt(filterValue.slice(1));
-    return rsiValue > threshold;
-  }
-  return true;
-}
-
-// ===========================================
 // RSI Averages (Top 100 by Market Cap)
 // ===========================================
 

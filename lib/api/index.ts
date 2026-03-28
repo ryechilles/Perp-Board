@@ -10,7 +10,7 @@ export { OKXHybridDataManager, type TickerUpdateCallback, type StatusCallback } 
 export { fetchTickersREST, fetchSpotSymbols, fetchListingDates, fetchFundingRates } from './okx-rest';
 
 // OKX RSI
-export { fetchRSIForInstrument, fetchRSIBatch } from './okx-rsi';
+export { fetchRSIForInstrument } from './okx-rsi';
 
 // OKX MA Flow (Three-Line Convergence)
 export { fetchMAForInstrument, fetchMAFlowBatch, calculateSMA, calculateConvergence } from './okx-ma-flow';
@@ -32,7 +32,4 @@ export {
 } from './hyperliquid-rest';
 
 // Hyperliquid RSI
-export {
-  fetchHyperliquidRSIForInstrument,
-  fetchHyperliquidRSIBatch,
-} from './hyperliquid-rsi';
+export { fetchHyperliquidRSIForInstrument } from './hyperliquid-rsi';

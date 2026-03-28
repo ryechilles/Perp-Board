@@ -163,26 +163,27 @@ export interface RsiSignalInfo {
   signal: RsiSignalType;
   label: string;
   pillStyle: string;
+  level: number;
 }
 
 export function getRsiSignal(rsi7: number | null, rsi14: number | null): RsiSignalInfo {
   if (rsi7 === null && rsi14 === null) {
-    return { signal: 'neutral', label: '--', pillStyle: 'bg-muted text-muted-foreground' };
+    return { signal: 'neutral', label: '--', pillStyle: 'bg-muted text-muted-foreground', level: 5 };
   }
 
   const avg = rsi7 !== null && rsi14 !== null
     ? (rsi7 + rsi14) / 2
     : rsi7 ?? rsi14 ?? 50;
 
-  if (avg <= RSI.EXTREME_OVERSOLD) return { signal: 'extreme-oversold', label: 'Extreme Oversold', pillStyle: 'bg-green-500 text-white' };
-  if (avg <= RSI.OVERSOLD) return { signal: 'oversold', label: 'Oversold', pillStyle: 'bg-green-400 text-white' };
-  if (avg <= RSI.VERY_WEAK) return { signal: 'very-weak', label: 'Very Weak', pillStyle: 'bg-green-300 text-green-800' };
-  if (avg <= RSI.WEAK) return { signal: 'weak', label: 'Weak', pillStyle: 'bg-emerald-100 text-emerald-700' };
-  if (avg <= RSI.NEUTRAL_HIGH) return { signal: 'neutral', label: 'Neutral', pillStyle: 'bg-muted text-muted-foreground' };
-  if (avg <= RSI.STRONG) return { signal: 'strong', label: 'Strong', pillStyle: 'bg-orange-100 text-orange-700' };
-  if (avg <= RSI.VERY_STRONG) return { signal: 'very-strong', label: 'Very Strong', pillStyle: 'bg-red-300 text-red-800' };
-  if (avg <= RSI.OVERBOUGHT) return { signal: 'overbought', label: 'Overbought', pillStyle: 'bg-red-400 text-white' };
-  return { signal: 'extreme-overbought', label: 'Extreme Overbought', pillStyle: 'bg-red-500 text-white' };
+  if (avg <= RSI.EXTREME_OVERSOLD) return { signal: 'extreme-oversold', label: 'Extreme Oversold', pillStyle: 'bg-green-500 text-white', level: 1 };
+  if (avg <= RSI.OVERSOLD) return { signal: 'oversold', label: 'Oversold', pillStyle: 'bg-green-400 text-white', level: 2 };
+  if (avg <= RSI.VERY_WEAK) return { signal: 'very-weak', label: 'Very Weak', pillStyle: 'bg-green-300 text-green-800', level: 3 };
+  if (avg <= RSI.WEAK) return { signal: 'weak', label: 'Weak', pillStyle: 'bg-emerald-100 text-emerald-700', level: 4 };
+  if (avg <= RSI.NEUTRAL_HIGH) return { signal: 'neutral', label: 'Neutral', pillStyle: 'bg-muted text-muted-foreground', level: 5 };
+  if (avg <= RSI.STRONG) return { signal: 'strong', label: 'Strong', pillStyle: 'bg-orange-100 text-orange-700', level: 6 };
+  if (avg <= RSI.VERY_STRONG) return { signal: 'very-strong', label: 'Very Strong', pillStyle: 'bg-red-300 text-red-800', level: 7 };
+  if (avg <= RSI.OVERBOUGHT) return { signal: 'overbought', label: 'Overbought', pillStyle: 'bg-red-400 text-white', level: 8 };
+  return { signal: 'extreme-overbought', label: 'Extreme Overbought', pillStyle: 'bg-red-500 text-white', level: 9 };
 }
 
 // ===========================================
@@ -317,20 +318,6 @@ export function calculate7DChange(candles: number[][]): number | null {
 // RSI Pill Styles
 // ===========================================
 
-export function getRsiOversoldPillStyle(rsi: number | null | undefined): string {
-  if (rsi === null || rsi === undefined) return 'bg-muted text-muted-foreground';
-  if (rsi <= 20) return 'bg-green-500 text-white';
-  if (rsi <= 25) return 'bg-green-400 text-white';
-  return 'bg-green-300 text-green-800';
-}
-
-export function getRsiOverboughtPillStyle(rsi: number | null | undefined): string {
-  if (rsi === null || rsi === undefined) return 'bg-muted text-muted-foreground';
-  if (rsi >= 85) return 'bg-red-600 text-white';
-  if (rsi >= 80) return 'bg-red-500 text-white';
-  return 'bg-red-400 text-white';
-}
-
 export function getRsiPillStyle(rsi: number | null | undefined): string {
   if (rsi === null || rsi === undefined) return 'bg-muted text-muted-foreground';
   if (rsi <= 20) return 'bg-green-500 text-white';
@@ -343,3 +330,8 @@ export function getRsiPillStyle(rsi: number | null | undefined): string {
   if (rsi <= 85) return 'bg-red-400 text-white';
   return 'bg-red-500 text-white';
 }
+
+/** @deprecated Use getRsiPillStyle instead */
+export const getRsiOversoldPillStyle = getRsiPillStyle;
+/** @deprecated Use getRsiPillStyle instead */
+export const getRsiOverboughtPillStyle = getRsiPillStyle;
