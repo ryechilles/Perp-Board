@@ -29,9 +29,29 @@ export class OKXHybridDataManager {
   private wsConnected = false;
   private wsLastUpdateTime: Map<string, number> = new Map(); // Track WS update timestamps
 
+  // Throttle: buffer WS updates and flush to React at most once per animation frame
+  private updateScheduled = false;
+  private statusPending: { status: 'connecting' | 'live' | 'error'; time?: Date } | null = null;
+
   constructor(onUpdate: TickerUpdateCallback, onStatus: StatusCallback) {
     this.onUpdate = onUpdate;
     this.onStatus = onStatus;
+  }
+
+  /** Schedule a throttled flush — writes to this.tickers immediately, but only notifies React once per frame */
+  private scheduleUpdate(status?: 'connecting' | 'live' | 'error', time?: Date): void {
+    if (status) this.statusPending = { status, time };
+    if (this.updateScheduled) return;
+    this.updateScheduled = true;
+    requestAnimationFrame(() => {
+      this.updateScheduled = false;
+      if (!this.isRunning) return;
+      this.onUpdate(new Map(this.tickers));
+      if (this.statusPending) {
+        this.onStatus(this.statusPending.status, this.statusPending.time);
+        this.statusPending = null;
+      }
+    });
   }
 
   async start(): Promise<void> {
@@ -156,8 +176,7 @@ export class OKXHybridDataManager {
               this.tickers.set(ticker.instId, processed);
               this.wsLastUpdateTime.set(ticker.instId, now);
             });
-            this.onUpdate(new Map(this.tickers));
-            this.onStatus('live', new Date());
+            this.scheduleUpdate('live', new Date());
           }
         } catch (e) {
           // Ignore parse errors for non-JSON messages
@@ -247,11 +266,7 @@ export class OKXHybridDataManager {
           this.allInstIds = Array.from(currentInstIds);
 
           if (updated) {
-            this.onUpdate(new Map(this.tickers));
-            // Only update status if WebSocket is not connected
-            if (!this.wsConnected) {
-              this.onStatus('live', new Date());
-            }
+            this.scheduleUpdate(!this.wsConnected ? 'live' : undefined, !this.wsConnected ? new Date() : undefined);
           }
         }
       } catch (error) {
