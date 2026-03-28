@@ -82,52 +82,55 @@ export function Controls({
     if (filters.listAge === '<180d' && !filters.rsi7 && !filters.rsi14) return 'newListed';
     if (filters.rsi7 === '>75' && filters.rsi14 === '>75') return 'overbought';
     if (filters.rsi7 === '<25' && filters.rsi14 === '<25') return 'oversold';
-    if (filters.assetCategory === 'crypto') return 'crypto';
-    if (filters.assetCategory === 'stock') return 'stock';
-    if (Object.values(filters).every(v => v === undefined || v === '' || (Array.isArray(v) && v.length === 0))) return 'all';
     return 'all';
   };
 
   const handleQuickFilter = (filter: QuickFilter) => {
     // Clear search term when using quick filters
     onSearchChange('');
+    // Preserve the current assetCategory when switching quick filters
+    const currentCategory = filters.assetCategory;
     switch (filter) {
       case 'all':
-        onFiltersChange({});
-        setTempFilters({});
+        onFiltersChange(currentCategory ? { assetCategory: currentCategory } : {});
+        setTempFilters(currentCategory ? { assetCategory: currentCategory } : {});
         break;
-      case 'crypto':
-        onFiltersChange({ assetCategory: 'crypto' });
-        setTempFilters({ assetCategory: 'crypto' });
+      case 'top25': {
+        const f = { rank: '1-25' as const, ...(currentCategory ? { assetCategory: currentCategory } : {}) };
+        onFiltersChange(f);
+        setTempFilters(f);
         break;
-      case 'stock':
-        onFiltersChange({ assetCategory: 'stock' });
-        setTempFilters({ assetCategory: 'stock' });
+      }
+      case 'meme': {
+        const f = { isMeme: 'yes' as const, ...(currentCategory ? { assetCategory: currentCategory } : {}) };
+        onFiltersChange(f);
+        setTempFilters(f);
         break;
-      case 'top25':
-        onFiltersChange({ rank: '1-25' });
-        setTempFilters({ rank: '1-25' });
+      }
+      case 'noSpot': {
+        const f = { hasSpot: 'no' as const, ...(currentCategory ? { assetCategory: currentCategory } : {}) };
+        onFiltersChange(f);
+        setTempFilters(f);
         break;
-      case 'meme':
-        onFiltersChange({ isMeme: 'yes' });
-        setTempFilters({ isMeme: 'yes' });
+      }
+      case 'newListed': {
+        const f = { listAge: '<180d' as const, ...(currentCategory ? { assetCategory: currentCategory } : {}) };
+        onFiltersChange(f);
+        setTempFilters(f);
         break;
-      case 'noSpot':
-        onFiltersChange({ hasSpot: 'no' });
-        setTempFilters({ hasSpot: 'no' });
+      }
+      case 'overbought': {
+        const f = { rsi7: '>75' as const, rsi14: '>75' as const, ...(currentCategory ? { assetCategory: currentCategory } : {}) };
+        onFiltersChange(f);
+        setTempFilters(f);
         break;
-      case 'newListed':
-        onFiltersChange({ listAge: '<180d' });
-        setTempFilters({ listAge: '<180d' });
+      }
+      case 'oversold': {
+        const f = { rsi7: '<25' as const, rsi14: '<25' as const, ...(currentCategory ? { assetCategory: currentCategory } : {}) };
+        onFiltersChange(f);
+        setTempFilters(f);
         break;
-      case 'overbought':
-        onFiltersChange({ rsi7: '>75', rsi14: '>75' });
-        setTempFilters({ rsi7: '>75', rsi14: '>75' });
-        break;
-      case 'oversold':
-        onFiltersChange({ rsi7: '<25', rsi14: '<25' });
-        setTempFilters({ rsi7: '<25', rsi14: '<25' });
-        break;
+      }
     }
     // Scroll table to top when filter changes
     onScrollToTop?.();
@@ -143,7 +146,9 @@ export function Controls({
   const totalCount = Object.keys(columns).length - excludedColumns.length;
 
   // Only count filters that have actual values (not undefined or empty string or empty array)
-  const hasFilters = Object.values(filters).some(v => {
+  // Exclude assetCategory since it's always set via the toggle and isn't a "filter"
+  const hasFilters = Object.entries(filters).some(([key, v]) => {
+    if (key === 'assetCategory') return false;
     if (Array.isArray(v)) return v.length > 0;
     return v !== undefined && v !== '';
   });
@@ -155,33 +160,35 @@ export function Controls({
   );
 
   const handleClearFilters = () => {
-    setTempFilters({});
-    onFiltersChange({});
+    const base = exchange === 'okx' && filters.assetCategory ? { assetCategory: filters.assetCategory } : {};
+    setTempFilters(base);
+    onFiltersChange(base);
   };
 
   const exchangeLabel = exchange === 'hyperliquid' ? 'Hyperliquid' : 'OKX';
 
+  // Asset category tab state — derived from filters
+  const activeAssetCategory: 'crypto' | 'stock' = filters.assetCategory === 'stock' ? 'stock' : 'crypto';
+
+  // On mount, default to 'crypto' if no assetCategory is set (OKX only)
+  useEffect(() => {
+    if (exchange === 'okx' && !filters.assetCategory) {
+      onFiltersChange({ ...filters, assetCategory: 'crypto' });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleAssetCategoryChange = (value: string) => {
+    const category = value as 'crypto' | 'stock';
+    // Preserve other quick filters, just change assetCategory
+    const newFilters = { ...filters, assetCategory: category as AssetCategory };
+    onFiltersChange(newFilters);
+    setTempFilters(newFilters);
+    onScrollToTop?.();
+  };
+
   // Main filter options - using PillButtonGroup template
   const mainFilterOptions = useMemo((): PillButtonOption<QuickFilter>[] => [
-    {
-      value: 'all',
-      label: 'All',
-      tooltip: 'Show all tokens (crypto + stocks)'
-    },
-    // Only show Crypto/Stock split for OKX (which has equity perpetuals)
-    ...(exchange === 'okx' ? [
-      {
-        value: 'crypto' as QuickFilter,
-        label: 'Crypto',
-        tooltip: 'Crypto perpetuals only'
-      },
-      {
-        value: 'stock' as QuickFilter,
-        label: '📈 Stock',
-        activeColor: 'text-blue-500',
-        tooltip: 'Stock/equity perpetuals only (AAPL, TSLA, etc.)'
-      },
-    ] : []),
     {
       value: 'top25',
       label: 'Top 25',
@@ -314,6 +321,26 @@ export function Controls({
 
       {/* Quick Filters + Controls Row - Flat structure for consistent gap */}
       <div className="flex items-center gap-4 relative z-[60]">
+        {/* Crypto / Stock toggle */}
+        {exchange === 'okx' && (
+          <Tabs value={activeAssetCategory} onValueChange={handleAssetCategoryChange}>
+            <TabsList className="bg-transparent h-8 p-0 gap-0 border border-border rounded-md">
+              <TabsTrigger
+                value="crypto"
+                className="h-full rounded-r-none rounded-l-[5px] px-3 py-1 text-xs font-medium data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-none data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground"
+              >
+                Crypto
+              </TabsTrigger>
+              <TabsTrigger
+                value="stock"
+                className="h-full rounded-l-none rounded-r-[5px] px-3 py-1 text-xs font-medium data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-none data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground"
+              >
+                Stock
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
+
         {/* Main Quick Filters */}
         <PillButtonGroup
           options={mainFilterOptions}
