@@ -164,6 +164,7 @@ export class HyperliquidDataManager {
 
           // Handle allMids updates
           if (data.channel === 'allMids' && data.data?.mids) {
+            if (!this.isRunning) return; // Guard against updates after stop()
             const mids: Record<string, string> = data.data.mids;
 
             let updated = false;
@@ -243,6 +244,7 @@ export class HyperliquidDataManager {
   private startRestPolling(): void {
     // Poll for full ticker data (volume, funding, OI updates)
     this.restPollInterval = setInterval(async () => {
+      if (!this.isRunning) return; // Guard against updates after stop()
       try {
         const response = await fetch(API.HYPERLIQUID_REST, {
           method: 'POST',
@@ -250,9 +252,11 @@ export class HyperliquidDataManager {
           body: JSON.stringify({ type: 'metaAndAssetCtxs' }),
         });
 
+        if (!this.isRunning) return; // Check again after await
         if (!response.ok) return;
 
         const result = await response.json();
+        if (!this.isRunning) return;
         if (!Array.isArray(result) || result.length < 2) return;
 
         const meta = result[0] as HyperliquidMeta;

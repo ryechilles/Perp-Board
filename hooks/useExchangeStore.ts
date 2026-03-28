@@ -57,6 +57,7 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
   const intervalsRef = useRef<NodeJS.Timeout[]>([]);
   const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
   const rsiAbortRef = useRef<AbortController | null>(null);
+  const disposedRef = useRef(false);
 
   // RSI cache (exchange-specific)
   const cache = getCacheForExchange(exchange);
@@ -178,6 +179,7 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
 
   // Initialize
   const initialize = useCallback(async () => {
+    disposedRef.current = false;
     checkVersionAndClearCache();
 
     // Load cached market cap
@@ -188,12 +190,15 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
 
     // Fetch exchange-specific initial data (spot symbols, listings, funding)
     const initialData = await adapter.fetchInitialData();
+    if (disposedRef.current) return; // ← Bail if cleanup already ran
+
     setSpotSymbols(initialData.spotSymbols);
     if (initialData.listingData) setListingData(initialData.listingData);
     if (initialData.fundingRateData) setFundingRateData(initialData.fundingRateData);
 
     // Fetch CoinGecko data (non-blocking)
     fetchMarketCapData().then((marketCap) => {
+      if (disposedRef.current) return; // ← Don't update state if disposed
       console.log(`[MarketCap] Received ${marketCap.size} coins from CoinGecko`);
       setMarketCapData(marketCap);
       setMarketCapCache(marketCap);
@@ -203,6 +208,8 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
 
     // Create and start data manager
     const handleTickerUpdate = (newTickers: Map<string, ProcessedTicker>) => {
+      if (disposedRef.current) return; // ← Don't update state if disposed
+
       setTickers(newTickers);
       // Extract funding from tickers for exchanges that embed it (Hyperliquid)
       if (adapter.extractFundingFromTickers) {
@@ -246,12 +253,18 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
     };
 
     const handleStatusUpdate = (newStatus: 'connecting' | 'live' | 'error', time?: Date) => {
+      if (disposedRef.current) return; // ← Don't update state if disposed
       setStatus(newStatus);
       if (time) setLastUpdate(time);
     };
 
     dataManagerRef.current = adapter.createDataManager(handleTickerUpdate, handleStatusUpdate);
     await dataManagerRef.current.start();
+    if (disposedRef.current) { // ← Bail if cleanup ran during start()
+      dataManagerRef.current.stop();
+      dataManagerRef.current = null;
+      return;
+    }
 
     // Initial RSI fetch
     const initialRsiTimeout = setTimeout(() => {
@@ -333,6 +346,9 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
 
   // Cleanup — aborts in-flight RSI fetches instantly
   const cleanup = useCallback(() => {
+    // ── Mark as disposed so initialize() and callbacks bail out ──
+    disposedRef.current = true;
+
     // ── Abort RSI fetch loop immediately ──
     rsiAbortRef.current?.abort();
     rsiAbortRef.current = null;

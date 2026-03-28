@@ -149,6 +149,7 @@ export class OKXHybridDataManager {
 
           // Handle ticker data
           if (data.arg?.channel === 'tickers' && data.data) {
+            if (!this.isRunning) return; // Guard against updates after stop()
             const now = Date.now();
             data.data.forEach((ticker: OKXTicker) => {
               const processed = processTicker(ticker);
@@ -208,11 +209,14 @@ export class OKXHybridDataManager {
   private startRestPolling(): void {
     // Poll for all tickers (updates non-TOP 50)
     this.restPollInterval = setInterval(async () => {
+      if (!this.isRunning) return; // Guard against updates after stop()
       try {
         const response = await fetch(`${OKX_REST_BASE}/market/tickers?instType=SWAP`);
+        if (!this.isRunning) return; // Check again after await
         const data = await response.json();
 
         if (data.code === '0' && data.data) {
+          if (!this.isRunning) return;
           let updated = false;
           const currentInstIds = new Set<string>();
 

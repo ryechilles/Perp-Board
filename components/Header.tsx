@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { APP_CONFIG } from '@/lib/config';
@@ -89,7 +90,7 @@ const EXCHANGES = [
   },
 ] as const;
 
-export function Header() {
+export const Header = memo(function Header() {
   const pathname = usePathname();
 
   return (
@@ -128,4 +129,4 @@ export function Header() {
       </div>
     </header>
   );
-}
+});
