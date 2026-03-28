@@ -332,10 +332,14 @@ export function Controls({
         {exchange === 'okx' && (
           <Tabs value={activeAssetCategory} onValueChange={handleAssetCategoryChange}>
             <TabsList>
-              <TabsTrigger value="crypto">
+              <TabsTrigger value="crypto" onClick={() => {
+                if (activeAssetCategory === 'crypto') handleAssetCategoryChange('crypto');
+              }}>
                 Crypto
               </TabsTrigger>
-              <TabsTrigger value="stock">
+              <TabsTrigger value="stock" onClick={() => {
+                if (activeAssetCategory === 'stock') handleAssetCategoryChange('stock');
+              }}>
                 Stock
               </TabsTrigger>
             </TabsList>
@@ -351,15 +355,13 @@ export function Controls({
           />
         )}
 
-        {/* RSI Quick Filters — hidden in Stock mode */}
-        {activeAssetCategory !== 'stock' && (
-          <PillButtonGroup
-            options={rsiFilterOptions}
-            value={activeQuickFilter}
-            onChange={handleQuickFilter}
-            className="hidden md:inline-flex"
-          />
-        )}
+        {/* RSI Quick Filters — always visible */}
+        <PillButtonGroup
+          options={rsiFilterOptions}
+          value={activeQuickFilter}
+          onChange={handleQuickFilter}
+          className="hidden md:inline-flex"
+        />
 
         {/* Settings icon */}
         <Button
