@@ -269,6 +269,18 @@ export const CACHE_KEYS = {
 } as const;
 
 // ===========================================
+// Stock (Equity Perpetual) Symbols
+// OKX equity perpetual swaps — used to distinguish stock vs crypto
+// ===========================================
+export const STOCK_SYMBOLS = new Set([
+  'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'META',  // Mag 7
+  'MSTR', 'COIN', 'HOOD', 'CRCL',                              // Crypto-adjacent
+  'INTC', 'AMD', 'MU', 'SNDK', 'TSM',                          // Semiconductors
+  'ORCL', 'NFLX', 'PLTR',                                       // Tech & Enterprise
+  'QQQ', 'SPY',                                                  // Index ETFs
+]);
+
+// ===========================================
 // Meme Tokens List
 // ===========================================
 export const MEME_TOKENS = new Set([
