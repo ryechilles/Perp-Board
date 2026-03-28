@@ -380,14 +380,6 @@ export function applyWRsiSignalFilter(
   });
 }
 
-/**
- * Filter to only USDT pairs
- * For OKX: instId.includes('-USDT-')
- */
-export function applyUsdtFilter(data: ProcessedTicker[]): ProcessedTicker[] {
-  return data.filter(t => t.instId.includes('-USDT-'));
-}
-
 // ===========================================
 // Sorting
 // ===========================================
@@ -470,7 +462,10 @@ export function applySorting(
 // ===========================================
 
 /**
- * Filter and sort tickers in a single pipeline
+ * Filter and sort tickers in a single pipeline.
+ *
+ * `preFilter` is the exchange-specific pre-filter (e.g. OKX keeps only USDT swaps).
+ * It replaces the old `isOkx` boolean flag.
  */
 export function filterAndSort(
   tickers: Map<string, ProcessedTicker>,
@@ -480,13 +475,13 @@ export function filterAndSort(
   filters: Filters,
   sort: SortConfig,
   ctx: FilterContext,
-  isOkx?: boolean
+  preFilter?: (tickers: ProcessedTicker[]) => ProcessedTicker[]
 ): ProcessedTicker[] {
   let filtered = Array.from(tickers.values());
 
-  // Filter to USDT pairs (OKX only)
-  if (isOkx) {
-    filtered = applyUsdtFilter(filtered);
+  // Exchange-specific pre-filter (replaces old isOkx boolean)
+  if (preFilter) {
+    filtered = preFilter(filtered);
   }
 
   // Search filter

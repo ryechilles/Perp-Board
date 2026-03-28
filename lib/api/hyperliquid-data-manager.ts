@@ -13,18 +13,21 @@
  * - Instrument IDs are simple coin names (e.g., "BTC" not "BTC-USDT-SWAP")
  */
 
-import { HyperliquidMeta, HyperliquidAssetCtx, ProcessedTicker } from '../types';
+import { HyperliquidMeta, HyperliquidAssetCtx, ProcessedTicker, TickerUpdateCallback, StatusUpdateCallback } from '../types';
 import { processHyperliquidTicker } from './hyperliquid-rest';
+import { withRetry } from '../concurrency';
 import { API, TIMING, UI } from '../constants';
 
-export type TickerUpdateCallback = (tickers: Map<string, ProcessedTicker>) => void;
-export type StatusCallback = (status: 'connecting' | 'live' | 'error', time?: Date) => void;
+/** @deprecated Use TickerUpdateCallback from '../types' */
+export type { TickerUpdateCallback };
+/** @deprecated Use StatusUpdateCallback from '../types' */
+export type StatusCallback = StatusUpdateCallback;
 
 export class HyperliquidDataManager {
   private ws: WebSocket | null = null;
   private tickers: Map<string, ProcessedTicker> = new Map();
   private onUpdate: TickerUpdateCallback;
-  private onStatus: StatusCallback;
+  private onStatus: StatusUpdateCallback;
   private top50Coins: string[] = [];
   private allCoins: string[] = [];
   private restPollInterval: NodeJS.Timeout | null = null;
@@ -41,7 +44,7 @@ export class HyperliquidDataManager {
   private updateScheduled = false;
   private statusPending: { status: 'connecting' | 'live' | 'error'; time?: Date } | null = null;
 
-  constructor(onUpdate: TickerUpdateCallback, onStatus: StatusCallback) {
+  constructor(onUpdate: TickerUpdateCallback, onStatus: StatusUpdateCallback) {
     this.onUpdate = onUpdate;
     this.onStatus = onStatus;
   }
@@ -79,25 +82,20 @@ export class HyperliquidDataManager {
 
   private async fetchAllTickers(): Promise<void> {
     try {
-      const response = await fetch(API.HYPERLIQUID_REST, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'metaAndAssetCtxs' }),
-      });
-
-      if (!response.ok) {
-        console.error(`[Hyperliquid] HTTP ${response.status}`);
-        this.onStatus('error');
-        return;
-      }
-
-      const result = await response.json();
-
-      if (!Array.isArray(result) || result.length < 2) {
-        console.error('[Hyperliquid] Invalid response format');
-        this.onStatus('error');
-        return;
-      }
+      const result = await withRetry(
+        async () => {
+          const response = await fetch(API.HYPERLIQUID_REST, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'metaAndAssetCtxs' }),
+          });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const json = await response.json();
+          if (!Array.isArray(json) || json.length < 2) throw new Error('Invalid response format');
+          return json;
+        },
+        { maxAttempts: 3, baseDelay: 1000, label: 'Hyperliquid fetchAllTickers' }
+      );
 
       const meta = result[0] as HyperliquidMeta;
       const contexts = result[1] as HyperliquidAssetCtx[];

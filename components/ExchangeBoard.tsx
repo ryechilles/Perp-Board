@@ -11,6 +11,7 @@ import { Spinner } from '@/components/ui';
 import { ColumnKey, ProcessedTicker } from '@/lib/types';
 import { COLUMN_DEFINITIONS } from '@/lib/utils';
 import { useExchangeStore } from '@/hooks/useExchangeStore';
+import { useUrlState } from '@/hooks/useUrlState';
 
 // Fixed column configuration (shared across exchanges)
 const FIXED_COLUMNS: ColumnKey[] = ['favorite', 'rank', 'logo', 'symbol'];
@@ -45,9 +46,8 @@ interface ExchangeBoardProps {
   exchange: 'okx' | 'hyperliquid';
   tabs: TabConfig[];
   tabWidgets: Record<string, TabWidgetConfig>;
-  /** Optional URL state sync hook (OKX only) */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  useUrlStateHook?: (...args: any[]) => any;
+  /** Enable URL state synchronisation (OKX only) */
+  enableUrlState?: boolean;
 }
 
 // ===========================================
@@ -59,7 +59,7 @@ export function ExchangeBoard({
   exchange,
   tabs,
   tabWidgets,
-  useUrlStateHook,
+  enableUrlState = false,
 }: ExchangeBoardProps) {
   const [activeTab, setActiveTab] = useState(tabs[0]?.id ?? 'rsi');
 
@@ -71,25 +71,24 @@ export function ExchangeBoard({
   const [isScrolled, setIsScrolled] = useState(false);
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
-  // URL state sync (OKX only)
-  if (useUrlStateHook) {
-    useUrlStateHook(
-      {
-        favorites: store.favorites,
-        filters: store.filters,
-        columns: store.columns,
-        columnOrder: store.columnOrder,
-        view: store.view,
-      },
-      {
-        setFavorites: store.setFavoritesDirectly,
-        setFilters: store.setFilters,
-        setColumns: store.setColumnsDirectly,
-        setColumnOrder: store.setColumnOrderDirectly,
-        setView: store.setView,
-      }
-    );
-  }
+  // URL state sync — always called (Rules of Hooks), but gated by `enabled`
+  useUrlState(
+    {
+      favorites: store.favorites,
+      filters: store.filters,
+      columns: store.columns,
+      columnOrder: store.columnOrder,
+      view: store.view,
+    },
+    {
+      setFavorites: store.setFavoritesDirectly,
+      setFilters: store.setFilters,
+      setColumns: store.setColumnsDirectly,
+      setColumnOrder: store.setColumnOrderDirectly,
+      setView: store.setView,
+    },
+    enableUrlState
+  );
 
   // Initialize / cleanup
   useEffect(() => {

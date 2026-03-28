@@ -161,6 +161,13 @@ function paramsToState(params: URLSearchParams): Partial<UrlState> {
   return state;
 }
 
+/**
+ * useUrlState — synchronises store state ↔ URL query params.
+ *
+ * `enabled` (default true) controls whether the hook does anything.
+ * When disabled the hook still runs (satisfying the Rules of Hooks)
+ * but all side-effects are skipped.
+ */
 export function useUrlState(
   currentState: {
     favorites: string[];
@@ -175,13 +182,15 @@ export function useUrlState(
     setColumns: (columns: ColumnVisibility) => void;
     setColumnOrder: (order: ColumnKey[]) => void;
     setView: (view: 'market' | 'favorites') => void;
-  }
+  },
+  enabled: boolean = true
 ) {
   const initializedRef = useRef(false);
   const isUpdatingFromUrlRef = useRef(false);
 
   // Initialize state from URL on mount
   useEffect(() => {
+    if (!enabled) return;
     if (initializedRef.current) return;
     initializedRef.current = true;
 
@@ -212,10 +221,11 @@ export function useUrlState(
     setTimeout(() => {
       isUpdatingFromUrlRef.current = false;
     }, 100);
-  }, [setters]);
+  }, [setters, enabled]);
 
   // Update URL when state changes
   const updateUrl = useCallback(() => {
+    if (!enabled) return;
     if (typeof window === 'undefined') return;
     if (isUpdatingFromUrlRef.current) return;
 
@@ -227,18 +237,20 @@ export function useUrlState(
 
     // Use replaceState to avoid polluting browser history
     window.history.replaceState(null, '', newUrl);
-  }, [currentState]);
+  }, [currentState, enabled]);
 
   // Debounced URL update
   useEffect(() => {
+    if (!enabled) return;
     if (!initializedRef.current) return;
 
     const timeoutId = setTimeout(updateUrl, 300);
     return () => clearTimeout(timeoutId);
-  }, [updateUrl]);
+  }, [updateUrl, enabled]);
 
   // Generate shareable URL
   const getShareableUrl = useCallback(() => {
+    if (!enabled) return '';
     if (typeof window === 'undefined') return '';
 
     const params = stateToParams(currentState);
@@ -246,7 +258,7 @@ export function useUrlState(
     return queryString
       ? `${window.location.origin}${window.location.pathname}?${queryString}`
       : `${window.location.origin}${window.location.pathname}`;
-  }, [currentState]);
+  }, [currentState, enabled]);
 
   return { getShareableUrl };
 }

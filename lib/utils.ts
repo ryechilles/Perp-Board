@@ -16,7 +16,7 @@ import { twMerge } from 'tailwind-merge';
 // ===========================================
 
 // Concurrency (consumers should migrate to '@/lib/concurrency')
-export { Mutex, RateLimiter } from './concurrency';
+export { Mutex, RateLimiter, withRetry } from './concurrency';
 
 // Columns & funding formatters (consumers should migrate to '@/lib/columns')
 export {

@@ -1,9 +1,8 @@
 'use client';
 
-import { useMemo, useCallback } from 'react';
 import { useHyperliquidStore } from '@/hooks/useHyperliquidStore';
-import { useWidgetOrder } from '@/hooks/useWidgetOrder';
-import { ExchangeBoard, TabConfig, TabWidgetConfig } from '@/components/ExchangeBoard';
+import { useBoardWidgets, TabWidgetDef, WidgetContext } from '@/hooks/useBoardWidgets';
+import { ExchangeBoard, TabConfig } from '@/components/ExchangeBoard';
 import { MarketMomentum } from '@/components/MarketMomentum';
 import { RsiOversold } from '@/components/RsiOversold';
 import { RsiOverbought } from '@/components/RsiOverbought';
@@ -42,44 +41,14 @@ const TABS: TabConfig[] = [
   { id: 'hlp', label: 'HLP', icon: <HlpTabIcon /> },
 ];
 
-const DEFAULT_WIDGET_ORDER: Record<string, string[]> = {
-  rsi: ['marketMomentum', 'rsiOversold', 'rsiOverbought'],
-  funding: ['fundingMarket', 'fundingKiller'],
-  altcoin: ['topGainers', 'vsBtc', 'ethBtcRatio', 'total2'],
-  btc: ['btcDominance', 'ahr999'],
-  hlp: ['hlpVault'],
-};
+// ── Widget definitions ──
 
-export default function HyperliquidBoard() {
-  const store = useHyperliquidStore();
-
-  // Widget ordering per tab (hl- prefix for separate localStorage)
-  const [rsiWidgetOrder, setRsiWidgetOrder] = useWidgetOrder('hl-rsi', DEFAULT_WIDGET_ORDER.rsi);
-  const [fundingWidgetOrder, setFundingWidgetOrder] = useWidgetOrder('hl-funding', DEFAULT_WIDGET_ORDER.funding);
-  const [altcoinWidgetOrder, setAltcoinWidgetOrder] = useWidgetOrder('hl-altcoin', DEFAULT_WIDGET_ORDER.altcoin);
-  const [btcWidgetOrder, setBtcWidgetOrder] = useWidgetOrder('hl-btc', DEFAULT_WIDGET_ORDER.btc);
-  const [hlpWidgetOrder, setHlpWidgetOrder] = useWidgetOrder('hl-hlp', DEFAULT_WIDGET_ORDER.hlp);
-
-  // Token click handlers
-  const handleTokenClick = useCallback((symbol: string) => {
-    store.setFilters({});
-    store.setSearchTerm(symbol);
-  }, [store]);
-
-  const handleGroupClick = useCallback((symbols: string[]) => {
-    store.setFilters({});
-    store.setSearchTerm(symbols.join('|'));
-  }, [store]);
-
-  // RSI averages for MarketMomentum
-  const { avgRsi7, avgRsi14 } = store.getRsiAverages();
-
-  // Widget configs per tab
-  const tabWidgets: Record<string, TabWidgetConfig> = useMemo(() => ({
-    rsi: {
-      order: rsiWidgetOrder,
-      setOrder: setRsiWidgetOrder,
-      widgets: {
+const TAB_WIDGET_DEFS: Record<string, TabWidgetDef> = {
+  rsi: {
+    defaultOrder: ['marketMomentum', 'rsiOversold', 'rsiOverbought'],
+    createWidgets: ({ store, handleTokenClick }: WidgetContext) => {
+      const { avgRsi7, avgRsi14 } = store.getRsiAverages();
+      return {
         marketMomentum: <MarketMomentum avgRsi7={avgRsi7} avgRsi14={avgRsi14} exchangeLabel={EXCHANGE_LABEL} />,
         rsiOversold: (
           <RsiOversold
@@ -99,85 +68,77 @@ export default function HyperliquidBoard() {
             exchangeLabel={EXCHANGE_LABEL}
           />
         ),
-      },
+      };
     },
-    funding: {
-      order: fundingWidgetOrder,
-      setOrder: setFundingWidgetOrder,
-      widgets: {
-        fundingMarket: (
-          <FundingMarket
-            tickers={store.tickers}
-            fundingRateData={store.fundingRateData}
-            marketCapData={store.marketCapData}
-            onGroupClick={handleGroupClick}
-            exchangeLabel={EXCHANGE_LABEL}
-          />
-        ),
-        fundingKiller: (
-          <FundingKiller
-            tickers={store.tickers}
-            fundingRateData={store.fundingRateData}
-            marketCapData={store.marketCapData}
-            onTokenClick={handleTokenClick}
-            onGroupClick={handleGroupClick}
-            exchangeLabel={EXCHANGE_LABEL}
-          />
-        ),
-      },
-    },
-    altcoin: {
-      order: altcoinWidgetOrder,
-      setOrder: setAltcoinWidgetOrder,
-      widgets: {
-        topGainers: (
-          <AltcoinTopGainers
-            tickers={store.tickers}
-            rsiData={store.rsiData}
-            marketCapData={store.marketCapData}
-            onTokenClick={handleTokenClick}
-            exchangeLabel={EXCHANGE_LABEL}
-          />
-        ),
-        vsBtc: (
-          <AltcoinVsBTC
-            tickers={store.tickers}
-            rsiData={store.rsiData}
-            marketCapData={store.marketCapData}
-            onTokenClick={handleTokenClick}
-            onTopNClick={handleGroupClick}
-            exchangeLabel={EXCHANGE_LABEL}
-          />
-        ),
-        ethBtcRatio: <EthBtcRatio />,
-        total2: <Total2MiniChart />,
-      },
-    },
-    btc: {
-      order: btcWidgetOrder,
-      setOrder: setBtcWidgetOrder,
-      widgets: {
-        btcDominance: <BTCDominance />,
-        ahr999: <AHR999Indicator />,
-      },
-    },
-    hlp: {
-      order: hlpWidgetOrder,
-      setOrder: setHlpWidgetOrder,
-      widgets: {
-        hlpVault: <HLPVault />,
-      },
-    },
-  }), [
-    avgRsi7, avgRsi14,
-    store.tickers, store.rsiData, store.marketCapData, store.fundingRateData,
-    rsiWidgetOrder, setRsiWidgetOrder,
-    fundingWidgetOrder, setFundingWidgetOrder,
-    altcoinWidgetOrder, setAltcoinWidgetOrder,
-    btcWidgetOrder, setBtcWidgetOrder,
-    hlpWidgetOrder, setHlpWidgetOrder,
-    handleTokenClick, handleGroupClick,
-  ]);
+  },
+  funding: {
+    defaultOrder: ['fundingMarket', 'fundingKiller'],
+    createWidgets: ({ store, handleTokenClick, handleGroupClick }: WidgetContext) => ({
+      fundingMarket: (
+        <FundingMarket
+          tickers={store.tickers}
+          fundingRateData={store.fundingRateData}
+          marketCapData={store.marketCapData}
+          onGroupClick={handleGroupClick}
+          exchangeLabel={EXCHANGE_LABEL}
+        />
+      ),
+      fundingKiller: (
+        <FundingKiller
+          tickers={store.tickers}
+          fundingRateData={store.fundingRateData}
+          marketCapData={store.marketCapData}
+          onTokenClick={handleTokenClick}
+          onGroupClick={handleGroupClick}
+          exchangeLabel={EXCHANGE_LABEL}
+        />
+      ),
+    }),
+  },
+  altcoin: {
+    defaultOrder: ['topGainers', 'vsBtc', 'ethBtcRatio', 'total2'],
+    createWidgets: ({ store, handleTokenClick, handleGroupClick }: WidgetContext) => ({
+      topGainers: (
+        <AltcoinTopGainers
+          tickers={store.tickers}
+          rsiData={store.rsiData}
+          marketCapData={store.marketCapData}
+          onTokenClick={handleTokenClick}
+          exchangeLabel={EXCHANGE_LABEL}
+        />
+      ),
+      vsBtc: (
+        <AltcoinVsBTC
+          tickers={store.tickers}
+          rsiData={store.rsiData}
+          marketCapData={store.marketCapData}
+          onTokenClick={handleTokenClick}
+          onTopNClick={handleGroupClick}
+          exchangeLabel={EXCHANGE_LABEL}
+        />
+      ),
+      ethBtcRatio: <EthBtcRatio />,
+      total2: <Total2MiniChart />,
+    }),
+  },
+  btc: {
+    defaultOrder: ['btcDominance', 'ahr999'],
+    createWidgets: () => ({
+      btcDominance: <BTCDominance />,
+      ahr999: <AHR999Indicator />,
+    }),
+  },
+  hlp: {
+    defaultOrder: ['hlpVault'],
+    createWidgets: () => ({
+      hlpVault: <HLPVault />,
+    }),
+  },
+};
+
+export default function HyperliquidBoard() {
+  const store = useHyperliquidStore();
+  const { tabWidgets } = useBoardWidgets(store, TAB_WIDGET_DEFS, 'hl-');
 
   return (
     <ExchangeBoard

@@ -3,7 +3,7 @@
  * Thin configuration layer that plugs into useExchangeStore
  */
 
-import { ExchangeAdapter, TickerUpdateCallback, StatusUpdateCallback, RSIData, DataManager } from '../types';
+import { ExchangeAdapter, TickerUpdateCallback, StatusUpdateCallback, RSIData, ProcessedTicker, DataManager } from '../types';
 import { OKXHybridDataManager } from '../api/okx-data-manager';
 import { fetchRSIForInstrument } from '../api/okx-rsi';
 import { fetchRSIBatchGeneric } from '../api/rsi-batch';
@@ -25,6 +25,11 @@ export const okxAdapter: ExchangeAdapter = {
     signal?: AbortSignal
   ): Promise<void> {
     return fetchRSIBatchGeneric(ids, existing, fetchRSIForInstrument, onProgress, onUpdate, tier, signal);
+  },
+
+  preFilterTickers(tickers: ProcessedTicker[]): ProcessedTicker[] {
+    // OKX: keep only USDT perpetual swaps
+    return tickers.filter(t => t.instId.includes('-USDT-'));
   },
 
   async fetchInitialData() {

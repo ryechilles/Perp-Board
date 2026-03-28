@@ -44,6 +44,11 @@ export const hyperliquidAdapter: ExchangeAdapter = {
     return { spotSymbols };
   },
 
+  preFilterTickers(tickers: ProcessedTicker[]): ProcessedTicker[] {
+    // Hyperliquid: no pre-filtering needed, all tickers are valid
+    return tickers;
+  },
+
   extractFundingFromTickers(tickers: Map<string, ProcessedTicker>): Map<string, FundingRateData> {
     const fundingRates = new Map<string, FundingRateData>();
 

@@ -384,6 +384,9 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
     defaultSettlementInterval: adapter.defaultSettlementInterval,
   }), [rsiData, marketCapData, fundingRateData, spotSymbols, listingData, adapter]);
 
+  // Exchange-specific pre-filter (stable reference via adapter)
+  const preFilter = adapter.preFilterTickers;
+
   // Filtered + sorted data (memoized)
   const filteredData = useMemo(() => {
     return filterAndSort(
@@ -394,9 +397,9 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
       filtersHook.filters,
       filtersHook.sort,
       filterCtx,
-      exchange === 'okx'
+      preFilter
     );
-  }, [tickers, filtersHook.searchTerm, filtersHook.view, favoritesHook.favorites, filtersHook.filters, filtersHook.sort, filterCtx, exchange]);
+  }, [tickers, filtersHook.searchTerm, filtersHook.view, favoritesHook.favorites, filtersHook.filters, filtersHook.sort, filterCtx, preFilter]);
 
   const getFilteredData = useCallback(() => filteredData, [filteredData]);
 

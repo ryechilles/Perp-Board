@@ -196,31 +196,8 @@ export type ColumnKey =
   | 'listDate'
   | 'hasSpot';
 
-// Column visibility settings
-export interface ColumnVisibility {
-  favorite: boolean;
-  rank: boolean;
-  logo: boolean;
-  symbol: boolean;
-  price: boolean;
-  fundingRate: boolean;
-  fundingApr: boolean;
-  fundingInterval: boolean;
-  change4h: boolean;
-  change: boolean;
-  change7d: boolean;
-  volume24h: boolean;
-  marketCap: boolean;
-  dRsiSignal: boolean;
-  wRsiSignal: boolean;
-  rsi7: boolean;
-  rsi14: boolean;
-  rsiW7: boolean;
-  rsiW14: boolean;
-  adx: boolean;
-  listDate: boolean;
-  hasSpot: boolean;
-}
+// Column visibility settings — auto-synced with ColumnKey
+export type ColumnVisibility = Record<ColumnKey, boolean>;
 
 // Column order configuration
 export interface ColumnConfig {
@@ -377,6 +354,8 @@ export interface ExchangeAdapter {
     fundingRateData?: Map<string, FundingRateData>;
   }>;
   extractFundingFromTickers?(tickers: Map<string, ProcessedTicker>): Map<string, FundingRateData>;
+  /** Pre-filter tickers before the filter pipeline (e.g. OKX keeps only USDT swaps) */
+  preFilterTickers(tickers: ProcessedTicker[]): ProcessedTicker[];
   spotSymbolFormat: 'base-usdt' | 'base';
   defaultSettlementInterval: number;
   features: {

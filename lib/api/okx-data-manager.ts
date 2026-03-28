@@ -3,22 +3,25 @@
  * Manages WebSocket connection for TOP 50 tickers + REST polling for the rest
  */
 
-import { OKXTicker, ProcessedTicker } from '../types';
+import { OKXTicker, ProcessedTicker, TickerUpdateCallback, StatusUpdateCallback } from '../types';
 import { processTicker } from '../utils';
+import { withRetry } from '../concurrency';
 import { API, TIMING, UI } from '../constants';
 
 const OKX_WS_PUBLIC = API.OKX_WS_PUBLIC;
 const OKX_REST_BASE = API.OKX_REST_BASE;
 
-export type TickerUpdateCallback = (tickers: Map<string, ProcessedTicker>) => void;
-export type StatusCallback = (status: 'connecting' | 'live' | 'error', time?: Date) => void;
+/** @deprecated Use TickerUpdateCallback from '../types' */
+export type { TickerUpdateCallback };
+/** @deprecated Use StatusUpdateCallback from '../types' */
+export type StatusCallback = StatusUpdateCallback;
 
 // Hybrid data manager: WebSocket for TOP 50 + REST polling for the rest
 export class OKXHybridDataManager {
   private ws: WebSocket | null = null;
   private tickers: Map<string, ProcessedTicker> = new Map();
   private onUpdate: TickerUpdateCallback;
-  private onStatus: StatusCallback;
+  private onStatus: StatusUpdateCallback;
   private top50InstIds: string[] = [];
   private top50Set: Set<string> = new Set(); // O(1) lookup instead of Array.includes
   private allInstIds: string[] = [];
@@ -33,7 +36,7 @@ export class OKXHybridDataManager {
   private updateScheduled = false;
   private statusPending: { status: 'connecting' | 'live' | 'error'; time?: Date } | null = null;
 
-  constructor(onUpdate: TickerUpdateCallback, onStatus: StatusCallback) {
+  constructor(onUpdate: TickerUpdateCallback, onStatus: StatusUpdateCallback) {
     this.onUpdate = onUpdate;
     this.onStatus = onStatus;
   }
@@ -71,10 +74,18 @@ export class OKXHybridDataManager {
 
   private async fetchAllTickers(): Promise<void> {
     try {
-      const response = await fetch(`${OKX_REST_BASE}/market/tickers?instType=SWAP`);
-      const data = await response.json();
+      const data = await withRetry(
+        async () => {
+          const response = await fetch(`${OKX_REST_BASE}/market/tickers?instType=SWAP`);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const json = await response.json();
+          if (json.code !== '0') throw new Error(`OKX API error: ${json.code}`);
+          return json;
+        },
+        { maxAttempts: 3, baseDelay: 1000, label: 'OKX fetchAllTickers' }
+      );
 
-      if (data.code === '0' && data.data) {
+      if (data.data) {
         const usdtSwaps: ProcessedTicker[] = [];
         const currentInstIds = new Set<string>();
 

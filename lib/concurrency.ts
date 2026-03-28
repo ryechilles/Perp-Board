@@ -1,9 +1,51 @@
 /**
  * Concurrency Utilities
- * Mutex and RateLimiter for managing API call sequencing
+ * Mutex, RateLimiter, and retry helpers for managing API call sequencing
  */
 
 import { RATE_LIMIT } from './constants';
+
+// ===========================================
+// Retry with Exponential Backoff
+// ===========================================
+
+export interface RetryOptions {
+  /** Maximum number of attempts (including the first). Default: 3 */
+  maxAttempts?: number;
+  /** Base delay in ms before the first retry. Default: 1000 */
+  baseDelay?: number;
+  /** Maximum delay cap in ms. Default: 10000 */
+  maxDelay?: number;
+  /** Optional label for log messages */
+  label?: string;
+}
+
+/**
+ * Retry a promise-returning function with exponential backoff.
+ * The first attempt runs immediately; retries use `baseDelay * 2^(attempt-1)`.
+ */
+export async function withRetry<T>(
+  fn: () => Promise<T>,
+  options: RetryOptions = {}
+): Promise<T> {
+  const { maxAttempts = 3, baseDelay = 1000, maxDelay = 10000, label = 'operation' } = options;
+
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      if (attempt === maxAttempts) break;
+
+      const delay = Math.min(baseDelay * Math.pow(2, attempt - 1), maxDelay);
+      console.warn(`[Retry] ${label} failed (attempt ${attempt}/${maxAttempts}), retrying in ${delay}ms...`);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+
+  throw lastError;
+}
 
 /**
  * Mutex class for preventing concurrent API calls
