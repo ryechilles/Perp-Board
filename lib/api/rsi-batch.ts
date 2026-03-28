@@ -10,6 +10,21 @@
 import { RSIData } from '../types';
 import { TIMING } from '../constants';
 
+/** Abortable delay — resolves immediately when the signal fires */
+function abortableDelay(ms: number, signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted) return Promise.reject(new DOMException('Aborted', 'AbortError'));
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(resolve, ms);
+    signal?.addEventListener('abort', () => {
+      clearTimeout(timer);
+      reject(new DOMException('Aborted', 'AbortError'));
+    }, { once: true });
+  });
+}
+
+/** Batch size for grouped setState updates */
+const BATCH_SIZE = 10;
+
 /**
  * Generic RSI batch fetcher with tiered priority
  *
@@ -18,12 +33,16 @@ import { TIMING } from '../constants';
  * - 51-100 (tier2): medium speed (300ms delay)
  * - 101+ (tier3): slower (500ms delay)
  *
+ * Supports AbortSignal for cancellation (instant response on exchange switch)
+ * and batched onUpdate calls to reduce setState pressure on the main thread.
+ *
  * @param instruments - Array of instrument IDs to fetch (order matters: index determines tier)
  * @param existingData - Map of existing RSI data keyed by instrument ID
  * @param fetchSingle - Function to fetch RSI for a single instrument
  * @param onProgress - Callback for progress updates (e.g., "Loading Top 50: 5/10")
  * @param onUpdate - Callback when new data is fetched (called with instId and RSIData)
  * @param tier - Optional: fetch specific tier only ('top50', 'tier2', 'tier3', or 'all'/undefined)
+ * @param signal - Optional AbortSignal to cancel the batch mid-flight
  */
 export async function fetchRSIBatchGeneric(
   instruments: string[],
@@ -31,7 +50,8 @@ export async function fetchRSIBatchGeneric(
   fetchSingle: (id: string) => Promise<RSIData | null>,
   onProgress: (text: string) => void,
   onUpdate: (id: string, data: RSIData) => void,
-  tier?: 'top50' | 'tier2' | 'tier3' | 'all'
+  tier?: 'top50' | 'tier2' | 'tier3' | 'all',
+  signal?: AbortSignal
 ): Promise<void> {
   const now = Date.now();
 
@@ -59,50 +79,62 @@ export async function fetchRSIBatchGeneric(
   const tier2List = tier === 'all' || tier === 'tier2' || !tier ? toFetch.slice(50, 100) : [];
   const tier3List = tier === 'all' || tier === 'tier3' || !tier ? toFetch.slice(100) : [];
 
-  // Tier 1: Top 50 - fastest loading
-  for (let i = 0; i < top50.length; i++) {
-    const id = top50[i];
-    onProgress(`Loading Top 50: ${i + 1}/${top50.length}`);
+  // Pending batch buffer — flushed every BATCH_SIZE items or at tier boundary
+  let pendingBatch: Array<[string, RSIData]> = [];
 
-    const rsiData = await fetchSingle(id);
-    if (rsiData) {
-      onUpdate(id, rsiData);
+  const flushBatch = () => {
+    if (pendingBatch.length === 0) return;
+    const batch = pendingBatch;
+    pendingBatch = [];
+    // Single onUpdate per batch → one setState instead of N
+    for (const [id, data] of batch) {
+      onUpdate(id, data);
     }
+  };
 
-    if (i < top50.length - 1) {
-      await new Promise(r => setTimeout(r, TIMING.RSI_DELAY_TOP50));
+  /** Process one tier's worth of instruments */
+  async function processTier(
+    items: string[],
+    label: string,
+    delayMs: number
+  ): Promise<void> {
+    for (let i = 0; i < items.length; i++) {
+      // ── Abort check ──
+      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+
+      const id = items[i];
+      onProgress(`Loading ${label}: ${i + 1}/${items.length}`);
+
+      const rsiData = await fetchSingle(id);
+      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+
+      if (rsiData) {
+        pendingBatch.push([id, rsiData]);
+        if (pendingBatch.length >= BATCH_SIZE) {
+          flushBatch();
+        }
+      }
+
+      if (i < items.length - 1) {
+        await abortableDelay(delayMs, signal);
+      }
     }
+    // Flush remaining at tier boundary
+    flushBatch();
   }
 
-  // Tier 2: 51-100 - medium speed
-  for (let i = 0; i < tier2List.length; i++) {
-    const id = tier2List[i];
-    onProgress(`Loading 51-100: ${i + 1}/${tier2List.length}`);
-
-    const rsiData = await fetchSingle(id);
-    if (rsiData) {
-      onUpdate(id, rsiData);
+  try {
+    await processTier(top50, 'Top 50', TIMING.RSI_DELAY_TOP50);
+    await processTier(tier2List, '51-100', TIMING.RSI_DELAY_TIER2);
+    await processTier(tier3List, 'others', TIMING.RSI_DELAY_TIER3);
+    onProgress('');
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      // Flush whatever we collected so far — no data loss
+      flushBatch();
+      onProgress('');
+      return; // Silent exit, not an error
     }
-
-    if (i < tier2List.length - 1) {
-      await new Promise(r => setTimeout(r, TIMING.RSI_DELAY_TIER2));
-    }
+    throw err; // Re-throw genuine errors
   }
-
-  // Tier 3: 101+ - slower
-  for (let i = 0; i < tier3List.length; i++) {
-    const id = tier3List[i];
-    onProgress(`Loading others: ${i + 1}/${tier3List.length}`);
-
-    const rsiData = await fetchSingle(id);
-    if (rsiData) {
-      onUpdate(id, rsiData);
-    }
-
-    if (i < tier3List.length - 1) {
-      await new Promise(r => setTimeout(r, TIMING.RSI_DELAY_TIER3));
-    }
-  }
-
-  onProgress('');
 }

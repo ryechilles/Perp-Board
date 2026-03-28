@@ -21,9 +21,10 @@ export const okxAdapter: ExchangeAdapter = {
     existing: Map<string, RSIData>,
     onProgress: (text: string) => void,
     onUpdate: (id: string, data: RSIData) => void,
-    tier?: 'top50' | 'tier2' | 'tier3' | 'all'
+    tier?: 'top50' | 'tier2' | 'tier3' | 'all',
+    signal?: AbortSignal
   ): Promise<void> {
-    return fetchRSIBatchGeneric(ids, existing, fetchRSIForInstrument, onProgress, onUpdate, tier);
+    return fetchRSIBatchGeneric(ids, existing, fetchRSIForInstrument, onProgress, onUpdate, tier, signal);
   },
 
   async fetchInitialData() {

@@ -368,7 +368,8 @@ export interface ExchangeAdapter {
     existing: Map<string, RSIData>,
     onProgress: (text: string) => void,
     onUpdate: (id: string, data: RSIData) => void,
-    tier?: 'top50' | 'tier2' | 'tier3' | 'all'
+    tier?: 'top50' | 'tier2' | 'tier3' | 'all',
+    signal?: AbortSignal
   ): Promise<void>;
   fetchInitialData(): Promise<{
     spotSymbols: Set<string>;

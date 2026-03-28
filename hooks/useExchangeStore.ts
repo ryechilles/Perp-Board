@@ -56,6 +56,7 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
   const isFetchingRsiRef = useRef(false);
   const intervalsRef = useRef<NodeJS.Timeout[]>([]);
   const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
+  const rsiAbortRef = useRef<AbortController | null>(null);
 
   // RSI cache (exchange-specific)
   const cache = getCacheForExchange(exchange);
@@ -77,15 +78,33 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
     }
   }, [cache.rsi]);
 
-  // Update RSI data for single instrument
-  const updateRsiData = useCallback((instId: string, data: RSIData) => {
+  // Batched RSI data updater — collects updates and flushes in a single setState via microtask
+  const rsiBatchBufferRef = useRef<Array<[string, RSIData]>>([]);
+  const rsiBatchScheduledRef = useRef(false);
+
+  const flushRsiBatch = useCallback(() => {
+    rsiBatchScheduledRef.current = false;
+    const batch = rsiBatchBufferRef.current;
+    if (batch.length === 0) return;
+    rsiBatchBufferRef.current = [];
     setRsiData(prev => {
       const newMap = new Map(prev);
-      newMap.set(instId, data);
+      for (const [id, data] of batch) {
+        newMap.set(id, data);
+      }
       saveRsiCacheDebounced(newMap);
       return newMap;
     });
   }, [saveRsiCacheDebounced]);
+
+  const updateRsiData = useCallback((instId: string, data: RSIData) => {
+    rsiBatchBufferRef.current.push([instId, data]);
+    if (!rsiBatchScheduledRef.current) {
+      rsiBatchScheduledRef.current = true;
+      // Flush on next microtask — batches all synchronous onUpdate calls into one setState
+      Promise.resolve().then(flushRsiBatch);
+    }
+  }, [flushRsiBatch]);
 
   // Get sorted instrument IDs by market cap rank
   const getSortedInstIds = useCallback((tickerMap: Map<string, ProcessedTicker>) => {
@@ -103,28 +122,36 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
       .map(t => t.instId);
   }, [marketCapData, exchange]);
 
-  // Fetch RSI (all tiers)
+  // Fetch RSI (all tiers) — cancellable via AbortController
   const fetchRsiForVisible = useCallback(async (tickerMap: Map<string, ProcessedTicker>) => {
     if (isFetchingRsiRef.current) return;
+    // Abort any previous RSI fetch before starting a new one
+    rsiAbortRef.current?.abort();
+    const controller = new AbortController();
+    rsiAbortRef.current = controller;
     isFetchingRsiRef.current = true;
     try {
       const instIds = getSortedInstIds(tickerMap);
-      await adapter.fetchRSIBatch(instIds, rsiData, setRsiProgress, updateRsiData);
+      await adapter.fetchRSIBatch(instIds, rsiData, setRsiProgress, updateRsiData, undefined, controller.signal);
     } finally {
       isFetchingRsiRef.current = false;
     }
   }, [getSortedInstIds, rsiData, updateRsiData, adapter]);
 
-  // Fetch RSI for specific tier
+  // Fetch RSI for specific tier — cancellable via AbortController
   const fetchRsiForTier = useCallback(async (
     tickerMap: Map<string, ProcessedTicker>,
     tier: 'top50' | 'tier2' | 'tier3'
   ) => {
     if (isFetchingRsiRef.current) return;
+    // Abort any previous RSI fetch before starting a new one
+    rsiAbortRef.current?.abort();
+    const controller = new AbortController();
+    rsiAbortRef.current = controller;
     isFetchingRsiRef.current = true;
     try {
       const instIds = getSortedInstIds(tickerMap);
-      await adapter.fetchRSIBatch(instIds, rsiData, setRsiProgress, updateRsiData, tier);
+      await adapter.fetchRSIBatch(instIds, rsiData, setRsiProgress, updateRsiData, tier, controller.signal);
     } finally {
       isFetchingRsiRef.current = false;
     }
@@ -304,8 +331,13 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
     }
   }, [adapter, fetchRsiForVisible, fetchRsiForTier, cache.rsi]);
 
-  // Cleanup
+  // Cleanup — aborts in-flight RSI fetches instantly
   const cleanup = useCallback(() => {
+    // ── Abort RSI fetch loop immediately ──
+    rsiAbortRef.current?.abort();
+    rsiAbortRef.current = null;
+    isFetchingRsiRef.current = false;
+
     intervalsRef.current.forEach(clearInterval);
     intervalsRef.current = [];
     timeoutsRef.current.forEach(clearTimeout);
@@ -314,6 +346,10 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
       clearTimeout(saveRsiCacheTimeoutRef.current);
       saveRsiCacheTimeoutRef.current = null;
     }
+    // Flush any pending RSI batch buffer to avoid data loss
+    rsiBatchBufferRef.current = [];
+    rsiBatchScheduledRef.current = false;
+
     if (adapter.features.maFlow) {
       maFlowHook.cleanup();
     }
