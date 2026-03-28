@@ -410,10 +410,10 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
 
   const getRsiAverages = useCallback(() => rsiAverages, [rsiAverages]);
 
-  // Quick filter counts (memoized)
+  // Quick filter counts (memoized, filtered by current asset category)
   const quickFilterCounts = useMemo(() => {
-    return calculateQuickFilterCounts(tickers, rsiData);
-  }, [tickers, rsiData]);
+    return calculateQuickFilterCounts(tickers, rsiData, filtersHook.filters.assetCategory);
+  }, [tickers, rsiData, filtersHook.filters.assetCategory]);
 
   const getQuickFilterCounts = useCallback(() => quickFilterCounts, [quickFilterCounts]);
 

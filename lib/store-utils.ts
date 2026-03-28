@@ -4,7 +4,8 @@
  * These are stateless and can be used by any store without risk.
  */
 
-import { ProcessedTicker, RSIData, MarketCapData } from './types';
+import { ProcessedTicker, RSIData, MarketCapData, AssetCategory } from './types';
+import { STOCK_SYMBOLS } from './constants';
 
 // ===========================================
 // RSI Averages (Top 100 by Market Cap)
@@ -123,12 +124,22 @@ export interface QuickFilterCounts {
 
 /**
  * Count tokens in overbought/oversold states (D-RSI7 & D-RSI14 both > 75 or < 25)
+ * Filtered by asset category when specified
  */
 export function calculateQuickFilterCounts(
   tickers: Map<string, ProcessedTicker>,
-  rsiData: Map<string, RSIData>
+  rsiData: Map<string, RSIData>,
+  assetCategory?: AssetCategory
 ): QuickFilterCounts {
-  const allTickers = Array.from(tickers.values());
+  let allTickers = Array.from(tickers.values());
+
+  // Filter by asset category if specified
+  if (assetCategory) {
+    allTickers = allTickers.filter(t => {
+      const isStock = STOCK_SYMBOLS.has(t.baseSymbol);
+      return assetCategory === 'stock' ? isStock : !isStock;
+    });
+  }
 
   const overbought = allTickers.filter(t => {
     const rsi = rsiData.get(t.instId);
