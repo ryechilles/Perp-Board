@@ -12,6 +12,7 @@ import {
   Filters,
   SortConfig,
   RsiSignalType,
+  AssetCategory,
 } from './types';
 import { MEME_TOKENS } from './constants';
 import { getRsiSignal } from './utils';
@@ -345,6 +346,23 @@ export function applyWRsiSignalFilter(
   });
 }
 
+/**
+ * Apply asset category filter (crypto vs stock)
+ * Uses instCategory from OKX instruments data stored in listingData
+ */
+export function applyAssetCategoryFilter(
+  data: ProcessedTicker[],
+  assetCategory: AssetCategory | undefined,
+  listingData?: Map<string, ListingData>
+): ProcessedTicker[] {
+  if (!assetCategory || !listingData) return data;
+
+  return data.filter(t => {
+    const isStock = listingData.get(t.instId)?.instCategory === 'Stocks';
+    return assetCategory === 'stock' ? isStock : !isStock;
+  });
+}
+
 // ===========================================
 // Sorting
 // ===========================================
@@ -465,6 +483,7 @@ export function filterAndSort(
   filtered = applyHasSpotFilter(filtered, filters.hasSpot, ctx.spotSymbols, ctx.spotSymbolFormat);
   filtered = applyDRsiSignalFilter(filtered, filters.dRsiSignal, ctx.rsiData);
   filtered = applyWRsiSignalFilter(filtered, filters.wRsiSignal, ctx.rsiData);
+  filtered = applyAssetCategoryFilter(filtered, filters.assetCategory, ctx.listingData);
 
   // Sort
   filtered = applySorting(filtered, sort, ctx);

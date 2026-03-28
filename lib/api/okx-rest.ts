@@ -65,7 +65,8 @@ export async function fetchListingDates(): Promise<Map<string, ListingData>> {
       data.data.forEach((inst: OKXInstrument) => {
         if (inst.listTime) {
           result.set(inst.instId, {
-            listTime: parseInt(inst.listTime, 10)
+            listTime: parseInt(inst.listTime, 10),
+            instCategory: inst.instCategory,
           });
         }
       });

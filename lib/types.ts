@@ -110,8 +110,12 @@ export interface OKXInstrument {
   lotSz?: string;
   minSz?: string;
   ctType?: string;
+  instCategory?: string; // 'Stocks' for equity perpetuals, undefined/other for crypto
   state: string;
 }
+
+// Asset category type
+export type AssetCategory = 'crypto' | 'stock';
 
 // OKX Funding Rate data
 export interface OKXFundingRate {
@@ -161,6 +165,7 @@ export interface FundingRateData {
 // Listing date data
 export interface ListingData {
   listTime: number; // Unix timestamp in milliseconds
+  instCategory?: string; // 'Stocks' for equity perpetuals
 }
 
 // Market cap data from CoinGecko
@@ -235,6 +240,7 @@ export interface Filters {
   isMeme?: string;   // Meme token filter
   dRsiSignal?: RsiSignalType[];  // D-RSI Avg Signal filter (multi-select)
   wRsiSignal?: RsiSignalType[];  // W-RSI Avg Signal filter (multi-select)
+  assetCategory?: AssetCategory;  // 'crypto' or 'stock' filter
 }
 
 // Sort configuration

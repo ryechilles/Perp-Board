@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Search, Settings, RotateCcw } from 'lucide-react';
-import { ColumnVisibility, ColumnKey, Filters, RsiSignalType } from '@/lib/types';
+import { ColumnVisibility, ColumnKey, Filters, RsiSignalType, AssetCategory } from '@/lib/types';
 import { getDefaultColumns } from '@/lib/defaults';
 import { RsiFilter } from './RsiFilter';
 import { PillButtonGroup, PillButtonOption, Button, Tabs, TabsList, TabsTrigger } from '@/components/ui';
 
 // Quick filter types
-type QuickFilter = 'all' | 'top25' | 'meme' | 'noSpot' | 'newListed' | 'overbought' | 'oversold';
+type QuickFilter = 'all' | 'crypto' | 'stock' | 'top25' | 'meme' | 'noSpot' | 'newListed' | 'overbought' | 'oversold';
 
 interface ControlsProps {
   columns: ColumnVisibility;
@@ -82,6 +82,8 @@ export function Controls({
     if (filters.listAge === '<180d' && !filters.rsi7 && !filters.rsi14) return 'newListed';
     if (filters.rsi7 === '>75' && filters.rsi14 === '>75') return 'overbought';
     if (filters.rsi7 === '<25' && filters.rsi14 === '<25') return 'oversold';
+    if (filters.assetCategory === 'crypto') return 'crypto';
+    if (filters.assetCategory === 'stock') return 'stock';
     if (Object.values(filters).every(v => v === undefined || v === '' || (Array.isArray(v) && v.length === 0))) return 'all';
     return 'all';
   };
@@ -93,6 +95,14 @@ export function Controls({
       case 'all':
         onFiltersChange({});
         setTempFilters({});
+        break;
+      case 'crypto':
+        onFiltersChange({ assetCategory: 'crypto' });
+        setTempFilters({ assetCategory: 'crypto' });
+        break;
+      case 'stock':
+        onFiltersChange({ assetCategory: 'stock' });
+        setTempFilters({ assetCategory: 'stock' });
         break;
       case 'top25':
         onFiltersChange({ rank: '1-25' });
@@ -156,8 +166,22 @@ export function Controls({
     {
       value: 'all',
       label: 'All',
-      tooltip: 'Show all tokens'
+      tooltip: 'Show all tokens (crypto + stocks)'
     },
+    // Only show Crypto/Stock split for OKX (which has equity perpetuals)
+    ...(exchange === 'okx' ? [
+      {
+        value: 'crypto' as QuickFilter,
+        label: 'Crypto',
+        tooltip: 'Crypto perpetuals only'
+      },
+      {
+        value: 'stock' as QuickFilter,
+        label: '📈 Stock',
+        activeColor: 'text-blue-500',
+        tooltip: 'Stock/equity perpetuals only (AAPL, TSLA, etc.)'
+      },
+    ] : []),
     {
       value: 'top25',
       label: 'Top 25',
