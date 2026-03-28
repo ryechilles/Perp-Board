@@ -180,10 +180,17 @@ export function Controls({
 
   const handleAssetCategoryChange = (value: string) => {
     const category = value as 'crypto' | 'stock';
-    // Preserve other quick filters, just change assetCategory
-    const newFilters = { ...filters, assetCategory: category as AssetCategory };
-    onFiltersChange(newFilters);
-    setTempFilters(newFilters);
+    // If clicking the same category again, reset all quick filters
+    if (category === activeAssetCategory) {
+      const resetFilters = { assetCategory: category as AssetCategory };
+      onFiltersChange(resetFilters);
+      setTempFilters(resetFilters);
+    } else {
+      // Switching to a different category — reset quick filters too for a clean slate
+      const newFilters = { assetCategory: category as AssetCategory };
+      onFiltersChange(newFilters);
+      setTempFilters(newFilters);
+    }
     onScrollToTop?.();
   };
 
@@ -335,20 +342,24 @@ export function Controls({
           </Tabs>
         )}
 
-        {/* Main Quick Filters */}
-        <PillButtonGroup
-          options={mainFilterOptions}
-          value={activeQuickFilter}
-          onChange={handleQuickFilter}
-        />
+        {/* Main Quick Filters — hidden in Stock mode */}
+        {activeAssetCategory !== 'stock' && (
+          <PillButtonGroup
+            options={mainFilterOptions}
+            value={activeQuickFilter}
+            onChange={handleQuickFilter}
+          />
+        )}
 
-        {/* RSI Quick Filters */}
-        <PillButtonGroup
-          options={rsiFilterOptions}
-          value={activeQuickFilter}
-          onChange={handleQuickFilter}
-          className="hidden md:inline-flex"
-        />
+        {/* RSI Quick Filters — hidden in Stock mode */}
+        {activeAssetCategory !== 'stock' && (
+          <PillButtonGroup
+            options={rsiFilterOptions}
+            value={activeQuickFilter}
+            onChange={handleQuickFilter}
+            className="hidden md:inline-flex"
+          />
+        )}
 
         {/* Settings icon */}
         <Button
