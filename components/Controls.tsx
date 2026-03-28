@@ -324,17 +324,11 @@ export function Controls({
         {/* Crypto / Stock toggle */}
         {exchange === 'okx' && (
           <Tabs value={activeAssetCategory} onValueChange={handleAssetCategoryChange}>
-            <TabsList className="bg-transparent h-8 p-0 gap-0 border border-border rounded-md">
-              <TabsTrigger
-                value="crypto"
-                className="h-full rounded-r-none rounded-l-[5px] px-3 py-1 text-xs font-medium data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-none data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground"
-              >
+            <TabsList>
+              <TabsTrigger value="crypto">
                 Crypto
               </TabsTrigger>
-              <TabsTrigger
-                value="stock"
-                className="h-full rounded-l-none rounded-r-[5px] px-3 py-1 text-xs font-medium data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-none data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground"
-              >
+              <TabsTrigger value="stock">
                 Stock
               </TabsTrigger>
             </TabsList>
