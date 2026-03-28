@@ -4,7 +4,8 @@ import { memo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { APP_CONFIG } from '@/lib/config';
-import { Button, ThemeToggle } from '@/components/ui';
+import { ThemeToggle } from '@/components/ui';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // P Logo SVG Component - matches the new flat minimal logo design
 function PerpLogo({ className = "w-7 h-7" }: { className?: string }) {
@@ -105,26 +106,24 @@ export const Header = memo(function Header() {
           </div>
         </div>
 
-        {/* Right: Theme Toggle + Exchange Buttons */}
+        {/* Right: Theme Toggle + Exchange Tabs */}
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          {EXCHANGES.map((exchange) => {
-            const isActive = pathname === exchange.href || pathname.startsWith(exchange.href + '/');
-            const Logo = exchange.logo;
-            return (
-              <Button
-                key={exchange.id}
-                variant={isActive ? 'default' : 'secondary'}
-                size="sm"
-                asChild
-              >
-                <Link href={exchange.href}>
-                  <Logo className="w-4 h-4" />
-                  {exchange.label}
-                </Link>
-              </Button>
-            );
-          })}
+          <Tabs value={EXCHANGES.find(e => pathname === e.href || pathname.startsWith(e.href + '/'))?.id ?? 'okx'}>
+            <TabsList>
+              {EXCHANGES.map((exchange) => {
+                const Logo = exchange.logo;
+                return (
+                  <TabsTrigger key={exchange.id} value={exchange.id} asChild>
+                    <Link href={exchange.href} className="flex items-center gap-1.5">
+                      <Logo className="w-4 h-4" />
+                      {exchange.label}
+                    </Link>
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+          </Tabs>
         </div>
       </div>
     </header>
