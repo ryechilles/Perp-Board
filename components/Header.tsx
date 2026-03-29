@@ -1,8 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { APP_CONFIG } from '@/lib/config';
 import { ThemeToggle } from '@/components/ui';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -93,6 +92,16 @@ const EXCHANGES = [
 
 export const Header = memo(function Header() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const activeExchange = EXCHANGES.find(e => pathname === e.href || pathname.startsWith(e.href + '/'))?.id ?? 'okx';
+
+  const handleExchangeChange = (value: string) => {
+    const exchange = EXCHANGES.find(e => e.id === value);
+    if (exchange) {
+      router.push(exchange.href);
+    }
+  };
 
   return (
     <header className="px-4 sm:px-6 py-2 flex-shrink-0">
@@ -109,16 +118,14 @@ export const Header = memo(function Header() {
         {/* Right: Theme Toggle + Exchange Tabs */}
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Tabs value={EXCHANGES.find(e => pathname === e.href || pathname.startsWith(e.href + '/'))?.id ?? 'okx'}>
+          <Tabs value={activeExchange} onValueChange={handleExchangeChange}>
             <TabsList>
               {EXCHANGES.map((exchange) => {
                 const Logo = exchange.logo;
                 return (
-                  <TabsTrigger key={exchange.id} value={exchange.id} asChild>
-                    <Link href={exchange.href} className="flex items-center gap-1.5">
-                      <Logo className="w-4 h-4" />
-                      {exchange.label}
-                    </Link>
+                  <TabsTrigger key={exchange.id} value={exchange.id} className="flex items-center gap-1.5">
+                    <Logo className="w-4 h-4" />
+                    {exchange.label}
                   </TabsTrigger>
                 );
               })}
