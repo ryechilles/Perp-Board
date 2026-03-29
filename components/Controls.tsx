@@ -375,7 +375,7 @@ export function Controls({
           ref={customizeButtonRef}
           variant="ghost"
           size="icon"
-          className="h-8 w-8"
+          className="h-control-default w-8"
           onClick={() => setShowCustomizePanel(!showCustomizePanel)}
           aria-label="Toggle settings panel"
           aria-expanded={showCustomizePanel}
@@ -436,7 +436,7 @@ export function Controls({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className="h-control-default w-8"
                 onClick={() => {
                   if (customizeTab === 'columns') {
                     onColumnsPreset('default');

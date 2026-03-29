@@ -61,6 +61,28 @@ module.exports = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      height: {
+        'control-compact': 'var(--control-compact)',     /* 28px */
+        'control-default': 'var(--control-default)',     /* 32px */
+        'control-prominent': 'var(--control-prominent)', /* 36px */
+      },
+      minWidth: {
+        'control-compact': 'var(--control-compact)',
+        'control-default': 'var(--control-default)',
+        'control-prominent': 'var(--control-prominent)',
+      },
+      spacing: {
+        'widget-header-py': 'var(--widget-header-py)',
+        'widget-header-px-sm': 'var(--widget-header-px-sm)',
+        'widget-header-px-lg': 'var(--widget-header-px-lg)',
+        'widget-content-sm': 'var(--widget-content-sm)',
+        'widget-content-lg': 'var(--widget-content-lg)',
+      },
+      gap: {
+        'tight': 'var(--gap-tight)',
+        'control': 'var(--gap-default)',
+        'section': 'var(--gap-loose)',
+      },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },

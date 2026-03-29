@@ -20,14 +20,14 @@ export function TimeFrameSelector({ value, onChange }: TimeFrameSelectorProps) {
       value={value}
       onValueChange={(v) => v && onChange(v as TimeFrame)}
       size="sm"
-      className="gap-0.5"
+      className="gap-tight"
     >
       {(['1h', '4h', '24h'] as TimeFrame[]).map((tf) => (
         <ToggleGroupItem
           key={tf}
           value={tf}
           onClick={(e) => e.stopPropagation()}
-          className="px-2.5 py-1 text-xs data-[state=on]:bg-background data-[state=on]:shadow-sm"
+          className="h-control-compact px-2.5 text-xs data-[state=on]:bg-background data-[state=on]:shadow-sm"
         >
           {tf}
         </ToggleGroupItem>

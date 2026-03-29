@@ -86,10 +86,10 @@ export function PillButtonGroup<T extends string = string>(props: PillButtonGrou
 
   const [hoveredValue, setHoveredValue] = useState<T | null>(null);
 
-  // Size-based styles using shadcn conventions
+  // Size-based styles using design token heights
   const sizeStyles = {
-    sm: 'h-7 px-2.5 text-xs',
-    md: 'h-8 px-3 text-sm',
+    sm: 'h-control-compact px-2.5 text-xs',
+    md: 'h-control-default px-3 text-sm',
   };
 
   // Check if a value is active

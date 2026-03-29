@@ -78,7 +78,7 @@ export function LargeWidget({
       )}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-950/[0.10] dark:border-white/[0.10]">
+      <div className="flex items-center justify-between px-widget-header-px-lg py-widget-header-py border-b border-gray-950/[0.10] dark:border-white/[0.10]">
         <div className="flex items-center gap-3 min-w-0">
           {icon && (
             <span className="text-muted-foreground flex-shrink-0">{icon}</span>
@@ -101,7 +101,7 @@ export function LargeWidget({
       <div
         className={cn(
           'flex-1',
-          padded && 'p-5',
+          padded && 'p-widget-content-lg',
           scrollable && 'overflow-auto'
         )}
       >
@@ -116,7 +116,7 @@ export function LargeWidget({
 
       {/* Footer */}
       {footer && (
-        <div className="px-5 py-3 border-t border-gray-950/[0.10] dark:border-white/[0.10] text-sm text-muted-foreground">
+        <div className="px-widget-header-px-lg py-widget-header-py border-t border-gray-950/[0.10] dark:border-white/[0.10] text-sm text-muted-foreground">
           {footer}
         </div>
       )}

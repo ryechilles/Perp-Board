@@ -26,6 +26,47 @@
     --input: 0 0% 90%;
     --ring: 0 0% 10%;
     --radius: 0.5rem;
+
+    /* ── Spacing & Sizing Tokens ─────────────────────────────
+     * Based on 4px grid. All interactive element heights and
+     * widget spacing derive from this scale.
+     *
+     * Control Heights (interactive elements):
+     *   compact  = 28px — widget-internal controls, time selectors
+     *   default  = 32px — standard filters, tabs, segmented controls
+     *   prominent = 36px — primary actions, standalone buttons
+     *
+     * Widget Header Padding:
+     *   Uses consistent vertical rhythm across all widget sizes.
+     *   Total header height = padding-top + control-height + padding-bottom
+     *   Small widget:  12px + control + 12px
+     *   Large widget:  12px + control + 12px  (same rhythm, larger px for content area)
+     *
+     * Content Padding:
+     *   sm = 16px — small widgets
+     *   md = 20px — large widgets
+     * ──────────────────────────────────────────────────────── */
+
+    /* Control heights */
+    --control-compact: 1.75rem;   /* 28px — widget internal */
+    --control-default: 2rem;      /* 32px — standard controls */
+    --control-prominent: 2.25rem; /* 36px — primary actions */
+
+    /* Widget header padding (vertical) — unified across sizes */
+    --widget-header-py: 0.75rem;  /* 12px — consistent vertical rhythm */
+
+    /* Widget header padding (horizontal) */
+    --widget-header-px-sm: 1rem;  /* 16px — small widgets */
+    --widget-header-px-lg: 1.25rem; /* 20px — large widgets */
+
+    /* Widget content padding */
+    --widget-content-sm: 1rem;    /* 16px */
+    --widget-content-lg: 1.25rem; /* 20px */
+
+    /* Gaps */
+    --gap-tight: 0.25rem;   /* 4px — between controls in a group */
+    --gap-default: 0.5rem;  /* 8px — between elements */
+    --gap-loose: 0.75rem;   /* 12px — between sections */
   }
 
   .dark {
