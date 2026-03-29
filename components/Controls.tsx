@@ -5,7 +5,7 @@ import { Search, Settings, RotateCcw } from 'lucide-react';
 import { ColumnVisibility, ColumnKey, Filters, RsiSignalType, AssetCategory } from '@/lib/types';
 import { getDefaultColumns } from '@/lib/defaults';
 import { RsiFilter } from './RsiFilter';
-import { PillButtonGroup, PillButtonOption, Button, Tabs, TabsList, TabsTrigger } from '@/components/ui';
+import { PillButtonGroup, PillButtonOption, Button } from '@/components/ui';
 
 // Quick filter types
 type QuickFilter = 'all' | 'crypto' | 'stock' | 'top25' | 'meme' | 'noSpot' | 'newListed' | 'overbought' | 'oversold';
@@ -194,6 +194,18 @@ export function Controls({
     onScrollToTop?.();
   };
 
+  // Asset category options (Crypto / Stock toggle)
+  const assetCategoryOptions: PillButtonOption<string>[] = [
+    { value: 'crypto', label: 'Crypto' },
+    { value: 'stock', label: 'Stock' },
+  ];
+
+  // Customize panel tab options
+  const customizePanelOptions: PillButtonOption<string>[] = [
+    { value: 'columns', label: hasNonDefaultColumns ? 'Columns •' : 'Columns' },
+    { value: 'filters', label: hasFilters ? 'Filters •' : 'Filters' },
+  ];
+
   // Main filter options - using PillButtonGroup template
   const mainFilterOptions = useMemo((): PillButtonOption<QuickFilter>[] => [
     {
@@ -337,20 +349,11 @@ export function Controls({
       <div className="flex items-center gap-4 relative z-[60]">
         {/* Crypto / Stock toggle */}
         {exchange === 'okx' && (
-          <Tabs value={activeAssetCategory} onValueChange={handleAssetCategoryChange}>
-            <TabsList>
-              <TabsTrigger value="crypto" onClick={() => {
-                if (activeAssetCategory === 'crypto') handleAssetCategoryChange('crypto');
-              }}>
-                Crypto
-              </TabsTrigger>
-              <TabsTrigger value="stock" onClick={() => {
-                if (activeAssetCategory === 'stock') handleAssetCategoryChange('stock');
-              }}>
-                Stock
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <PillButtonGroup
+            options={assetCategoryOptions}
+            value={activeAssetCategory}
+            onChange={handleAssetCategoryChange}
+          />
         )}
 
         {/* Main Quick Filters — hidden in Stock mode */}
@@ -416,22 +419,11 @@ export function Controls({
         <div className="h-full flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-950/[0.10] dark:border-white/[0.10]">
-            <Tabs value={customizeTab} onValueChange={(v) => setCustomizeTab(v as 'columns' | 'filters')}>
-              <TabsList>
-                <TabsTrigger
-                  value="columns"
-                  className={hasNonDefaultColumns && customizeTab !== 'columns' ? 'text-primary' : ''}
-                >
-                  Columns {hasNonDefaultColumns && <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary ml-1" />}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="filters"
-                  className={hasFilters && customizeTab !== 'filters' ? 'text-primary' : ''}
-                >
-                  Filters {hasFilters && <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary ml-1" />}
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <PillButtonGroup
+              options={customizePanelOptions}
+              value={customizeTab}
+              onChange={(v) => setCustomizeTab(v as 'columns' | 'filters')}
+            />
             {(hasFilters || hasNonDefaultColumns) && (
               <Button
                 variant="ghost"
