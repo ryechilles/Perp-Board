@@ -60,7 +60,7 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
   const disposedRef = useRef(false);
 
   // RSI cache (exchange-specific)
-  const cache = getCacheForExchange(exchange);
+  const cache = useMemo(() => getCacheForExchange(exchange), [exchange]);
   const saveRsiCacheTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const saveRsiCacheDebounced = useCallback((rsiMap: Map<string, RSIData>) => {
     if (saveRsiCacheTimeoutRef.current) {

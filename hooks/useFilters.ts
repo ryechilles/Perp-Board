@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { Filters, SortConfig } from '@/lib/types';
 import { getCacheForExchange } from '@/lib/cache';
 
@@ -8,7 +8,7 @@ import { getCacheForExchange } from '@/lib/cache';
  * Hook for managing filters, sorting, search, and view mode
  */
 export function useFilters(exchange: 'okx' | 'hyperliquid' = 'okx', onFilterChange?: () => void) {
-  const cache = getCacheForExchange(exchange);
+  const cache = useMemo(() => getCacheForExchange(exchange), [exchange]);
   const [filters, setFiltersState] = useState<Filters>({});
   const [sort, setSort] = useState<SortConfig>({ column: 'rank', direction: 'asc' });
   const [view, setViewState] = useState<'market' | 'favorites'>('market');

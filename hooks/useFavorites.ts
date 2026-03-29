@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { getCacheForExchange } from '@/lib/cache';
 
 /**
  * Hook for managing favorite tokens
  */
 export function useFavorites(exchange: 'okx' | 'hyperliquid' = 'okx') {
-  const cache = getCacheForExchange(exchange);
+  const cache = useMemo(() => getCacheForExchange(exchange), [exchange]);
   const [favorites, setFavorites] = useState<string[]>([]);
 
   // Load favorites from cache on mount

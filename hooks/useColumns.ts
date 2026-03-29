@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { ColumnVisibility, ColumnKey } from '@/lib/types';
 import { isMobile } from '@/lib/utils';
 import { DEFAULT_COLUMN_ORDER, getDefaultColumns } from '@/lib/defaults';
@@ -14,7 +14,7 @@ const DEFAULT_COLUMNS: ColumnVisibility = getDefaultColumns(isMobile());
  * Hook for managing column visibility and order
  */
 export function useColumns(exchange: 'okx' | 'hyperliquid' = 'okx') {
-  const cache = getCacheForExchange(exchange);
+  const cache = useMemo(() => getCacheForExchange(exchange), [exchange]);
   const [columns, setColumns] = useState<ColumnVisibility>(DEFAULT_COLUMNS);
   const [columnOrder, setColumnOrder] = useState<ColumnKey[]>(DEFAULT_COLUMN_ORDER);
 
