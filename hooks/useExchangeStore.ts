@@ -13,7 +13,7 @@ import {
 } from '@/lib/types';
 import { fetchMarketCapData } from '@/lib/api/coingecko';
 import { filterAndSort, FilterContext } from '@/lib/filters';
-import { calculateRsiAverages, calculateTopMovers, calculateQuickFilterCounts } from '@/lib/store-utils';
+import { calculateRsiAverages, calculateTopMovers, calculateQuickFilterCounts, pruneMapByKeys } from '@/lib/store-utils';
 import { TIMING, MA_FLOW } from '@/lib/constants';
 import { getCacheForExchange, getMarketCapCache, setMarketCapCache, checkVersionAndClearCache } from '@/lib/cache';
 
@@ -107,42 +107,22 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
     }
   }, [flushRsiBatch]);
 
-  // Get sorted instrument IDs by market cap rank
+  // Get sorted instrument IDs by market cap rank (uses adapter's preFilterTickers)
   const getSortedInstIds = useCallback((tickerMap: Map<string, ProcessedTicker>) => {
-    return Array.from(tickerMap.values())
-      .filter(t => {
-        // OKX: filter to USDT swaps only
-        if (exchange === 'okx') return t.instId.includes('-USDT-');
-        return true;
-      })
+    const filtered = adapter.preFilterTickers(Array.from(tickerMap.values()));
+    return filtered
       .sort((a, b) => {
         const rankA = marketCapData.get(a.baseSymbol)?.rank ?? 9999;
         const rankB = marketCapData.get(b.baseSymbol)?.rank ?? 9999;
         return rankA - rankB;
       })
       .map(t => t.instId);
-  }, [marketCapData, exchange]);
+  }, [marketCapData, adapter]);
 
-  // Fetch RSI (all tiers) — cancellable via AbortController
-  const fetchRsiForVisible = useCallback(async (tickerMap: Map<string, ProcessedTicker>) => {
-    if (isFetchingRsiRef.current) return;
-    // Abort any previous RSI fetch before starting a new one
-    rsiAbortRef.current?.abort();
-    const controller = new AbortController();
-    rsiAbortRef.current = controller;
-    isFetchingRsiRef.current = true;
-    try {
-      const instIds = getSortedInstIds(tickerMap);
-      await adapter.fetchRSIBatch(instIds, rsiData, setRsiProgress, updateRsiData, undefined, controller.signal);
-    } finally {
-      isFetchingRsiRef.current = false;
-    }
-  }, [getSortedInstIds, rsiData, updateRsiData, adapter]);
-
-  // Fetch RSI for specific tier — cancellable via AbortController
-  const fetchRsiForTier = useCallback(async (
+  // Fetch RSI — cancellable via AbortController, supports optional tier filtering
+  const fetchRsi = useCallback(async (
     tickerMap: Map<string, ProcessedTicker>,
-    tier: 'top50' | 'tier2' | 'tier3'
+    tier?: 'top50' | 'tier2' | 'tier3'
   ) => {
     if (isFetchingRsiRef.current) return;
     // Abort any previous RSI fetch before starting a new one
@@ -222,31 +202,8 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
       // nothing changed (React bails out, no extra re-render).
       const validKeys = new Set(newTickers.keys());
 
-      setRsiData(prev => {
-        let hasOrphans = false;
-        for (const key of prev.keys()) {
-          if (!validKeys.has(key)) { hasOrphans = true; break; }
-        }
-        if (!hasOrphans) return prev;
-        const pruned = new Map<string, RSIData>();
-        for (const [k, v] of prev) {
-          if (validKeys.has(k)) pruned.set(k, v);
-        }
-        return pruned;
-      });
-
-      setListingData(prev => {
-        let hasOrphans = false;
-        for (const key of prev.keys()) {
-          if (!validKeys.has(key)) { hasOrphans = true; break; }
-        }
-        if (!hasOrphans) return prev;
-        const pruned = new Map<string, ListingData>();
-        for (const [k, v] of prev) {
-          if (validKeys.has(k)) pruned.set(k, v);
-        }
-        return pruned;
-      });
+      setRsiData(prev => pruneMapByKeys(prev, validKeys));
+      setListingData(prev => pruneMapByKeys(prev, validKeys));
 
       // MA Flow data is managed by its own hook — prune via ref
       pruneMAFlowRef.current(validKeys);
@@ -266,11 +223,11 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
       return;
     }
 
-    // Initial RSI fetch
+    // Initial RSI fetch (all tiers)
     const initialRsiTimeout = setTimeout(() => {
       const currentTickers = dataManagerRef.current?.getTickers();
       if (currentTickers && currentTickers.size > 0) {
-        fetchRsiForVisible(currentTickers);
+        fetchRsi(currentTickers);
       }
     }, TIMING.INITIAL_RSI_FETCH_DELAY);
     timeoutsRef.current.push(initialRsiTimeout);
@@ -279,7 +236,7 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
     const rsiTop50Interval = setInterval(() => {
       const currentTickers = dataManagerRef.current?.getTickers();
       if (currentTickers && currentTickers.size > 0) {
-        fetchRsiForTier(currentTickers, 'top50');
+        fetchRsi(currentTickers, 'top50');
       }
     }, TIMING.RSI_REFRESH_TOP50);
     intervalsRef.current.push(rsiTop50Interval);
@@ -287,7 +244,7 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
     const rsiTier2Interval = setInterval(() => {
       const currentTickers = dataManagerRef.current?.getTickers();
       if (currentTickers && currentTickers.size > 0) {
-        fetchRsiForTier(currentTickers, 'tier2');
+        fetchRsi(currentTickers, 'tier2');
       }
     }, TIMING.RSI_REFRESH_TIER2);
     intervalsRef.current.push(rsiTier2Interval);
@@ -295,7 +252,7 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
     const rsiTier3Interval = setInterval(() => {
       const currentTickers = dataManagerRef.current?.getTickers();
       if (currentTickers && currentTickers.size > 0) {
-        fetchRsiForTier(currentTickers, 'tier3');
+        fetchRsi(currentTickers, 'tier3');
       }
     }, TIMING.RSI_REFRESH_TIER3);
     intervalsRef.current.push(rsiTier3Interval);
@@ -342,7 +299,7 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
       }, TIMING.FUNDING_RATES_REFRESH);
       intervalsRef.current.push(fundingRatesInterval);
     }
-  }, [adapter, fetchRsiForVisible, fetchRsiForTier, cache.rsi]);
+  }, [adapter, fetchRsi, cache.rsi]);
 
   // Cleanup — aborts in-flight RSI fetches instantly
   const cleanup = useCallback(() => {

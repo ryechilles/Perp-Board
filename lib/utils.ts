@@ -13,12 +13,11 @@ import { twMerge } from 'tailwind-merge';
 
 // ===========================================
 // Re-exports for backward compatibility
+// TODO: Migrate consumers to import directly from '@/lib/concurrency', '@/lib/columns', '@/lib/defaults'
 // ===========================================
 
-// Concurrency (consumers should migrate to '@/lib/concurrency')
 export { Mutex, RateLimiter, withRetry } from './concurrency';
 
-// Columns & funding formatters (consumers should migrate to '@/lib/columns')
 export {
   COLUMN_DEFINITIONS,
   COLUMN_TOOLTIPS,
@@ -30,7 +29,6 @@ export {
   formatListDate,
 } from './columns';
 
-// Defaults
 export { DEFAULT_COLUMN_ORDER, DEFAULT_COLUMNS, getDefaultColumns } from './defaults';
 
 // ===========================================
@@ -331,7 +329,3 @@ export function getRsiPillStyle(rsi: number | null | undefined): string {
   return 'bg-red-500 text-white';
 }
 
-/** @deprecated Use getRsiPillStyle instead */
-export const getRsiOversoldPillStyle = getRsiPillStyle;
-/** @deprecated Use getRsiPillStyle instead */
-export const getRsiOverboughtPillStyle = getRsiPillStyle;

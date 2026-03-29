@@ -8,6 +8,27 @@ import { ProcessedTicker, RSIData, MarketCapData, AssetCategory } from './types'
 import { STOCK_SYMBOLS } from './constants';
 
 // ===========================================
+// Generic Map Pruning
+// ===========================================
+
+/**
+ * Prune orphaned entries from a Map by removing keys not in the validKeys set.
+ * Returns the original Map reference if nothing changed (React bail-out friendly).
+ */
+export function pruneMapByKeys<T>(map: Map<string, T>, validKeys: Set<string>): Map<string, T> {
+  let hasOrphans = false;
+  for (const key of map.keys()) {
+    if (!validKeys.has(key)) { hasOrphans = true; break; }
+  }
+  if (!hasOrphans) return map;
+  const pruned = new Map<string, T>();
+  for (const [k, v] of map) {
+    if (validKeys.has(k)) pruned.set(k, v);
+  }
+  return pruned;
+}
+
+// ===========================================
 // RSI Averages (Top 100 by Market Cap)
 // ===========================================
 

@@ -16,7 +16,6 @@ import {
   HyperliquidSpotMeta,
   ProcessedTicker,
   FundingRateData,
-  ListingData,
 } from '../types';
 import { API } from '../constants';
 
@@ -150,13 +149,6 @@ export async function fetchHyperliquidFundingRates(): Promise<Map<string, Fundin
   }
 
   return fundingMap;
-}
-
-// ===== Fetch listing dates =====
-// Hyperliquid meta doesn't provide listing timestamps directly
-// We return an empty map for now; could be populated from chain history later
-export async function fetchHyperliquidListingDates(): Promise<Map<string, ListingData>> {
-  return new Map<string, ListingData>();
 }
 
 // ===== Fetch spot symbols (which perp tokens have spot trading on Hyperliquid) =====

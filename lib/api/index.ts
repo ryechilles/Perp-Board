@@ -3,6 +3,15 @@
  * Re-exports all API functions for clean imports
  */
 
+// Base Data Manager
+export { BaseDataManager } from './base-data-manager';
+
+// Shared RSI Pipeline
+export { calculateRSIForInstrument, type CandleFetcher } from './rsi-core';
+
+// RSI Batch
+export { fetchRSIBatchGeneric } from './rsi-batch';
+
 // OKX Data Manager
 export { OKXHybridDataManager, type TickerUpdateCallback, type StatusCallback } from './okx-data-manager';
 
@@ -26,7 +35,6 @@ export {
   fetchHyperliquidTickers,
   fetchHyperliquidMeta,
   fetchHyperliquidFundingRates,
-  fetchHyperliquidListingDates,
   fetchHyperliquidAllMids,
   processHyperliquidTicker,
 } from './hyperliquid-rest';
