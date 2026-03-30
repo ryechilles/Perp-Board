@@ -143,7 +143,6 @@ export interface RSIData {
   rsi14: number | null;     // Daily RSI14
   rsiW7: number | null;     // Weekly RSI7
   rsiW14: number | null;    // Weekly RSI14
-  adx14: number | null;     // ADX (14-period, daily)
   change1h: number | null;  // 1-hour change %
   change4h: number | null;  // 4-hour change %
   change7d: number | null;  // 7-day change %
@@ -197,7 +196,6 @@ export type ColumnKey =
   | 'rsi14'
   | 'rsiW7'
   | 'rsiW14'
-  | 'adx'
   | 'listDate'
   | 'hasSpot';
 

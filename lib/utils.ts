@@ -7,7 +7,7 @@
  */
 
 import { OKXTicker, ProcessedTicker, RsiSignalType } from './types';
-import { MEME_TOKENS as MEME_TOKENS_SET, RSI, ADX, UI } from './constants';
+import { MEME_TOKENS as MEME_TOKENS_SET, RSI, UI } from './constants';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -182,126 +182,6 @@ export function getRsiSignal(rsi7: number | null, rsi14: number | null): RsiSign
   if (avg <= RSI.VERY_STRONG) return { signal: 'very-strong', label: 'Very Strong', pillStyle: 'bg-red-300 text-red-800', level: 7 };
   if (avg <= RSI.OVERBOUGHT) return { signal: 'overbought', label: 'Overbought', pillStyle: 'bg-red-400 text-white', level: 8 };
   return { signal: 'extreme-overbought', label: 'Extreme Overbought', pillStyle: 'bg-red-500 text-white', level: 9 };
-}
-
-// ===========================================
-// ADX Calculation & Signals (5-level trend strength)
-// ===========================================
-
-/**
- * Calculate ADX (Average Directional Index) from OHLC candle data.
- * Expects candles in chronological order (oldest first).
- * Each candle: [timestamp, open, high, low, close, ...]
- */
-export function calculateADX(candles: number[][], period: number = 14): number | null {
-  // Need at least 2*period + 1 candles for a reliable ADX
-  if (candles.length < period * 2 + 1) return null;
-
-  const highs = candles.map(c => c[2]);
-  const lows = candles.map(c => c[3]);
-  const closes = candles.map(c => c[4]);
-
-  // Step 1: Calculate True Range, +DM, -DM for each bar
-  const trList: number[] = [];
-  const plusDMList: number[] = [];
-  const minusDMList: number[] = [];
-
-  for (let i = 1; i < candles.length; i++) {
-    const highDiff = highs[i] - highs[i - 1];
-    const lowDiff = lows[i - 1] - lows[i];
-
-    const plusDM = highDiff > lowDiff && highDiff > 0 ? highDiff : 0;
-    const minusDM = lowDiff > highDiff && lowDiff > 0 ? lowDiff : 0;
-
-    const tr = Math.max(
-      highs[i] - lows[i],
-      Math.abs(highs[i] - closes[i - 1]),
-      Math.abs(lows[i] - closes[i - 1])
-    );
-
-    trList.push(tr);
-    plusDMList.push(plusDM);
-    minusDMList.push(minusDM);
-  }
-
-  if (trList.length < period * 2) return null;
-
-  // Step 2: Wilder's smoothing for first period values
-  let smoothTR = 0;
-  let smoothPlusDM = 0;
-  let smoothMinusDM = 0;
-
-  for (let i = 0; i < period; i++) {
-    smoothTR += trList[i];
-    smoothPlusDM += plusDMList[i];
-    smoothMinusDM += minusDMList[i];
-  }
-
-  // Step 3: Calculate DX values using Wilder's smoothing
-  const dxValues: number[] = [];
-
-  for (let i = period; i < trList.length; i++) {
-    if (i === period) {
-      // First smoothed values already computed above
-    } else {
-      smoothTR = smoothTR - (smoothTR / period) + trList[i];
-      smoothPlusDM = smoothPlusDM - (smoothPlusDM / period) + plusDMList[i];
-      smoothMinusDM = smoothMinusDM - (smoothMinusDM / period) + minusDMList[i];
-    }
-
-    if (smoothTR === 0) continue;
-
-    const plusDI = (smoothPlusDM / smoothTR) * 100;
-    const minusDI = (smoothMinusDM / smoothTR) * 100;
-    const diSum = plusDI + minusDI;
-
-    if (diSum === 0) {
-      dxValues.push(0);
-    } else {
-      dxValues.push((Math.abs(plusDI - minusDI) / diSum) * 100);
-    }
-  }
-
-  if (dxValues.length < period) return null;
-
-  // Step 4: Smooth DX to get ADX (Wilder's smoothing)
-  let adx = 0;
-  for (let i = 0; i < period; i++) {
-    adx += dxValues[i];
-  }
-  adx /= period;
-
-  for (let i = period; i < dxValues.length; i++) {
-    adx = ((adx * (period - 1)) + dxValues[i]) / period;
-  }
-
-  return adx;
-}
-
-/**
- * ADX signal types (5-level system)
- */
-export type AdxSignalType = 'no-trend' | 'forming' | 'trending' | 'strong' | 'extreme';
-
-export interface AdxSignalInfo {
-  signal: AdxSignalType;
-  label: string;
-  pillStyle: string;
-}
-
-/**
- * Get ADX signal based on ADX value (5 levels)
- */
-export function getAdxSignal(adx: number | null | undefined): AdxSignalInfo {
-  if (adx === null || adx === undefined) {
-    return { signal: 'no-trend', label: '--', pillStyle: 'bg-muted text-muted-foreground' };
-  }
-
-  if (adx < ADX.NO_TREND) return { signal: 'no-trend', label: 'No Trend', pillStyle: 'bg-muted text-muted-foreground' };
-  if (adx < ADX.FORMING) return { signal: 'forming', label: 'Forming', pillStyle: 'bg-sky-100 text-sky-700' };
-  if (adx < ADX.TRENDING) return { signal: 'trending', label: 'Trending', pillStyle: 'bg-blue-400 text-white' };
-  if (adx < ADX.STRONG) return { signal: 'strong', label: 'Strong', pillStyle: 'bg-violet-500 text-white' };
-  return { signal: 'extreme', label: 'Extreme', pillStyle: 'bg-fuchsia-600 text-white' };
 }
 
 export function calculate7DChange(candles: number[][]): number | null {

@@ -119,7 +119,6 @@ export function useColumns(exchange: 'okx' | 'hyperliquid' = 'okx') {
         volume24h: true, marketCap: true,
         dRsiSignal: true, wRsiSignal: true,
         rsi7: true, rsi14: true, rsiW7: true, rsiW14: true,
-        adx: true,
         listDate: true, hasSpot: false
       };
     } else if (preset === 'none') {
@@ -130,7 +129,6 @@ export function useColumns(exchange: 'okx' | 'hyperliquid' = 'okx') {
         volume24h: false, marketCap: false,
         dRsiSignal: false, wRsiSignal: false,
         rsi7: false, rsi14: false, rsiW7: false, rsiW14: false,
-        adx: false,
         listDate: false, hasSpot: false
       };
     } else {

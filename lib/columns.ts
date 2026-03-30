@@ -32,14 +32,6 @@ export const COLUMN_TOOLTIPS: Partial<Record<ColumnKey, string[]>> = {
     '≤85: Overbought',
     '>85: Extreme Overbought',
   ],
-  adx: [
-    'ADX (14-period, Daily)',
-    '0-20: No Trend (ranging)',
-    '20-25: Forming',
-    '25-50: Trending',
-    '50-75: Strong Trend',
-    '75+: Extreme (may exhaust)',
-  ],
 };
 
 // Column definitions - all columns centered except symbol (left-aligned)
@@ -63,7 +55,6 @@ export const COLUMN_DEFINITIONS: Record<ColumnKey, { label: string; width: numbe
   rsi14: { label: 'D-RSI14', width: 62, align: 'center', sortable: true },
   rsiW7: { label: 'W-RSI7', width: 58, align: 'center', sortable: true },
   rsiW14: { label: 'W-RSI14', width: 62, align: 'center', sortable: true },
-  adx: { label: 'ADX', width: 90, align: 'center', sortable: true },
   listDate: { label: 'Listed', width: 75, align: 'center', sortable: true },
   hasSpot: { label: 'Spot', width: 48, align: 'center', sortable: true }
 };

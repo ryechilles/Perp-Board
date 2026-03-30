@@ -312,12 +312,6 @@ export function Controls({
         { key: 'rsiW14', label: 'W-RSI14' },
       ]
     },
-    {
-      label: 'Trend',
-      columns: [
-        { key: 'adx' as ColumnKey, label: 'ADX' },
-      ]
-    },
     // Only show listing date column for exchanges that have the data
     ...(exchange !== 'hyperliquid' ? [{
       label: 'Other',

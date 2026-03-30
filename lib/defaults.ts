@@ -26,7 +26,6 @@ export const DEFAULT_COLUMNS: ColumnVisibility = {
   rsi14: false,
   rsiW7: false,
   rsiW14: false,
-  adx: true,
   listDate: false,
   hasSpot: false
 };
@@ -57,6 +56,5 @@ export const DEFAULT_COLUMN_ORDER: ColumnKey[] = [
   'rsi14',
   'rsiW7',
   'rsiW14',
-  'adx',
   'listDate'
 ];

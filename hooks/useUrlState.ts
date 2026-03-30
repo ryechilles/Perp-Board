@@ -26,7 +26,6 @@ const ALL_COLUMNS_VISIBLE: ColumnVisibility = {
   rsi14: true,
   rsiW7: true,
   rsiW14: true,
-  adx: true,
   listDate: true,
   hasSpot: true
 };

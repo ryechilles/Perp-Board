@@ -1,6 +1,6 @@
 /**
  * Shared RSI Calculation Pipeline
- * Extracts the common RSI/ADX/sparkline calculation logic that's identical
+ * Extracts the common RSI/sparkline calculation logic that's identical
  * between OKX and Hyperliquid. Each exchange only needs to implement
  * a CandleFetcher to provide candle data in normalized format.
  *
@@ -9,7 +9,7 @@
  */
 
 import { RSIData } from '../types';
-import { calculateRSI, calculateADX, calculate7DChange, Mutex, RateLimiter } from '../utils';
+import { calculateRSI, calculate7DChange, Mutex, RateLimiter } from '../utils';
 import { TIMING } from '../constants';
 
 /**
@@ -26,7 +26,7 @@ export interface CandleFetcher {
 /**
  * Calculate full RSI data for a single instrument using the provided candle fetcher.
  * This is the shared pipeline that handles:
- * - Daily RSI (7, 14) + ADX + 7D change + sparkline
+ * - Daily RSI (7, 14) + 7D change + sparkline
  * - Weekly RSI (7, 14)
  * - Hourly: 1H/4H change + 24H sparkline (with 4H fallback)
  */
@@ -52,7 +52,6 @@ export async function calculateRSIForInstrument(
     let rsi14: number | null = null;
     let rsiW7: number | null = null;
     let rsiW14: number | null = null;
-    let adx14: number | null = null;
     let change1h: number | null = null;
     let change4h: number | null = null;
     let change7d: number | null = null;
@@ -67,7 +66,6 @@ export async function calculateRSIForInstrument(
       rsi7 = calculateRSI(closes, 7);
       rsi14 = calculateRSI(closes, 14);
       change7d = calculate7DChange(dailyCandles);
-      adx14 = calculateADX(dailyCandles);
       sparkline7d = closes.slice(-7);
     }
 
@@ -141,7 +139,6 @@ export async function calculateRSIForInstrument(
       rsi14,
       rsiW7,
       rsiW14,
-      adx14,
       change1h,
       change4h,
       change7d,
