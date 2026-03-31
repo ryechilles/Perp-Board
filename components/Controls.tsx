@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Search, Settings, RotateCcw } from 'lucide-react';
 import { ColumnVisibility, ColumnKey, Filters, RsiSignalType, AssetCategory } from '@/lib/types';
+import { cn } from '@/lib/utils';
 import { getDefaultColumns } from '@/lib/defaults';
 import { RsiFilter } from './RsiFilter';
 import { PillButtonGroup, PillButtonOption, Button } from '@/components/ui';
@@ -164,6 +165,32 @@ export function Controls({
     setTempFilters(base);
     onFiltersChange(base);
   };
+
+  // Scroll fade state for filter bar
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [showLeftFade, setShowLeftFade] = useState(false);
+  const [showRightFade, setShowRightFade] = useState(false);
+
+  const updateScrollFades = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setShowLeftFade(scrollLeft > 2);
+    setShowRightFade(scrollLeft + clientWidth < scrollWidth - 2);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    updateScrollFades();
+    el.addEventListener('scroll', updateScrollFades, { passive: true });
+    const ro = new ResizeObserver(updateScrollFades);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener('scroll', updateScrollFades);
+      ro.disconnect();
+    };
+  }, [updateScrollFades]);
 
   const exchangeLabel = exchange === 'hyperliquid' ? 'Hyperliquid' : 'OKX';
 
@@ -344,60 +371,84 @@ export function Controls({
         </label>
       </div>
 
-      {/* Quick Filters + Controls Row - Flat structure for consistent gap */}
-      <div className="flex items-center gap-4 relative z-[60]">
-        {/* Crypto / Stock toggle */}
-        {exchange === 'okx' && (
-          <PillButtonGroup
-            options={assetCategoryOptions}
-            value={activeAssetCategory}
-            onChange={handleAssetCategoryChange}
+      {/* Quick Filters + Controls Row */}
+      <div className="flex items-center gap-3 relative z-[60]">
+        {/* Scrollable filter area */}
+        <div className="relative flex-1 min-w-0">
+          <div
+            ref={scrollContainerRef}
+            className="flex items-center gap-4 overflow-x-auto"
+          >
+            {/* Crypto / Stock toggle */}
+            {exchange === 'okx' && (
+              <PillButtonGroup
+                options={assetCategoryOptions}
+                value={activeAssetCategory}
+                onChange={handleAssetCategoryChange}
+              />
+            )}
+
+            {/* Main Quick Filters — hidden in Stock mode */}
+            {activeAssetCategory !== 'stock' && (
+              <PillButtonGroup
+                options={mainFilterOptions}
+                value={activeQuickFilter}
+                onChange={handleQuickFilter}
+              />
+            )}
+
+            {/* RSI Quick Filters — always visible */}
+            <PillButtonGroup
+              options={rsiFilterOptions}
+              value={activeQuickFilter}
+              onChange={handleQuickFilter}
+              className="hidden md:inline-flex"
+            />
+          </div>
+
+          {/* Left fade */}
+          <div
+            className={cn(
+              'absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent pointer-events-none transition-opacity duration-200',
+              showLeftFade ? 'opacity-100' : 'opacity-0'
+            )}
           />
-        )}
-
-        {/* Main Quick Filters — hidden in Stock mode */}
-        {activeAssetCategory !== 'stock' && (
-          <PillButtonGroup
-            options={mainFilterOptions}
-            value={activeQuickFilter}
-            onChange={handleQuickFilter}
+          {/* Right fade */}
+          <div
+            className={cn(
+              'absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none transition-opacity duration-200',
+              showRightFade ? 'opacity-100' : 'opacity-0'
+            )}
           />
-        )}
+        </div>
 
-        {/* RSI Quick Filters — always visible */}
-        <PillButtonGroup
-          options={rsiFilterOptions}
-          value={activeQuickFilter}
-          onChange={handleQuickFilter}
-          className="hidden md:inline-flex"
-        />
+        {/* Pinned controls: Settings + Search */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <Button
+            ref={customizeButtonRef}
+            variant="ghost"
+            size="icon"
+            className="h-control-default w-8"
+            onClick={() => setShowCustomizePanel(!showCustomizePanel)}
+            aria-label="Toggle settings panel"
+            aria-expanded={showCustomizePanel}
+          >
+            <Settings className="w-4 h-4 text-muted-foreground" />
+          </Button>
 
-        {/* Settings icon */}
-        <Button
-          ref={customizeButtonRef}
-          variant="ghost"
-          size="icon"
-          className="h-control-default w-8"
-          onClick={() => setShowCustomizePanel(!showCustomizePanel)}
-          aria-label="Toggle settings panel"
-          aria-expanded={showCustomizePanel}
-        >
-          <Settings className="w-4 h-4 text-muted-foreground" />
-        </Button>
-
-        {/* Search */}
-        <label className="hidden md:inline-flex items-center gap-1 cursor-text">
-          <Search className="w-4 h-4 text-muted-foreground" />
-          <input
-            ref={searchInputRef}
-            type="text"
-            placeholder=""
-            value={searchTerm}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="bg-transparent border-none outline-none text-[13px] text-foreground w-[60px]"
-            aria-label="Search tokens"
-          />
-        </label>
+          <label className="hidden md:inline-flex items-center gap-1 cursor-text">
+            <Search className="w-4 h-4 text-muted-foreground" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder=""
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="bg-transparent border-none outline-none text-[13px] text-foreground w-[60px]"
+              aria-label="Search tokens"
+            />
+          </label>
+        </div>
       </div>
 
       {/* Sidebar Overlay */}
