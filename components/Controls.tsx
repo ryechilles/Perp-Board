@@ -385,6 +385,7 @@ export function Controls({
                 options={assetCategoryOptions}
                 value={activeAssetCategory}
                 onChange={handleAssetCategoryChange}
+                scrollable
               />
             )}
 
@@ -394,6 +395,7 @@ export function Controls({
                 options={mainFilterOptions}
                 value={activeQuickFilter}
                 onChange={handleQuickFilter}
+                scrollable
               />
             )}
 
@@ -402,6 +404,7 @@ export function Controls({
               options={rsiFilterOptions}
               value={activeQuickFilter}
               onChange={handleQuickFilter}
+              scrollable
               className="hidden md:inline-flex"
             />
           </div>
