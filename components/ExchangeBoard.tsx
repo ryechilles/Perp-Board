@@ -211,9 +211,9 @@ export function ExchangeBoard({
                Mobile (flex-col):  Tabs → Widgets → Controls → Table
                Desktop (lg grid):  [Tabs     | Controls]
                                    [Widgets  | Table   ]  */}
-          <div className="flex flex-col lg:grid lg:grid-cols-[320px_1fr] gap-4 flex-1 overflow-y-auto lg:overflow-hidden">
+          <div className="flex flex-col lg:grid lg:grid-cols-[320px_1fr] lg:grid-rows-[auto_1fr] gap-4 flex-1 overflow-y-auto lg:overflow-hidden">
             {/* Tabs — mobile: 1st, desktop: top-left */}
-            <div className="order-1 lg:order-none flex-shrink-0">
+            <div className="order-1 lg:order-none flex-shrink-0 lg:self-center">
               <TabContainer
                 tabs={tabs}
                 activeTab={activeTab}
@@ -223,7 +223,7 @@ export function ExchangeBoard({
             </div>
 
             {/* Controls — mobile: 3rd, desktop: top-right */}
-            <div className="order-3 lg:order-none flex-shrink-0 lg:flex lg:items-center">
+            <div className="order-3 lg:order-none flex-shrink-0 lg:self-center">
               <Controls
                 exchange={exchange}
                 columns={store.columns as any}
@@ -242,7 +242,7 @@ export function ExchangeBoard({
             </div>
 
             {/* Widgets sidebar — mobile: 2nd, desktop: bottom-left */}
-            <div className="order-2 lg:order-none lg:overflow-y-auto lg:pr-2 space-y-4">
+            <div className="order-2 lg:order-none lg:overflow-y-auto lg:min-h-0 lg:pr-2 space-y-4">
               <ErrorBoundary>
                 {tabs.map((tab) => {
                   if (activeTab !== tab.id) return null;
@@ -267,7 +267,7 @@ export function ExchangeBoard({
             </div>
 
             {/* Data Table — mobile: 4th, desktop: bottom-right */}
-            <div className="order-4 lg:order-none bg-card rounded-xl border border-gray-950/[0.10] dark:border-white/[0.10] shadow-sm flex flex-col flex-1 min-h-[400px] lg:min-h-0 overflow-hidden">
+            <div className="order-4 lg:order-none bg-card rounded-xl border border-gray-950/[0.10] dark:border-white/[0.10] shadow-sm flex flex-col min-h-[400px] lg:min-h-0 overflow-hidden">
               <div
                 ref={tableContainerRef}
                 className="flex-1 overflow-auto"
