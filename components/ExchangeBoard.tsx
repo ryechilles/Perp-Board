@@ -207,9 +207,13 @@ export function ExchangeBoard({
       <div className="flex-1 flex flex-col px-4 sm:px-6 pt-4 pb-4 overflow-hidden">
         <div className="max-w-[1600px] mx-auto w-full flex flex-col flex-1 overflow-hidden">
 
-          {/* ROW 1: Tabs + Controls */}
-          <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-4">
-            <div className="lg:w-[320px] flex-shrink-0">
+          {/* Main grid: 4 sections with responsive order
+               Mobile (flex-col):  Tabs → Widgets → Controls → Table
+               Desktop (lg grid):  [Tabs     | Controls]
+                                   [Widgets  | Table   ]  */}
+          <div className="flex flex-col lg:grid lg:grid-cols-[320px_1fr] gap-4 flex-1 overflow-y-auto lg:overflow-hidden">
+            {/* Tabs — mobile: 1st, desktop: top-left */}
+            <div className="order-1 lg:order-none flex-shrink-0">
               <TabContainer
                 tabs={tabs}
                 activeTab={activeTab}
@@ -218,27 +222,27 @@ export function ExchangeBoard({
               />
             </div>
 
-            <Controls
-              exchange={exchange}
-              columns={store.columns as any}
-              columnOrder={store.columnOrder}
-              filters={store.filters as any}
-              searchTerm={store.searchTerm}
-              overboughtCount={quickFilterCounts.overbought}
-              oversoldCount={quickFilterCounts.oversold}
-              onColumnChange={store.updateColumn as any}
-              onColumnsPreset={store.setColumnsPreset}
-              onFiltersChange={store.setFilters as any}
-              onSearchChange={store.setSearchTerm}
-              onColumnOrderChange={store.updateColumnOrder}
-              onScrollToTop={handleScrollToTop}
-            />
-          </div>
+            {/* Controls — mobile: 3rd, desktop: top-right */}
+            <div className="order-3 lg:order-none flex-shrink-0 lg:flex lg:items-center">
+              <Controls
+                exchange={exchange}
+                columns={store.columns as any}
+                columnOrder={store.columnOrder}
+                filters={store.filters as any}
+                searchTerm={store.searchTerm}
+                overboughtCount={quickFilterCounts.overbought}
+                oversoldCount={quickFilterCounts.oversold}
+                onColumnChange={store.updateColumn as any}
+                onColumnsPreset={store.setColumnsPreset}
+                onFiltersChange={store.setFilters as any}
+                onSearchChange={store.setSearchTerm}
+                onColumnOrderChange={store.updateColumnOrder}
+                onScrollToTop={handleScrollToTop}
+              />
+            </div>
 
-          {/* ROW 2: Widgets + Table */}
-          <div className="flex flex-col lg:flex-row flex-1 gap-4 overflow-y-auto lg:overflow-hidden">
-            {/* Widgets sidebar */}
-            <div className="lg:w-[320px] flex-shrink-0 lg:overflow-y-auto lg:pr-2 space-y-4">
+            {/* Widgets sidebar — mobile: 2nd, desktop: bottom-left */}
+            <div className="order-2 lg:order-none lg:overflow-y-auto lg:pr-2 space-y-4">
               <ErrorBoundary>
                 {tabs.map((tab) => {
                   if (activeTab !== tab.id) return null;
@@ -262,8 +266,8 @@ export function ExchangeBoard({
               </ErrorBoundary>
             </div>
 
-            {/* Data Table */}
-            <div className="bg-card rounded-xl border border-gray-950/[0.10] dark:border-white/[0.10] shadow-sm flex flex-col flex-1 min-h-[400px] lg:min-h-0 overflow-hidden">
+            {/* Data Table — mobile: 4th, desktop: bottom-right */}
+            <div className="order-4 lg:order-none bg-card rounded-xl border border-gray-950/[0.10] dark:border-white/[0.10] shadow-sm flex flex-col flex-1 min-h-[400px] lg:min-h-0 overflow-hidden">
               <div
                 ref={tableContainerRef}
                 className="flex-1 overflow-auto"

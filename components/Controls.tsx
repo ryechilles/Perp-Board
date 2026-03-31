@@ -425,8 +425,8 @@ export function Controls({
           />
         </div>
 
-        {/* Pinned controls: Settings + Search */}
-        <div className="flex items-center gap-3 flex-shrink-0">
+        {/* Pinned controls: Settings + Search — hidden on small screens */}
+        <div className="hidden md:flex items-center gap-3 flex-shrink-0">
           <Button
             ref={customizeButtonRef}
             variant="ghost"
@@ -439,7 +439,7 @@ export function Controls({
             <Settings className="w-4 h-4 text-muted-foreground" />
           </Button>
 
-          <label className="hidden md:inline-flex items-center gap-1 cursor-text">
+          <label className="inline-flex items-center gap-1 cursor-text">
             <Search className="w-4 h-4 text-muted-foreground" />
             <input
               ref={searchInputRef}
