@@ -209,6 +209,11 @@ export function Controls({
   // Main filter options - using PillButtonGroup template
   const mainFilterOptions = useMemo((): PillButtonOption<QuickFilter>[] => [
     {
+      value: 'all',
+      label: 'All',
+      tooltip: `All ${exchangeLabel} Perp Tokens`
+    },
+    {
       value: 'top25',
       label: 'Top 25',
       tooltip: `${exchangeLabel} Perp Market Cap Rank 1-25`
