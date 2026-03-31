@@ -236,7 +236,7 @@ export function ExchangeBoard({
           </div>
 
           {/* ROW 2: Widgets + Table */}
-          <div className="flex flex-col lg:flex-row flex-1 gap-4 overflow-hidden">
+          <div className="flex flex-col lg:flex-row flex-1 gap-4 overflow-y-auto lg:overflow-hidden">
             {/* Widgets sidebar */}
             <div className="lg:w-[320px] flex-shrink-0 lg:overflow-y-auto lg:pr-2 space-y-4">
               <ErrorBoundary>
@@ -263,7 +263,7 @@ export function ExchangeBoard({
             </div>
 
             {/* Data Table */}
-            <div className="bg-card rounded-xl border border-gray-950/[0.10] dark:border-white/[0.10] shadow-sm flex flex-col flex-1 overflow-hidden">
+            <div className="bg-card rounded-xl border border-gray-950/[0.10] dark:border-white/[0.10] shadow-sm flex flex-col flex-1 min-h-[400px] lg:min-h-0 overflow-hidden">
               <div
                 ref={tableContainerRef}
                 className="flex-1 overflow-auto"
