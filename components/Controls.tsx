@@ -93,8 +93,9 @@ export function Controls({
     const currentCategory = filters.assetCategory;
     switch (filter) {
       case 'all':
-        onFiltersChange(currentCategory ? { assetCategory: currentCategory } : {});
-        setTempFilters(currentCategory ? { assetCategory: currentCategory } : {});
+        // 'All' clears everything including assetCategory — show both crypto + stock
+        onFiltersChange({});
+        setTempFilters({});
         break;
       case 'top25': {
         const f = { rank: '1-25' as const, ...(currentCategory ? { assetCategory: currentCategory } : {}) };
@@ -195,7 +196,10 @@ export function Controls({
   const exchangeLabel = exchange === 'hyperliquid' ? 'Hyperliquid' : 'OKX';
 
   // Asset category tab state — derived from filters
-  const activeAssetCategory: 'crypto' | 'stock' = filters.assetCategory === 'stock' ? 'stock' : 'crypto';
+  const activeAssetCategory: 'crypto' | 'stock' | 'all' =
+    filters.assetCategory === 'stock' ? 'stock'
+    : filters.assetCategory === 'crypto' ? 'crypto'
+    : 'all';
 
   // On mount, default to 'crypto' if no assetCategory is set (OKX only)
   useEffect(() => {
@@ -206,9 +210,13 @@ export function Controls({
   }, []);
 
   const handleAssetCategoryChange = (value: string) => {
-    const category = value as 'crypto' | 'stock';
-    // If clicking the same category again, reset all quick filters
-    if (category === activeAssetCategory) {
+    const category = value as 'crypto' | 'stock' | 'all';
+    if (category === 'all') {
+      // 'All' means no asset category filter — show both crypto and stock
+      onFiltersChange({});
+      setTempFilters({});
+    } else if (category === activeAssetCategory) {
+      // Clicking the same category again — reset all quick filters
       const resetFilters = { assetCategory: category as AssetCategory };
       onFiltersChange(resetFilters);
       setTempFilters(resetFilters);
@@ -221,10 +229,11 @@ export function Controls({
     onScrollToTop?.();
   };
 
-  // Asset category options (Crypto / Stock toggle)
+  // Asset category options (Crypto / Stock / All toggle)
   const assetCategoryOptions: PillButtonOption<string>[] = [
     { value: 'crypto', label: 'Crypto' },
     { value: 'stock', label: 'Stock' },
+    { value: 'all', label: 'All' },
   ];
 
   // Customize panel tab options
@@ -234,12 +243,14 @@ export function Controls({
   ];
 
   // Main filter options - using PillButtonGroup template
+  // OKX: 'All' is in the asset category group, so skip it here
   const mainFilterOptions = useMemo((): PillButtonOption<QuickFilter>[] => [
-    {
-      value: 'all',
+    // Only show 'All' quick filter for non-OKX exchanges (OKX uses category toggle instead)
+    ...(exchange !== 'okx' ? [{
+      value: 'all' as QuickFilter,
       label: 'All',
       tooltip: `All ${exchangeLabel} Perp Tokens`
-    },
+    }] : []),
     {
       value: 'top25',
       label: 'Top 25',
@@ -271,10 +282,10 @@ export function Controls({
 
   // RSI filter options - using PillButtonGroup template
   const categoryLabel = exchange === 'okx'
-    ? (activeAssetCategory === 'stock' ? 'Stock' : 'Crypto')
+    ? (activeAssetCategory === 'stock' ? 'Stock' : activeAssetCategory === 'crypto' ? 'Crypto' : '')
     : '';
   const scopeLabel = exchange === 'okx'
-    ? `${exchangeLabel} ${categoryLabel} Perp Tokens`
+    ? categoryLabel ? `${exchangeLabel} ${categoryLabel} Perp Tokens` : `All ${exchangeLabel} Perp Tokens`
     : `All ${exchangeLabel} Perp Tokens`;
 
   const rsiFilterOptions = useMemo((): PillButtonOption<QuickFilter>[] => [
@@ -389,7 +400,7 @@ export function Controls({
               />
             )}
 
-            {/* Main Quick Filters — hidden in Stock mode */}
+            {/* Main Quick Filters — visible in Crypto and All modes */}
             {activeAssetCategory !== 'stock' && (
               <PillButtonGroup
                 options={mainFilterOptions}
