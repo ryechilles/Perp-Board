@@ -1,6 +1,7 @@
 'use client';
 
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 import { Badge } from './badge';
 
@@ -64,6 +65,100 @@ interface PillButtonGroupMultiProps<T extends string = string> extends PillButto
 export type PillButtonGroupProps<T extends string = string> =
   | PillButtonGroupSingleProps<T>
   | PillButtonGroupMultiProps<T>;
+
+/**
+ * PillButton - Individual button with portal-based tooltip
+ * Portal renders tooltip at document.body level to escape overflow:hidden/auto containers.
+ */
+function PillButton<T extends string = string>({
+  option,
+  active,
+  isHovered,
+  size,
+  sizeStyles,
+  onMouseEnter,
+  onMouseLeave,
+  onClick,
+}: {
+  option: PillButtonOption<T>;
+  active: boolean;
+  isHovered: boolean;
+  size: 'sm' | 'md';
+  sizeStyles: Record<string, string>;
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+  onClick: () => void;
+}) {
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number } | null>(null);
+
+  useEffect(() => {
+    if (isHovered && option.tooltip && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setTooltipPos({
+        top: rect.bottom + 8,
+        left: rect.left,
+      });
+    } else {
+      setTooltipPos(null);
+    }
+  }, [isHovered, option.tooltip]);
+
+  return (
+    <div
+      data-active={active || undefined}
+      className={cn('relative', option.hiddenOnMobile && 'hidden md:block')}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
+      <button
+        ref={buttonRef}
+        onClick={onClick}
+        disabled={option.disabled}
+        className={cn(
+          'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md font-medium',
+          'ring-offset-background transition-all',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+          sizeStyles[size],
+          active
+            ? cn('bg-background text-foreground shadow-sm', option.activeColor)
+            : 'text-muted-foreground cursor-pointer hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10',
+          option.disabled && 'pointer-events-none opacity-50'
+        )}
+      >
+        {option.icon}
+        {option.label}
+        {option.badge !== undefined && (
+          <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
+            {option.badge}
+          </Badge>
+        )}
+      </button>
+
+      {/* Tooltip via portal — escapes overflow:auto containers */}
+      {option.tooltip && isHovered && tooltipPos &&
+        createPortal(
+          <div
+            className="fixed z-[9999] rounded-md border border-gray-950/[0.10] dark:border-white/[0.10] bg-popover p-3 text-popover-foreground shadow-md whitespace-nowrap animate-in fade-in-0 zoom-in-95"
+            style={{ top: tooltipPos.top, left: tooltipPos.left }}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+          >
+            {typeof option.tooltip === 'string' ? (
+              <>
+                <div className="text-[11px] font-medium text-muted-foreground mb-1">Filter Criteria</div>
+                <div className="text-xs">{option.tooltip}</div>
+              </>
+            ) : (
+              option.tooltip
+            )}
+          </div>,
+          document.body
+        )
+      }
+    </div>
+  );
+}
 
 /**
  * PillButtonGroup - Segmented control built on shadcn/ui design system
@@ -132,56 +227,17 @@ export function PillButtonGroup<T extends string = string>(props: PillButtonGrou
         const isHovered = hoveredValue === option.value;
 
         return (
-          <div
+          <PillButton
             key={option.value}
-            data-active={active || undefined}
-            className={cn('relative', option.hiddenOnMobile && 'hidden md:block')}
+            option={option}
+            active={active}
+            isHovered={isHovered}
+            size={size}
+            sizeStyles={sizeStyles}
             onMouseEnter={() => setHoveredValue(option.value)}
             onMouseLeave={() => setHoveredValue(null)}
-          >
-            <button
-              onClick={() => !option.disabled && handleClick(option.value)}
-              disabled={option.disabled}
-              className={cn(
-                // Base styles - shadcn button-like
-                'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md font-medium',
-                'ring-offset-background transition-all',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                sizeStyles[size],
-                // Active state
-                active
-                  ? cn(
-                      'bg-background text-foreground shadow-sm',
-                      option.activeColor
-                    )
-                  : 'text-muted-foreground hover:text-foreground hover:bg-black/[0.06] dark:hover:bg-white/[0.08]',
-                // Disabled state
-                option.disabled && 'pointer-events-none opacity-50'
-              )}
-            >
-              {option.icon}
-              {option.label}
-              {option.badge !== undefined && (
-                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
-                  {option.badge}
-                </Badge>
-              )}
-            </button>
-
-            {/* Tooltip - using shadcn card-like styling */}
-            {option.tooltip && isHovered && (
-              <div className="absolute top-full left-0 mt-2 z-50 rounded-md border border-gray-950/[0.10] dark:border-white/[0.10] bg-popover p-3 text-popover-foreground shadow-md whitespace-nowrap animate-in fade-in-0 zoom-in-95">
-                {typeof option.tooltip === 'string' ? (
-                  <>
-                    <div className="text-[11px] font-medium text-muted-foreground mb-1">Filter Criteria</div>
-                    <div className="text-xs">{option.tooltip}</div>
-                  </>
-                ) : (
-                  option.tooltip
-                )}
-              </div>
-            )}
-          </div>
+            onClick={() => !option.disabled && handleClick(option.value)}
+          />
         );
       })}
     </div>
