@@ -154,7 +154,7 @@ export function PillButtonGroup<T extends string = string>(props: PillButtonGrou
                       'bg-background text-foreground shadow-sm',
                       option.activeColor
                     )
-                  : 'text-muted-foreground hover:text-foreground hover:bg-background/50',
+                  : 'text-muted-foreground hover:text-foreground hover:bg-black/[0.06] dark:hover:bg-white/[0.08]',
                 // Disabled state
                 option.disabled && 'pointer-events-none opacity-50'
               )}
