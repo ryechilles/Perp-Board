@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "main": ".open-next/worker.js",
+  "name": "perp-board",
+  "compatibility_date": "2025-03-25",
+  "compatibility_flags": [
+    // Enable Node.js APIs (required by @opennextjs/cloudflare)
+    "nodejs_compat",
+    // Allow the app to fetch public URLs (e.g. exchange APIs, CoinGecko)
+    "global_fetch_strictly_public"
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      // Must match the "name" field above
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "perp-board"
+    }
+  ]
+}
