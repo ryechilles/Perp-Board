@@ -188,6 +188,7 @@ export const logoCache = createValueCache<Record<string, string>>(CACHE_KEYS.LOG
 export const columnsCache = createValueCache<ColumnVisibility>(CACHE_KEYS.COLUMNS, Infinity);
 export const hlColumnsCache = createValueCache<ColumnVisibility>(CACHE_KEYS.HL_COLUMNS, Infinity);
 export const filtersCache = createValueCache<Filters>(CACHE_KEYS.FILTERS, Infinity);
+export const hlFiltersCache = createValueCache<Filters>(CACHE_KEYS.HL_FILTERS, Infinity);
 
 // Array caches (no TTL)
 export const favoritesCache = createArrayCache<string>(CACHE_KEYS.FAVORITES);
@@ -332,6 +333,6 @@ export function getCacheForExchange(exchange: 'okx' | 'hyperliquid') {
     columns: isHL ? hlColumnsCache : columnsCache,
     columnOrder: isHL ? hlColumnOrderCache : columnOrderCache,
     favorites: isHL ? hlFavoritesCache : favoritesCache,
-    filters: filtersCache, // shared across exchanges
+    filters: isHL ? hlFiltersCache : filtersCache, // per-exchange (was shared → cross-exchange bleed)
   };
 }

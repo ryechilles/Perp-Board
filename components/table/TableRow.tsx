@@ -1,13 +1,16 @@
 'use client';
 
+import { memo, forwardRef } from 'react';
+import { ColumnKey } from '@/lib/types';
+import { MarketStore } from '@/lib/store/marketStore';
 import {
-  ProcessedTicker,
-  RSIData,
-  FundingRateData,
-  ListingData,
-  MarketCapData,
-  ColumnKey,
-} from '@/lib/types';
+  useTicker,
+  useRsi,
+  useFunding,
+  useListing,
+  useMarketCap,
+  useHasSpot,
+} from '@/hooks/useMarketSelectors';
 import { Button } from '@/components/ui';
 import {
   COLUMN_DEFINITIONS,
@@ -26,16 +29,14 @@ import {
 import { ChangeWithSparkline } from '@/components/Sparkline';
 
 interface TableRowProps {
-  ticker: ProcessedTicker;
+  /** External store instance — each row subscribes to its own instrument slice. */
+  marketStore: MarketStore;
+  instId: string;
+  baseSymbol: string;
   index: number;
   currentPage: number;
   pageSize: number;
   visibleColumns: ColumnKey[];
-  rsi: RSIData | undefined;
-  fundingRate: FundingRateData | undefined;
-  listingData: ListingData | undefined;
-  marketCap: MarketCapData | undefined;
-  hasSpot: boolean;
   exchange?: 'okx' | 'hyperliquid';
   isFavorite: boolean;
   isScrolled: boolean;
@@ -45,17 +46,14 @@ interface TableRowProps {
   onToggleFavorite: (instId: string) => void;
 }
 
-export function TableRow({
-  ticker,
+export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(function TableRow({
+  marketStore,
+  instId,
+  baseSymbol,
   index,
   currentPage,
   pageSize,
   visibleColumns,
-  rsi,
-  fundingRate,
-  listingData,
-  marketCap,
-  hasSpot,
   exchange = 'okx',
   isFavorite,
   isScrolled,
@@ -63,11 +61,24 @@ export function TableRow({
   fixedWidths,
   columns,
   onToggleFavorite,
-}: TableRowProps) {
+}: TableRowProps, ref) {
+  // Per-instrument subscriptions: this row re-renders only when its own
+  // ticker / rsi / funding / listing / marketCap / spot data changes.
+  const ticker = useTicker(marketStore, instId);
+  const rsi = useRsi(marketStore, instId);
+  const fundingRate = useFunding(marketStore, instId);
+  const listingRaw = useListing(marketStore, instId);
+  const listingData = exchange === 'okx' ? listingRaw : undefined;
+  const marketCap = useMarketCap(marketStore, baseSymbol);
+  const hasSpot = useHasSpot(marketStore, baseSymbol, exchange);
+
   const displayRank = (currentPage - 1) * pageSize + index + 1;
-  const parts = ticker.instId.split('-');
+  const parts = instId.split('-');
   const base = parts[0];
   const quote = parts[1] || (exchange === 'hyperliquid' ? 'USDC' : 'USDT');
+
+  // Row data not yet in the store (e.g. mid-update) — render nothing.
+  if (!ticker) return null;
 
   const isFixedColumn = (key: ColumnKey) => fixedColumns.includes(key);
 
@@ -146,7 +157,7 @@ export function TableRow({
                   ? 'text-yellow-400'
                   : 'text-muted hover:text-yellow-400'
               }`}
-              onClick={() => onToggleFavorite(ticker.instId)}
+              onClick={() => onToggleFavorite(instId)}
               aria-label={isFavorite ? `Remove ${base} from favorites` : `Add ${base} to favorites`}
               aria-pressed={isFavorite}
             >
@@ -399,8 +410,12 @@ export function TableRow({
   };
 
   return (
-    <tr className="hover:bg-muted/50 border-b border-gray-950/[0.10] dark:border-white/[0.10] group">
+    <tr
+      ref={ref}
+      data-index={index}
+      className="hover:bg-muted/50 border-b border-gray-950/[0.10] dark:border-white/[0.10] group"
+    >
       {visibleColumns.map(renderCell)}
     </tr>
   );
-}
+}));

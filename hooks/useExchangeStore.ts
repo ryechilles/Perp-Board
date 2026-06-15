@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo, useSyncExternalStore } from 'react';
 import {
   ProcessedTicker,
   RSIData,
@@ -13,9 +13,10 @@ import {
 } from '@/lib/types';
 import { fetchMarketCapData } from '@/lib/api/coingecko';
 import { filterAndSort, FilterContext } from '@/lib/filters';
-import { calculateRsiAverages, calculateTopMovers, calculateQuickFilterCounts, pruneMapByKeys } from '@/lib/store-utils';
+import { calculateRsiAverages, calculateTopMovers, calculateQuickFilterCounts } from '@/lib/store-utils';
 import { TIMING, MA_FLOW } from '@/lib/constants';
 import { getCacheForExchange, getMarketCapCache, setMarketCapCache, checkVersionAndClearCache } from '@/lib/cache';
+import { MarketStore } from '@/lib/store/marketStore';
 
 // Import composed hooks
 import { useColumns } from './useColumns';
@@ -31,13 +32,20 @@ import { useMAFlowData } from './useMAFlowData';
 export function useExchangeStore(adapter: ExchangeAdapter) {
   const exchange = adapter.exchange;
 
-  // Core data
-  const [tickers, setTickers] = useState<Map<string, ProcessedTicker>>(new Map());
-  const [rsiData, setRsiData] = useState<Map<string, RSIData>>(new Map());
-  const [fundingRateData, setFundingRateData] = useState<Map<string, FundingRateData>>(new Map());
-  const [listingData, setListingData] = useState<Map<string, ListingData>>(new Map());
-  const [marketCapData, setMarketCapData] = useState<Map<string, MarketCapData>>(new Map());
-  const [spotSymbols, setSpotSymbols] = useState<Set<string>>(new Set());
+  // Core data lives in an external store (outside React) so individual table
+  // rows can subscribe to their own instrument slice. This hook subscribes to
+  // the global snapshot for the derived data layer (filterAndSort / averages).
+  const marketStoreRef = useRef<MarketStore | null>(null);
+  if (marketStoreRef.current === null) {
+    marketStoreRef.current = new MarketStore();
+  }
+  const marketStore = marketStoreRef.current;
+  const snapshot = useSyncExternalStore(
+    marketStore.subscribe,
+    marketStore.getSnapshot,
+    marketStore.getSnapshot
+  );
+  const { tickers, rsiData, fundingRateData, listingData, marketCapData, spotSymbols } = snapshot;
 
   // Composed hooks (exchange-aware)
   const columnsHook = useColumns(exchange);
@@ -75,9 +83,9 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
   useEffect(() => {
     const cachedRsi = cache.rsi.get();
     if (cachedRsi && cachedRsi.size > 0) {
-      setRsiData(cachedRsi);
+      marketStore.setRsi(cachedRsi);
     }
-  }, [cache.rsi]);
+  }, [cache.rsi, marketStore]);
 
   // Batched RSI data updater — collects updates and flushes in a single setState via microtask
   const rsiBatchBufferRef = useRef<Array<[string, RSIData]>>([]);
@@ -88,15 +96,9 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
     const batch = rsiBatchBufferRef.current;
     if (batch.length === 0) return;
     rsiBatchBufferRef.current = [];
-    setRsiData(prev => {
-      const newMap = new Map(prev);
-      for (const [id, data] of batch) {
-        newMap.set(id, data);
-      }
-      saveRsiCacheDebounced(newMap);
-      return newMap;
-    });
-  }, [saveRsiCacheDebounced]);
+    marketStore.mergeRsi(batch);
+    saveRsiCacheDebounced(marketStore.getSnapshot().rsiData);
+  }, [saveRsiCacheDebounced, marketStore]);
 
   const updateRsiData = useCallback((instId: string, data: RSIData) => {
     rsiBatchBufferRef.current.push([instId, data]);
@@ -165,22 +167,22 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
     // Load cached market cap
     const cachedMarketCap = getMarketCapCache();
     if (cachedMarketCap) {
-      setMarketCapData(cachedMarketCap);
+      marketStore.setMarketCap(cachedMarketCap);
     }
 
     // Fetch exchange-specific initial data (spot symbols, listings, funding)
     const initialData = await adapter.fetchInitialData();
     if (disposedRef.current) return; // ← Bail if cleanup already ran
 
-    setSpotSymbols(initialData.spotSymbols);
-    if (initialData.listingData) setListingData(initialData.listingData);
-    if (initialData.fundingRateData) setFundingRateData(initialData.fundingRateData);
+    marketStore.setSpot(initialData.spotSymbols);
+    if (initialData.listingData) marketStore.setListing(initialData.listingData);
+    if (initialData.fundingRateData) marketStore.setFunding(initialData.fundingRateData);
 
     // Fetch CoinGecko data (non-blocking)
     fetchMarketCapData().then((marketCap) => {
       if (disposedRef.current) return; // ← Don't update state if disposed
       console.log(`[MarketCap] Received ${marketCap.size} coins from CoinGecko`);
-      setMarketCapData(marketCap);
+      marketStore.setMarketCap(marketCap);
       setMarketCapCache(marketCap);
     }).catch((error) => {
       console.error('[MarketCap] Failed to fetch:', error);
@@ -190,20 +192,17 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
     const handleTickerUpdate = (newTickers: Map<string, ProcessedTicker>) => {
       if (disposedRef.current) return; // ← Don't update state if disposed
 
-      setTickers(newTickers);
+      marketStore.setTickers(newTickers);
       // Extract funding from tickers for exchanges that embed it (Hyperliquid)
       if (adapter.extractFundingFromTickers) {
         const funding = adapter.extractFundingFromTickers(newTickers);
-        setFundingRateData(funding);
+        marketStore.setFunding(funding);
       }
 
-      // Prune orphaned entries from dependent maps when instruments are delisted.
-      // Uses functional updaters to avoid stale closures; returns prev ref if
-      // nothing changed (React bails out, no extra re-render).
+      // Prune orphaned rsi/listing entries when instruments are delisted.
+      // The store no-ops (no commit) when there is nothing to prune.
       const validKeys = new Set(newTickers.keys());
-
-      setRsiData(prev => pruneMapByKeys(prev, validKeys));
-      setListingData(prev => pruneMapByKeys(prev, validKeys));
+      marketStore.prune(validKeys);
 
       // MA Flow data is managed by its own hook — prune via ref
       pruneMAFlowRef.current(validKeys);
@@ -285,7 +284,8 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
     // Refresh market cap
     const marketCapInterval = setInterval(async () => {
       const newMarketCap = await fetchMarketCapData();
-      setMarketCapData(newMarketCap);
+      if (disposedRef.current) return;
+      marketStore.setMarketCap(newMarketCap);
       setMarketCapCache(newMarketCap);
     }, TIMING.MARKET_CAP_REFRESH);
     intervalsRef.current.push(marketCapInterval);
@@ -295,11 +295,12 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
       const { fetchFundingRates } = await import('@/lib/api/okx-rest');
       const fundingRatesInterval = setInterval(async () => {
         const newFundingRates = await fetchFundingRates();
-        setFundingRateData(newFundingRates);
+        if (disposedRef.current) return;
+        marketStore.setFunding(newFundingRates);
       }, TIMING.FUNDING_RATES_REFRESH);
       intervalsRef.current.push(fundingRatesInterval);
     }
-  }, [adapter, fetchRsi, cache.rsi]);
+  }, [adapter, fetchRsi, cache.rsi, marketStore]);
 
   // Cleanup — aborts in-flight RSI fetches instantly
   const cleanup = useCallback(() => {
@@ -392,6 +393,9 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
   }, [filteredData, paginationHook]);
 
   return {
+    // External store instance — table rows subscribe to per-instrument slices
+    marketStore,
+
     // Data
     tickers,
     rsiData,

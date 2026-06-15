@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback, ReactNode } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo, ReactNode } from 'react';
 import { Header } from '@/components/Header';
 import { Controls } from '@/components/Controls';
 import { Footer } from '@/components/Footer';
@@ -12,6 +12,7 @@ import { ColumnKey, ProcessedTicker } from '@/lib/types';
 import { COLUMN_DEFINITIONS } from '@/lib/utils';
 import { useExchangeStore } from '@/hooks/useExchangeStore';
 import { useUrlState } from '@/hooks/useUrlState';
+import { useVirtualRows } from '@/hooks/useVirtualRows';
 
 // Fixed column configuration (shared across exchanges)
 const FIXED_COLUMNS: ColumnKey[] = ['favorite', 'rank', 'logo', 'symbol'];
@@ -121,7 +122,23 @@ export function ExchangeBoard({
   const filteredData = store.getFilteredData();
   const quickFilterCounts = store.getQuickFilterCounts();
 
-  const visibleColumns = store.columnOrder.filter((key) => store.columns[key]);
+  // Stable reference so memoized rows don't re-render on every store update
+  const visibleColumns = useMemo(
+    () => store.columnOrder.filter((key) => store.columns[key]),
+    [store.columnOrder, store.columns]
+  );
+
+  // O(1) favorite lookup (was O(rows × favorites) via Array.includes)
+  const favoriteSet = useMemo(() => new Set(store.favorites), [store.favorites]);
+
+  // Row virtualization — only render rows in/near the viewport.
+  const getScrollElement = useCallback(() => tableContainerRef.current, []);
+  const { virtualRows, paddingTop, paddingBottom, measureElement } = useVirtualRows({
+    count: filteredData.length,
+    getScrollElement,
+    estimateSize: 44,
+    overscan: 12,
+  });
 
   const getColStyle = (key: ColumnKey) => {
     if (FIXED_WIDTHS[key]) {
@@ -186,15 +203,6 @@ export function ExchangeBoard({
   const handleScrollToTop = useCallback(() => {
     tableContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
-
-  // Spot symbol check based on exchange format
-  const hasSpot = useCallback(
-    (baseSymbol: string) => {
-      const spotKey = exchange === 'okx' ? `${baseSymbol}-USDT` : baseSymbol;
-      return store.spotSymbols.has(spotKey);
-    },
-    [exchange, store.spotSymbols]
-  );
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-muted">
@@ -318,28 +326,41 @@ export function ExchangeBoard({
                         </td>
                       </tr>
                     ) : (
-                      filteredData.map((ticker, index) => (
-                        <TableRow
-                          key={ticker.instId}
-                          ticker={ticker as any}
-                          index={index}
-                          currentPage={1}
-                          pageSize={filteredData.length}
-                          visibleColumns={visibleColumns}
-                          rsi={(store.rsiData as Map<string, unknown>).get(ticker.instId) as any}
-                          fundingRate={(store.fundingRateData as Map<string, unknown>).get(ticker.instId) as any}
-                          listingData={exchange === 'okx' ? (store.listingData as Map<string, unknown>).get(ticker.instId) as any : undefined}
-                          marketCap={(store.marketCapData as Map<string, unknown>).get(ticker.baseSymbol) as any}
-                          hasSpot={hasSpot(ticker.baseSymbol)}
-                          exchange={exchange}
-                          isFavorite={store.favorites.includes(ticker.instId)}
-                          isScrolled={isScrolled}
-                          fixedColumns={FIXED_COLUMNS}
-                          fixedWidths={FIXED_WIDTHS}
-                          columns={store.columns as any}
-                          onToggleFavorite={store.toggleFavorite}
-                        />
-                      ))
+                      <>
+                        {paddingTop > 0 && (
+                          <tr aria-hidden>
+                            <td colSpan={visibleColumns.length} style={{ height: paddingTop, padding: 0, border: 0 }} />
+                          </tr>
+                        )}
+                        {virtualRows.map(({ index }) => {
+                          const ticker = filteredData[index];
+                          return (
+                            <TableRow
+                              key={ticker.instId}
+                              ref={measureElement}
+                              marketStore={store.marketStore}
+                              instId={ticker.instId}
+                              baseSymbol={ticker.baseSymbol}
+                              index={index}
+                              currentPage={1}
+                              pageSize={filteredData.length}
+                              visibleColumns={visibleColumns}
+                              exchange={exchange}
+                              isFavorite={favoriteSet.has(ticker.instId)}
+                              isScrolled={isScrolled}
+                              fixedColumns={FIXED_COLUMNS}
+                              fixedWidths={FIXED_WIDTHS}
+                              columns={store.columns as any}
+                              onToggleFavorite={store.toggleFavorite}
+                            />
+                          );
+                        })}
+                        {paddingBottom > 0 && (
+                          <tr aria-hidden>
+                            <td colSpan={visibleColumns.length} style={{ height: paddingBottom, padding: 0, border: 0 }} />
+                          </tr>
+                        )}
+                      </>
                     )}
                   </tbody>
                 </table>
