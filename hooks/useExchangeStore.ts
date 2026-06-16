@@ -331,22 +331,41 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
     dataManagerRef.current = null;
   }, [adapter.features.maFlow, maFlowHook]);
 
-  // Filter context for the pipeline
-  const filterCtx: FilterContext = useMemo(() => ({
-    rsiData,
-    marketCapData,
-    fundingRateData,
-    spotSymbols,
-    listingData: adapter.features.listingDates ? listingData : undefined,
-    spotSymbolFormat: adapter.spotSymbolFormat,
-    defaultSettlementInterval: adapter.defaultSettlementInterval,
-  }), [rsiData, marketCapData, fundingRateData, spotSymbols, listingData, adapter]);
-
   // Exchange-specific pre-filter (stable reference via adapter)
   const preFilter = adapter.preFilterTickers;
 
+  // P3 decouple: does the current sort/filter actually depend on RSI data?
+  // If not (e.g. the default rank sort with no RSI filter), an RSI update does
+  // NOT change the row list — each row pulls its own RSI via a selector — so we
+  // skip re-running filterAndSort over every ticker on each RSI flush.
+  const rsiAffectsList = useMemo(() => {
+    const f = filtersHook.filters;
+    const rsiFilterActive = !!(
+      f.rsi7 || f.rsi14 || f.rsiW7 || f.rsiW14 ||
+      (f.dRsiSignal && f.dRsiSignal.length) ||
+      (f.wRsiSignal && f.wRsiSignal.length)
+    );
+    const rsiSortActive = ['change4h', 'change7d', 'rsi7', 'rsi14', 'rsiW7', 'rsiW14']
+      .includes(filtersHook.sort.column);
+    return rsiFilterActive || rsiSortActive;
+  }, [filtersHook.filters, filtersHook.sort.column]);
+
+  // Always read the freshest rsiData inside the memo, but only treat it as a
+  // dependency when it actually affects the list (see rsiAffectsList).
+  const rsiDataRef = useRef(rsiData);
+  rsiDataRef.current = rsiData;
+
   // Filtered + sorted data (memoized)
   const filteredData = useMemo(() => {
+    const ctx: FilterContext = {
+      rsiData: rsiDataRef.current,
+      marketCapData,
+      fundingRateData,
+      spotSymbols,
+      listingData: adapter.features.listingDates ? listingData : undefined,
+      spotSymbolFormat: adapter.spotSymbolFormat,
+      defaultSettlementInterval: adapter.defaultSettlementInterval,
+    };
     return filterAndSort(
       tickers,
       filtersHook.searchTerm,
@@ -354,10 +373,26 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
       favoritesHook.favorites,
       filtersHook.filters,
       filtersHook.sort,
-      filterCtx,
+      ctx,
       preFilter
     );
-  }, [tickers, filtersHook.searchTerm, filtersHook.view, favoritesHook.favorites, filtersHook.filters, filtersHook.sort, filterCtx, preFilter]);
+    // rsiData is intentionally a dependency only when it affects the list.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    tickers,
+    filtersHook.searchTerm,
+    filtersHook.view,
+    favoritesHook.favorites,
+    filtersHook.filters,
+    filtersHook.sort,
+    marketCapData,
+    fundingRateData,
+    spotSymbols,
+    listingData,
+    adapter,
+    preFilter,
+    rsiAffectsList ? rsiData : null,
+  ]);
 
   const getFilteredData = useCallback(() => filteredData, [filteredData]);
 
