@@ -21,7 +21,7 @@ import {
   ExchangeAdapter,
   DataManager,
 } from '@/lib/types';
-import { fetchMarketCapData } from '@/lib/api/coingecko';
+import { fetchMarketCapData } from '@/lib/api/marketcap';
 import { TIMING, MA_FLOW } from '@/lib/constants';
 import {
   getMarketCapCache,
@@ -107,15 +107,24 @@ export class ExchangeController {
   };
 
   // ───────────────────────── RSI fetch ───────────────────────────────────
-  /** Instrument IDs sorted by market-cap rank (uses adapter pre-filter). */
+  /**
+   * Instrument IDs sorted by market-cap rank (uses adapter pre-filter).
+   *
+   * Rank is primary; when it's missing (and especially if the market-cap source
+   * is fully down), entries fall back to 24h USD volume descending instead of an
+   * arbitrary input order — so RSI tier ordering degrades gracefully rather than
+   * going random when CoinLore is unavailable.
+   */
   private getSortedInstIds(tickerMap: Map<string, ProcessedTicker>): string[] {
     const marketCapData = this.store.getSnapshot().marketCapData;
+    const volUsd = (t: ProcessedTicker) => (parseFloat(t.volCcy24h) || 0) * t.priceNum;
     return this.adapter
       .preFilterTickers(Array.from(tickerMap.values()))
       .sort((a, b) => {
-        const rankA = marketCapData.get(a.baseSymbol)?.rank ?? 9999;
-        const rankB = marketCapData.get(b.baseSymbol)?.rank ?? 9999;
-        return rankA - rankB;
+        const rankA = marketCapData.get(a.baseSymbol)?.rank ?? Number.MAX_SAFE_INTEGER;
+        const rankB = marketCapData.get(b.baseSymbol)?.rank ?? Number.MAX_SAFE_INTEGER;
+        if (rankA !== rankB) return rankA - rankB;
+        return volUsd(b) - volUsd(a);
       })
       .map((t) => t.instId);
   }

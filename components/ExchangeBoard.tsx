@@ -234,15 +234,15 @@ export function ExchangeBoard({
             <div className="order-3 lg:order-none flex-shrink-0 lg:self-center">
               <Controls
                 exchange={exchange}
-                columns={store.columns as any}
+                columns={store.columns}
                 columnOrder={store.columnOrder}
-                filters={store.filters as any}
+                filters={store.filters}
                 searchTerm={store.searchTerm}
                 overboughtCount={quickFilterCounts.overbought}
                 oversoldCount={quickFilterCounts.oversold}
-                onColumnChange={store.updateColumn as any}
+                onColumnChange={store.updateColumn}
                 onColumnsPreset={store.setColumnsPreset}
-                onFiltersChange={store.setFilters as any}
+                onFiltersChange={store.setFilters}
                 onSearchChange={store.setSearchTerm}
                 onColumnOrderChange={store.updateColumnOrder}
                 onScrollToTop={handleScrollToTop}
@@ -293,14 +293,14 @@ export function ExchangeBoard({
 
                   <TableHeader
                     visibleColumns={visibleColumns}
-                    sort={store.sort as any}
+                    sort={store.sort}
                     isScrolled={isScrolled}
                     totalCount={filteredData.length}
                     draggedColumn={draggedColumn}
                     dragOverColumn={dragOverColumn}
                     fixedColumns={FIXED_COLUMNS}
                     fixedWidths={FIXED_WIDTHS}
-                    columns={store.columns as any}
+                    columns={store.columns}
                     onSort={store.updateSort}
                     onDragStart={handleDragStart}
                     onDragOver={handleDragOver}
@@ -350,7 +350,7 @@ export function ExchangeBoard({
                               isScrolled={isScrolled}
                               fixedColumns={FIXED_COLUMNS}
                               fixedWidths={FIXED_WIDTHS}
-                              columns={store.columns as any}
+                              columns={store.columns}
                               onToggleFavorite={store.toggleFavorite}
                             />
                           );
