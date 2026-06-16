@@ -22,6 +22,13 @@ export interface VirtualRow {
 interface Params {
   count: number;
   getScrollElement: () => HTMLElement | null;
+  /**
+   * Pixels between the scroll container's content top and the first row. Needed
+   * when the list does NOT start at the top of the scroll container (e.g. the
+   * mobile card list scrolls with the page, below the tabs/widgets/controls).
+   * Defaults to 0 — the dedicated-container case (desktop table).
+   */
+  getOffsetTop?: () => number;
   estimateSize?: number;
   overscan?: number;
 }
@@ -38,6 +45,7 @@ export interface VirtualResult {
 export function useVirtualRows({
   count,
   getScrollElement,
+  getOffsetTop,
   estimateSize = 44,
   overscan = 12,
 }: Params): VirtualResult {
@@ -141,7 +149,10 @@ export function useVirtualRows({
   }
   const totalSize = running;
 
-  const scrollTop = scrollTopRef.current;
+  // Subtract any content above the list (page-scroll case) so row offsets
+  // (0-based from the list top) line up with the container's scrollTop.
+  const offsetTop = getOffsetTop ? getOffsetTop() : 0;
+  const scrollTop = Math.max(0, scrollTopRef.current - offsetTop);
   const viewport = viewportRef.current;
 
   // First visible row (binary search over offsets).

@@ -5,7 +5,7 @@ import { Header } from '@/components/Header';
 import { Controls } from '@/components/Controls';
 import { Footer } from '@/components/Footer';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { TableHeader, TableRow } from '@/components/table';
+import { TableHeader, TableRow, TokenCard } from '@/components/table';
 import { TabContainer, WidgetGrid } from '@/components/layout';
 import { Spinner } from '@/components/ui';
 import { ColumnKey, ProcessedTicker } from '@/lib/types';
@@ -71,6 +71,10 @@ export function ExchangeBoard({
   // Scroll state
   const [isScrolled, setIsScrolled] = useState(false);
   const tableContainerRef = useRef<HTMLDivElement>(null);
+  // Mobile card list scrolls with the page (the main grid); the card list sits
+  // below the tabs/widgets/controls, so its virtualizer needs that offset.
+  const mainScrollRef = useRef<HTMLDivElement>(null);
+  const cardsWrapperRef = useRef<HTMLDivElement>(null);
 
   // URL state sync — always called (Rules of Hooks), but gated by `enabled`
   useUrlState(
@@ -138,6 +142,28 @@ export function ExchangeBoard({
     getScrollElement,
     estimateSize: 44,
     overscan: 12,
+  });
+
+  // Mobile card list virtualizer — shares the page (main grid) as its scroll
+  // container, with the list's distance from the top as the offset.
+  const getCardScrollElement = useCallback(() => mainScrollRef.current, []);
+  const getCardsOffsetTop = useCallback(() => {
+    const scroller = mainScrollRef.current;
+    const wrap = cardsWrapperRef.current;
+    if (!scroller || !wrap) return 0;
+    return wrap.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+  }, []);
+  const {
+    virtualRows: cardVirtualRows,
+    paddingTop: cardPaddingTop,
+    paddingBottom: cardPaddingBottom,
+    measureElement: measureCard,
+  } = useVirtualRows({
+    count: filteredData.length,
+    getScrollElement: getCardScrollElement,
+    getOffsetTop: getCardsOffsetTop,
+    estimateSize: 76,
+    overscan: 8,
   });
 
   const getColStyle = (key: ColumnKey) => {
@@ -219,7 +245,7 @@ export function ExchangeBoard({
                Mobile (flex-col):  Tabs → Widgets → Controls → Table
                Desktop (lg grid):  [Tabs     | Controls]
                                    [Widgets  | Table   ]  */}
-          <div className="flex flex-col lg:grid lg:grid-cols-[320px_1fr] lg:grid-rows-[auto_1fr] gap-4 flex-1 overflow-y-auto lg:overflow-hidden">
+          <div ref={mainScrollRef} className="flex flex-col lg:grid lg:grid-cols-[320px_1fr] lg:grid-rows-[auto_1fr] gap-4 flex-1 overflow-y-auto lg:overflow-hidden">
             {/* Tabs — mobile: 1st, desktop: top-left */}
             <div className="order-1 lg:order-none flex-shrink-0 lg:self-center">
               <TabContainer
@@ -274,8 +300,8 @@ export function ExchangeBoard({
               </ErrorBoundary>
             </div>
 
-            {/* Data Table — mobile: 4th, desktop: bottom-right */}
-            <div className="order-4 lg:order-none bg-card rounded-xl border border-gray-950/[0.10] dark:border-white/[0.10] shadow-sm flex flex-col min-h-[400px] lg:min-h-0 overflow-hidden">
+            {/* Data Table — desktop only (mobile uses the card list below) */}
+            <div className="order-4 lg:order-none bg-card rounded-xl border border-gray-950/[0.10] dark:border-white/[0.10] shadow-sm hidden lg:flex flex-col lg:min-h-0 overflow-hidden">
               <div
                 ref={tableContainerRef}
                 className="flex-1 overflow-auto"
@@ -365,6 +391,46 @@ export function ExchangeBoard({
                   </tbody>
                 </table>
               </div>
+            </div>
+
+            {/* Mobile card list — shown below lg in place of the table.
+                Scrolls with the page (mainScrollRef); virtualized via a wrapper
+                whose padding reserves total list height. */}
+            <div className="order-4 lg:hidden">
+              {filteredData.length === 0 ? (
+                <div className="flex items-center justify-center py-16 text-muted-foreground">
+                  {store.tickers.size === 0 ? (
+                    <>
+                      <Spinner size="md" className="mr-3" />
+                      Loading market data...
+                    </>
+                  ) : (
+                    'No data found'
+                  )}
+                </div>
+              ) : (
+                <div
+                  ref={cardsWrapperRef}
+                  style={{ paddingTop: cardPaddingTop, paddingBottom: cardPaddingBottom }}
+                >
+                  {cardVirtualRows.map(({ index }) => {
+                    const ticker = filteredData[index];
+                    return (
+                      <div key={ticker.instId} ref={measureCard} data-index={index} className="pb-2">
+                        <TokenCard
+                          marketStore={store.marketStore}
+                          instId={ticker.instId}
+                          baseSymbol={ticker.baseSymbol}
+                          index={index}
+                          exchange={exchange}
+                          isFavorite={favoriteSet.has(ticker.instId)}
+                          onToggleFavorite={store.toggleFavorite}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>

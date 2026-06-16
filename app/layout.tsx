@@ -37,8 +37,8 @@ export default function RootLayout({
             gtag('config', '${GA_MEASUREMENT_ID}');
           `}
         </Script>
-        {/* Force desktop view on mobile - min 1200px width */}
-        <meta name="viewport" content="width=1200, initial-scale=0.35, maximum-scale=2, user-scalable=yes" />
+        {/* Responsive: mobile renders a card layout, desktop the full table */}
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         {/* Version meta tag */}
         <meta name="version" content={APP_CONFIG.version} />
         {/* Standard favicon */}

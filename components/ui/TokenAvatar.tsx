@@ -1,11 +1,12 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
 interface TokenAvatarProps {
-  /** Token symbol (used for alt text and fallback) */
+  /** Token symbol (used for alt text, the CDN fallback, and the letter fallback) */
   symbol: string;
-  /** Logo URL (optional) */
+  /** Primary logo URL (e.g. CoinLore / cached). Optional. */
   logo?: string;
   /** Size variant */
   size?: 'sm' | 'md' | 'lg';
@@ -19,25 +20,39 @@ const sizeClasses = {
   lg: 'w-6 h-6 text-[10px]',
 };
 
+/** Symbol-keyed CDN fallback (loads browser-side; covers many majors). */
+function coinCapLogo(symbol: string): string {
+  return `https://assets.coincap.io/assets/icons/${symbol.toLowerCase()}@2x.png`;
+}
+
 /**
- * TokenAvatar - Displays a token's logo or fallback initial
+ * TokenAvatar — token logo with a layered fallback chain.
  *
- * Used in widget token lists to show token identity consistently.
- * Falls back to first letter of symbol if no logo is available.
- *
- * @example
- * ```tsx
- * <TokenAvatar symbol="BTC" logo={btcLogo} size="md" />
- * <TokenAvatar symbol="ETH" />  // Shows "E" fallback
- * ```
+ * Stage 0: the provided `logo` (CoinLore / cached). Stage 1: a symbol-keyed CDN
+ * (CoinCap). Stage 2: a letter avatar. Each <img> onError advances one stage,
+ * so a 404 at any source degrades gracefully without a broken-image icon.
+ * Images load from the browser (the user's IP), so the server-side IP block
+ * that affects the market-data API does not affect logos.
  */
 export function TokenAvatar({ symbol, logo, size = 'md', className }: TokenAvatarProps) {
-  if (logo) {
+  // 0 = primary logo, 1 = symbol CDN, 2 = letter avatar
+  const [stage, setStage] = useState<0 | 1 | 2>(logo ? 0 : symbol ? 1 : 2);
+
+  // Reset when inputs change (e.g. market-cap data arrives after first paint).
+  useEffect(() => {
+    setStage(logo ? 0 : symbol ? 1 : 2);
+  }, [logo, symbol]);
+
+  const src = stage === 0 ? logo : stage === 1 ? coinCapLogo(symbol) : null;
+
+  if (src) {
     return (
       <img
-        src={logo}
+        src={src}
         alt={symbol}
-        className={cn('rounded-full', sizeClasses[size], className)}
+        loading="lazy"
+        className={cn('rounded-full bg-muted', sizeClasses[size], className)}
+        onError={() => setStage((s) => (s < 2 ? ((s + 1) as 0 | 1 | 2) : 2))}
       />
     );
   }

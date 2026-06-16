@@ -11,7 +11,7 @@ import {
   useMarketCap,
   useHasSpot,
 } from '@/hooks/useMarketSelectors';
-import { Button } from '@/components/ui';
+import { Button, TokenAvatar } from '@/components/ui';
 import {
   COLUMN_DEFINITIONS,
   formatPrice,
@@ -202,26 +202,9 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
         );
 
       case 'logo':
-        const logoUrl = marketCap?.logo;
         return (
           <td key={key} className={baseClass} style={getCellStyle(key)}>
-            {logoUrl ? (
-              <img
-                src={logoUrl}
-                alt={base}
-                className="w-5 h-5 rounded-full bg-muted"
-                loading="lazy"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.onerror = null;
-                  target.src = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect fill='%23e5e7eb' width='32' height='32' rx='16'/><text x='16' y='21' text-anchor='middle' fill='%236b7280' font-size='14' font-family='sans-serif'>${base.charAt(0)}</text></svg>`;
-                }}
-              />
-            ) : (
-              <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-[10px] text-muted-foreground font-medium">
-                {base.charAt(0)}
-              </div>
-            )}
+            <TokenAvatar symbol={base} logo={marketCap?.logo} size="md" />
           </td>
         );
 

@@ -8,13 +8,13 @@
  *
  * Field coverage vs the old CoinGecko source:
  *  - marketCap + rank: provided by CoinLore.
- *  - logo: CoinLore does not return logos. Best-effort: reuse any previously
- *    cached CoinGecko logos from localStorage; unknown symbols fall back to
- *    letter avatars in the UI.
+ *  - logo: built from CoinLore's `nameid` (e.g. "bitcoin" → c1.coinlore.com
+ *    image). Logos load browser-side via <img>, so the Worker-IP block that
+ *    killed the CoinGecko API never applied to them. The UI <img> falls back
+ *    to a symbol-keyed CDN, then a letter avatar, if this 404s (see
+ *    TokenAvatar). A previously cached logo, if any, is preferred so revisits
+ *    paint instantly.
  *  - sparkline: not provided; the table falls back to OKX-derived sparklines.
- *
- * NOTE: filename kept as `coingecko.ts` to avoid churn (imported widely as
- * `fetchMarketCapData`); the data source is now CoinLore.
  */
 
 import { MarketCapData } from '../types';
@@ -25,6 +25,12 @@ interface CoinLoreCoin {
   symbol: string;
   rank: number;
   market_cap_usd: string;
+  nameid?: string;
+}
+
+/** CoinLore logo CDN, keyed by the coin's `nameid` (e.g. "bitcoin"). */
+function coinLoreLogo(nameid?: string): string | undefined {
+  return nameid ? `https://c1.coinlore.com/img/25x25/${nameid}.png` : undefined;
 }
 
 // Fetch market cap data via the CoinLore proxy.
@@ -56,7 +62,8 @@ export async function fetchMarketCapData(): Promise<Map<string, MarketCapData>> 
         result.set(symbol, {
           marketCap,
           rank,
-          logo: cachedLogos[symbol],
+          // Prefer a cached logo (instant revisit paint), else CoinLore's CDN.
+          logo: cachedLogos[symbol] || coinLoreLogo(coin.nameid),
           sparkline: undefined,
         });
       }
