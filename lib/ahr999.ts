@@ -8,6 +8,8 @@
 // 2.0 - 4.0: Take Profit Zone (止盈区) - Gradual exit
 // >= 4.0: Top Zone (逃顶区) - Sell
 
+import { API } from './constants';
+
 export interface AHR999Data {
   value: number;
   btcPrice: number;
@@ -124,22 +126,32 @@ function calculateGrowthValuation(): number {
   return valuation;
 }
 
-// Fetch BTC historical prices via server-side proxy (avoids CoinGecko rate limits)
+// Fetch ~200 daily BTC closes from OKX (keyless, client-direct — same source
+// the RSI pipeline already uses). Replaces the CoinGecko history proxy, which
+// 403s from Cloudflare Worker IPs.
 async function fetchBTCHistoricalPrices(): Promise<number[]> {
   try {
-    const response = await fetch('/api/coingecko?type=history');
+    const response = await fetch(
+      `${API.OKX_REST_BASE}/market/candles?instId=BTC-USDT&bar=1D&limit=200`
+    );
     if (!response.ok) {
-      console.error(`[AHR999] Failed to fetch BTC historical prices: HTTP ${response.status}`);
+      console.error(`[AHR999] Failed to fetch BTC candles: HTTP ${response.status}`);
       return [];
     }
     const data = await response.json();
 
-    if (data.prices && Array.isArray(data.prices)) {
-      return data.prices.map((p: [number, number]) => p[1]);
+    if (data.code !== '0' || !Array.isArray(data.data) || data.data.length === 0) {
+      return [];
     }
-    return [];
+
+    // OKX returns newest-first; reverse to chronological so the last element is
+    // the latest price. Candle format: [ts, open, high, low, close, ...].
+    return [...data.data]
+      .reverse()
+      .map((c: string[]) => parseFloat(c[4]))
+      .filter((n) => Number.isFinite(n));
   } catch (error) {
-    console.error('[AHR999] Failed to fetch BTC historical prices:', error);
+    console.error('[AHR999] Failed to fetch BTC candles:', error);
     return [];
   }
 }
