@@ -142,7 +142,8 @@ export class HyperliquidDataManager extends BaseDataManager {
       this.removeDelisted(currentCoins);
       this.updateIdLists(tickersList);
 
-      this.onUpdate(new Map(this.tickers));
+      // By reference — store keeps its own diffed copy (see scheduleUpdate)
+      this.onUpdate(this.tickers);
       this.onStatus('live', new Date());
     } catch (error) {
       console.error('[Hyperliquid] Error fetching initial tickers:', error);

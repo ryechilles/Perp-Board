@@ -7,6 +7,7 @@ import { OKXTicker, ProcessedTicker, TickerUpdateCallback, StatusUpdateCallback 
 import { processTicker } from '../utils';
 import { API, UI } from '../constants';
 import { BaseDataManager } from './base-data-manager';
+import { okxFetch } from './okx-gateway';
 
 const OKX_WS_PUBLIC = API.OKX_WS_PUBLIC;
 const OKX_REST_BASE = API.OKX_REST_BASE;
@@ -94,7 +95,7 @@ export class OKXHybridDataManager extends BaseDataManager {
     try {
       const data = await this.fetchWithRetry(
         async () => {
-          const response = await fetch(`${OKX_REST_BASE}/market/tickers?instType=SWAP`);
+          const response = await okxFetch(`${OKX_REST_BASE}/market/tickers?instType=SWAP`);
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
           const json = await response.json();
           if (json.code !== '0') throw new Error(`OKX API error: ${json.code}`);
@@ -120,7 +121,8 @@ export class OKXHybridDataManager extends BaseDataManager {
         this.updateIdLists(usdtSwaps);
         this.top50Set = new Set(this.top50Ids);
 
-        this.onUpdate(new Map(this.tickers));
+        // By reference — store keeps its own diffed copy (see scheduleUpdate)
+        this.onUpdate(this.tickers);
         this.onStatus('live', new Date());
       }
     } catch (error) {
@@ -131,7 +133,7 @@ export class OKXHybridDataManager extends BaseDataManager {
 
   protected async pollRest(): Promise<void> {
     try {
-      const response = await fetch(`${OKX_REST_BASE}/market/tickers?instType=SWAP`);
+      const response = await okxFetch(`${OKX_REST_BASE}/market/tickers?instType=SWAP`);
       if (!this.isRunning) return;
       const data = await response.json();
 

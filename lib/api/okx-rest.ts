@@ -6,13 +6,14 @@
 import { OKXTicker, OKXInstrument, OKXFundingRate, FundingRateData, ListingData, ProcessedTicker } from '../types';
 import { processTicker } from '../utils';
 import { API, TIMING, RATE_LIMIT } from '../constants';
+import { okxFetch } from './okx-gateway';
 
 const OKX_REST_BASE = API.OKX_REST_BASE;
 
 // Fetch all tickers via REST (fallback)
 export async function fetchTickersREST(): Promise<ProcessedTicker[]> {
   try {
-    const response = await fetch(`${OKX_REST_BASE}/market/tickers?instType=SWAP`);
+    const response = await okxFetch(`${OKX_REST_BASE}/market/tickers?instType=SWAP`);
     if (!response.ok) {
       console.error(`Failed to fetch tickers: HTTP ${response.status}`);
       return [];
@@ -32,7 +33,7 @@ export async function fetchTickersREST(): Promise<ProcessedTicker[]> {
 // Fetch spot symbols
 export async function fetchSpotSymbols(): Promise<Set<string>> {
   try {
-    const response = await fetch(`${OKX_REST_BASE}/market/tickers?instType=SPOT`);
+    const response = await okxFetch(`${OKX_REST_BASE}/market/tickers?instType=SPOT`);
     if (!response.ok) {
       console.error(`Failed to fetch spot symbols: HTTP ${response.status}`);
       return new Set<string>();
@@ -57,7 +58,7 @@ export async function fetchSpotSymbols(): Promise<Set<string>> {
 // Fetch listing dates for all SWAP instruments
 export async function fetchListingDates(): Promise<Map<string, ListingData>> {
   try {
-    const response = await fetch(`${OKX_REST_BASE}/public/instruments?instType=SWAP`);
+    const response = await okxFetch(`${OKX_REST_BASE}/public/instruments?instType=SWAP`);
     const data = await response.json();
 
     const result = new Map<string, ListingData>();
@@ -82,7 +83,7 @@ export async function fetchListingDates(): Promise<Map<string, ListingData>> {
 export async function fetchFundingRates(): Promise<Map<string, FundingRateData>> {
   try {
     // First get the list of all SWAP instruments
-    const response = await fetch(`${OKX_REST_BASE}/public/instruments?instType=SWAP`);
+    const response = await okxFetch(`${OKX_REST_BASE}/public/instruments?instType=SWAP`);
     const instData = await response.json();
 
     if (instData.code !== '0' || !instData.data) {
@@ -102,7 +103,7 @@ export async function fetchFundingRates(): Promise<Map<string, FundingRateData>>
       // Fetch each instrument's funding rate
       const promises = batch.map(async (instId: string) => {
         try {
-          const res = await fetch(`${OKX_REST_BASE}/public/funding-rate?instId=${instId}`);
+          const res = await okxFetch(`${OKX_REST_BASE}/public/funding-rate?instId=${instId}`);
           const data = await res.json();
 
           if (data.code === '0' && data.data && data.data[0]) {

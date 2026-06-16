@@ -5,15 +5,10 @@
  */
 
 import { MAFlowData, MAValues } from '../types';
-import { Mutex, RateLimiter } from '../concurrency';
-import { API, RATE_LIMIT, MA_FLOW } from '../constants';
+import { API, MA_FLOW } from '../constants';
+import { okxRateLimiter, okxCandleMutex } from './okx-gateway';
 
 const OKX_REST_BASE = API.OKX_REST_BASE;
-
-// Share mutex and rate limiter with RSI module to prevent conflicts
-// Using new instances since RSI module uses its own (they don't export them)
-const maMutex = new Mutex();
-const maRateLimiter = new RateLimiter(RATE_LIMIT.MAX_REQUESTS_PER_SECOND, RATE_LIMIT.WINDOW_MS);
 
 // ===========================================
 // SMA Calculation
@@ -101,9 +96,9 @@ async function fetchCandlesWithPagination(
         await new Promise(r => setTimeout(r, 500 * retry));
       }
 
-      await maMutex.acquire();
+      await okxCandleMutex.acquire();
       try {
-        await maRateLimiter.waitForSlot();
+        await okxRateLimiter.waitForSlot();
 
         let url = `${OKX_REST_BASE}/market/candles?instId=${instId}&bar=${bar}&limit=${maxPerRequest}`;
         if (after) {
@@ -137,7 +132,7 @@ async function fetchCandlesWithPagination(
         console.warn(`[MA Flow] ${isTimeout ? 'Timeout' : 'Fetch failed'} for ${instId} ${bar} (attempt ${retry + 1}):`, error);
         // Will retry after mutex release in finally
       } finally {
-        maMutex.release();
+        okxCandleMutex.release();
       }
     }
 

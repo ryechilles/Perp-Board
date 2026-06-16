@@ -9,6 +9,7 @@
 // >= 4.0: Top Zone (逃顶区) - Sell
 
 import { API } from './constants';
+import { okxFetch } from './api/okx-gateway';
 
 export interface AHR999Data {
   value: number;
@@ -131,7 +132,7 @@ function calculateGrowthValuation(): number {
 // 403s from Cloudflare Worker IPs.
 async function fetchBTCHistoricalPrices(): Promise<number[]> {
   try {
-    const response = await fetch(
+    const response = await okxFetch(
       `${API.OKX_REST_BASE}/market/candles?instId=BTC-USDT&bar=1D&limit=200`
     );
     if (!response.ok) {

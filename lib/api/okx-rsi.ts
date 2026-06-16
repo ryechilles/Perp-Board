@@ -4,21 +4,17 @@
  */
 
 import { RSIData } from '../types';
-import { Mutex, RateLimiter } from '../utils';
-import { API, RATE_LIMIT } from '../constants';
+import { API } from '../constants';
 import { CandleFetcher, calculateRSIForInstrument } from './rsi-core';
+import { okxCandleMutex, okxFetch } from './okx-gateway';
 
 const OKX_REST_BASE = API.OKX_REST_BASE;
-
-// Global mutex and rate limiter for OKX RSI fetching
-const rsiMutex = new Mutex();
-const rateLimiter = new RateLimiter(RATE_LIMIT.MAX_REQUESTS_PER_SECOND, RATE_LIMIT.WINDOW_MS);
 
 /** OKX candle fetcher — GET request, response is newest-first string arrays */
 const okxCandleFetcher: CandleFetcher = {
   async fetchCandles(instId: string, interval: string, limit: number): Promise<number[][] | null> {
     try {
-      const response = await fetch(`${OKX_REST_BASE}/market/candles?instId=${instId}&bar=${interval}&limit=${limit}`);
+      const response = await okxFetch(`${OKX_REST_BASE}/market/candles?instId=${instId}&bar=${interval}&limit=${limit}`);
       if (!response.ok) {
         console.warn(`[OKX] Candles HTTP error for ${instId} ${interval}: ${response.status}`);
         return null;
@@ -38,8 +34,10 @@ const okxCandleFetcher: CandleFetcher = {
     }
   },
 
+  // Rate metering now happens inside okxFetch (shared OKX gateway), so the
+  // pipeline's explicit waitForSlot is a no-op to avoid double-counting slots.
   async waitForSlot(): Promise<void> {
-    await rateLimiter.waitForSlot();
+    // intentionally empty — see okxFetch
   },
 };
 
@@ -48,7 +46,7 @@ export async function fetchRSIForInstrument(instId: string): Promise<RSIData | n
   return calculateRSIForInstrument(
     instId,
     okxCandleFetcher,
-    rsiMutex,
+    okxCandleMutex,
     '1D',   // daily
     '1W',   // weekly
     '1H',   // hourly

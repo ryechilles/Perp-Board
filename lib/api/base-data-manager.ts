@@ -30,7 +30,17 @@ export abstract class BaseDataManager {
     this.onStatus = onStatus;
   }
 
-  /** Schedule a throttled flush — writes to this.tickers immediately, but only notifies React once per frame */
+  /**
+   * Schedule a throttled flush — writes to this.tickers immediately, but only
+   * notifies React once per frame.
+   *
+   * The hot-path flush passes `this.tickers` BY REFERENCE (no defensive clone):
+   * MarketStore.setTickers diffs it and keeps its own `merged` copy, so the
+   * store never aliases our live map. The flush runs synchronously, and every
+   * consumer (setTickers / extractFundingFromTickers / prune) materializes
+   * what it needs before any await — so a later WS mutation can't corrupt them.
+   * This removes one full Map allocation per animation frame (~300 entries).
+   */
   protected scheduleUpdate(status?: 'connecting' | 'live' | 'error', time?: Date): void {
     if (status) this.statusPending = { status, time };
     if (this.updateScheduled) return;
@@ -38,7 +48,7 @@ export abstract class BaseDataManager {
     requestAnimationFrame(() => {
       this.updateScheduled = false;
       if (!this.isRunning) return;
-      this.onUpdate(new Map(this.tickers));
+      this.onUpdate(this.tickers);
       if (this.statusPending) {
         this.onStatus(this.statusPending.status, this.statusPending.time);
         this.statusPending = null;
