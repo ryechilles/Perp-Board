@@ -1,88 +1,70 @@
 /**
- * Market data & logo functions
+ * Market cap / rank data — sourced from CoinLore (keyless).
  *
- * Logos:
- *   - Crypto: sourced from CoinGecko (via coin.image in /coins/markets response)
- *   - Cached locally for 7 days
+ * Replaces CoinGecko for market data: CoinGecko's free API returns 403 to
+ * server-side requests from Cloudflare Worker IPs. CoinLore is keyless and
+ * works from datacenter IPs. Fetched via the /api/marketcap proxy (which adds
+ * a 5-minute server cache).
  *
- * Market cap & sparkline: sourced from CoinGecko (Top 500 by market cap).
+ * Field coverage vs the old CoinGecko source:
+ *  - marketCap + rank: provided by CoinLore.
+ *  - logo: CoinLore does not return logos. Best-effort: reuse any previously
+ *    cached CoinGecko logos from localStorage; unknown symbols fall back to
+ *    letter avatars in the UI.
+ *  - sparkline: not provided; the table falls back to OKX-derived sparklines.
+ *
+ * NOTE: filename kept as `coingecko.ts` to avoid churn (imported widely as
+ * `fetchMarketCapData`); the data source is now CoinLore.
  */
 
 import { MarketCapData } from '../types';
-import { TIMING, CACHE_KEYS } from '../constants';
-import { getLogoCache, setLogoCache } from '../cache';
+import { getLogoCache } from '../cache';
 
-// CoinGecko coin type
-type CoinGeckoCoin = {
+// CoinLore ticker shape (subset we use)
+interface CoinLoreCoin {
   symbol: string;
-  market_cap: number;
-  market_cap_rank: number;
-  image: string;
-  sparkline_in_7d?: { price: number[] };
-};
+  rank: number;
+  market_cap_usd: string;
+}
 
-// Fetch CoinGecko market cap data
-// OKX only has ~250-300 perpetual pairs, most are in top 500 by market cap
-// Logos are cached locally for 7 days
+// Fetch market cap data via the CoinLore proxy.
 export async function fetchMarketCapData(): Promise<Map<string, MarketCapData>> {
   const result = new Map<string, MarketCapData>();
-
-  // Load cached logos for instant display
   const cachedLogos = getLogoCache();
-  const newLogos: Record<string, string> = { ...cachedLogos };
-
-  // Helper to process CoinGecko response
-  const processCoinGeckoData = (data: CoinGeckoCoin[]) => {
-    data.forEach((coin) => {
-      const symbol = coin.symbol.toUpperCase();
-      const existing = result.get(symbol);
-      if (!existing || (coin.market_cap_rank && coin.market_cap_rank < existing.rank)) {
-        const logo = cachedLogos[symbol] || coin.image;
-        if (coin.image) {
-          newLogos[symbol] = coin.image;
-        }
-        result.set(symbol, {
-          marketCap: coin.market_cap,
-          rank: coin.market_cap_rank || 9999,
-          logo,
-          sparkline: coin.sparkline_in_7d?.price
-        });
-      }
-    });
-  };
 
   try {
-    // Use our API proxy to avoid CORS and rate limit issues
-    // Fetch Top 500 coins by market cap (2 pages x 250)
+    const response = await fetch('/api/marketcap');
+    if (!response.ok) {
+      console.error(`[MarketCap] /api/marketcap error: ${response.status}`);
+      return result;
+    }
 
-    // Page 1: rank 1-250
-    console.log('[CoinGecko] Fetching page 1 (rank 1-250)...');
-    const response1 = await fetch('/api/coingecko?page=1');
-    if (response1.ok) {
-      const data1 = await response1.json();
-      if (Array.isArray(data1)) {
-        console.log(`[CoinGecko] Page 1: ${data1.length} coins`);
-        processCoinGeckoData(data1);
-        setLogoCache(newLogos);
+    const data = await response.json();
+    if (!Array.isArray(data)) return result;
+
+    for (const coin of data as CoinLoreCoin[]) {
+      const symbol = (coin.symbol || '').toUpperCase();
+      if (!symbol) continue;
+
+      const rank = Number(coin.rank) || 9999;
+      const marketCap = parseFloat(coin.market_cap_usd) || 0;
+      if (!marketCap) continue;
+
+      const existing = result.get(symbol);
+      // Multiple coins can share a symbol — keep the highest-ranked one.
+      if (!existing || rank < existing.rank) {
+        result.set(symbol, {
+          marketCap,
+          rank,
+          logo: cachedLogos[symbol],
+          sparkline: undefined,
+        });
       }
     }
 
-    // Page 2: rank 251-500
-    console.log('[CoinGecko] Fetching page 2 (rank 251-500)...');
-    const response2 = await fetch('/api/coingecko?page=2');
-    if (response2.ok) {
-      const data2 = await response2.json();
-      if (Array.isArray(data2)) {
-        console.log(`[CoinGecko] Page 2: ${data2.length} coins`);
-        processCoinGeckoData(data2);
-        setLogoCache(newLogos);
-      }
-    }
-
-    console.log(`[CoinGecko] Total matched: ${result.size} coins`);
+    console.log(`[MarketCap] CoinLore: ${result.size} coins`);
   } catch (error) {
-    console.error('[CoinGecko] Failed to fetch data:', error);
-    setLogoCache(newLogos);
+    console.error('[MarketCap] Failed to fetch:', error);
   }
 
   return result;
