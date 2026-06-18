@@ -3,7 +3,7 @@
 import { ReactNode, useState } from 'react';
 import { Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button, Card, CardHeader, CardContent, Spinner } from '@/components/ui';
+import { Button, Card, CardHeader, CardContent, Skeleton } from '@/components/ui';
 
 export interface SmallWidgetProps {
   /** Widget title displayed in header */
@@ -24,6 +24,11 @@ export interface SmallWidgetProps {
   padded?: boolean;
   /** Loading state */
   loading?: boolean;
+  /**
+   * Custom skeleton shown while `loading`. When omitted, a generic shimmer
+   * placeholder is rendered. Pass a layout-matched skeleton for the best fit.
+   */
+  skeleton?: ReactNode;
 }
 
 /**
@@ -80,6 +85,7 @@ export function SmallWidget({
   className,
   padded = true,
   loading = false,
+  skeleton,
 }: SmallWidgetProps) {
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -134,9 +140,13 @@ export function SmallWidget({
       {/* Content */}
       <CardContent className={cn('flex-1', padded ? 'p-4' : 'p-0')}>
         {loading ? (
-          <div className="flex items-center justify-center h-full min-h-[80px]">
-            <Spinner size="md" />
-          </div>
+          skeleton ?? (
+            <div className="space-y-2.5 min-h-[80px]">
+              <Skeleton className="h-9 w-full rounded-xl" />
+              <Skeleton className="h-3 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
+          )
         ) : (
           <>
             {children}

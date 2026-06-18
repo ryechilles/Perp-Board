@@ -5,6 +5,7 @@ export { TokenAvatar } from './TokenAvatar';
 export { TimeFrameSelector } from './TimeFrameSelector';
 export { TooltipList } from './TooltipList';
 export { Spinner } from './spinner';
+export { Skeleton } from './skeleton';
 export { ThemeToggle } from './ThemeToggle';
 
 // shadcn/ui components

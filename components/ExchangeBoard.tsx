@@ -5,9 +5,8 @@ import { Header } from '@/components/Header';
 import { Controls } from '@/components/Controls';
 import { Footer } from '@/components/Footer';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { TableHeader, TableRow, TokenCard } from '@/components/table';
+import { TableHeader, TableRow, TokenCard, TableRowSkeleton, TokenCardSkeleton } from '@/components/table';
 import { TabContainer, WidgetGrid } from '@/components/layout';
-import { Spinner } from '@/components/ui';
 import { ColumnKey, ProcessedTicker } from '@/lib/types';
 import { COLUMN_DEFINITIONS } from '@/lib/utils';
 import { useExchangeStore } from '@/hooks/useExchangeStore';
@@ -337,20 +336,23 @@ export function ExchangeBoard({
 
                   <tbody>
                     {filteredData.length === 0 ? (
-                      <tr>
-                        <td colSpan={visibleColumns.length}>
-                          <div className="flex items-center justify-center py-16 text-muted-foreground">
-                            {store.tickers.size === 0 ? (
-                              <>
-                                <Spinner size="md" className="mr-3" />
-                                Loading market data...
-                              </>
-                            ) : (
-                              'No data found'
-                            )}
-                          </div>
-                        </td>
-                      </tr>
+                      store.tickers.size === 0 ? (
+                        Array.from({ length: 12 }).map((_, i) => (
+                          <TableRowSkeleton
+                            key={i}
+                            visibleColumns={visibleColumns}
+                            getColStyle={getColStyle}
+                          />
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={visibleColumns.length}>
+                            <div className="flex items-center justify-center py-16 text-muted-foreground">
+                              No data found
+                            </div>
+                          </td>
+                        </tr>
+                      )
                     ) : (
                       <>
                         {paddingTop > 0 && (
@@ -398,16 +400,17 @@ export function ExchangeBoard({
                 whose padding reserves total list height. */}
             <div className="order-4 lg:hidden">
               {filteredData.length === 0 ? (
-                <div className="flex items-center justify-center py-16 text-muted-foreground">
-                  {store.tickers.size === 0 ? (
-                    <>
-                      <Spinner size="md" className="mr-3" />
-                      Loading market data...
-                    </>
-                  ) : (
-                    'No data found'
-                  )}
-                </div>
+                store.tickers.size === 0 ? (
+                  <div className="space-y-2">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <TokenCardSkeleton key={i} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center py-16 text-muted-foreground">
+                    No data found
+                  </div>
+                )
               ) : (
                 <div
                   ref={cardsWrapperRef}

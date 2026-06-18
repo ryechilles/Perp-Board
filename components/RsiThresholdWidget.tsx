@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { TrendingDown, TrendingUp } from 'lucide-react';
 import { SmallWidget } from '@/components/widgets/base';
-import { TooltipList, TokenAvatar } from '@/components/ui';
+import { TooltipList, TokenAvatar, Skeleton } from '@/components/ui';
 import { ProcessedTicker, RSIData, MarketCapData } from '@/lib/types';
 import { formatPrice, getRsiPillStyle } from '@/lib/utils';
 import { getTokensByRsiThreshold } from '@/lib/widget-utils';
@@ -62,6 +62,23 @@ export function RsiThresholdWidget({
       icon={config.icon}
       subtitle={`Avg RSI ${config.comparator} ${config.threshold} in ${exchangeLabel} Perp Top ${WIDGET.TOP_TOKENS_COUNT}`}
       loading={isLoading}
+      skeleton={
+        <div className="space-y-1">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex items-center justify-between py-1.5">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-muted-foreground w-4">{i}</span>
+                <Skeleton className="w-5 h-5 rounded-full" />
+                <Skeleton className="w-10 h-3" />
+              </div>
+              <div className="flex items-center gap-3">
+                <Skeleton className="w-12 h-3" />
+                <Skeleton className="w-12 h-5 rounded-md" />
+              </div>
+            </div>
+          ))}
+        </div>
+      }
       tooltip={
         <TooltipList items={[
           `Filters ${exchangeLabel} perp top ${WIDGET.TOP_TOKENS_COUNT} by market cap`,
@@ -72,21 +89,7 @@ export function RsiThresholdWidget({
       }
     >
       <div className="space-y-1">
-        {isLoading ? (
-          [1, 2, 3].map((i) => (
-            <div key={i} className="flex items-center justify-between py-1.5">
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted-foreground w-4">{i}</span>
-                <div className="w-5 h-5 rounded-full bg-muted animate-pulse" />
-                <div className="w-10 h-3 bg-muted rounded animate-pulse" />
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-3 bg-muted rounded animate-pulse" />
-                <div className="w-12 h-5 bg-muted rounded-md animate-pulse" />
-              </div>
-            </div>
-          ))
-        ) : tokens.length > 0 ? (
+        {tokens.length > 0 ? (
           tokens.map((token, i) => (
             <div
               key={token.instId}

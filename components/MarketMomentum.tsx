@@ -2,7 +2,7 @@
 
 import { Activity } from 'lucide-react';
 import { SmallWidget } from '@/components/widgets/base';
-import { TooltipList } from '@/components/ui';
+import { TooltipList, Skeleton } from '@/components/ui';
 import { getRsiPillStyle, getRsiSignal } from '@/lib/utils';
 
 interface MarketMomentumProps {
@@ -23,6 +23,7 @@ export function MarketMomentum({ avgRsi7, avgRsi14, exchangeLabel = 'OKX' }: Mar
       icon={<Activity className="w-4 h-4" />}
       subtitle={`Top 100 ${exchangeLabel} Perp Tokens`}
       loading={isLoading}
+      skeleton={<Skeleton className="h-[52px] w-full rounded-xl" />}
       className="w-full"
       tooltip={
         <TooltipList items={[

@@ -2,7 +2,7 @@
 
 import { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
-import { Spinner } from '@/components/ui';
+import { Skeleton } from '@/components/ui';
 
 export interface LargeWidgetProps {
   /** Widget title displayed in header */
@@ -23,6 +23,11 @@ export interface LargeWidgetProps {
   padded?: boolean;
   /** Loading state */
   loading?: boolean;
+  /**
+   * Custom skeleton shown while `loading`. When omitted, a generic shimmer
+   * placeholder is rendered. Pass a layout-matched skeleton for the best fit.
+   */
+  skeleton?: ReactNode;
   /** Whether to allow content scrolling */
   scrollable?: boolean;
 }
@@ -61,6 +66,7 @@ export function LargeWidget({
   className,
   padded = true,
   loading = false,
+  skeleton,
   scrollable = false,
 }: LargeWidgetProps) {
   return (
@@ -106,9 +112,13 @@ export function LargeWidget({
         )}
       >
         {loading ? (
-          <div className="flex items-center justify-center h-full min-h-[120px]">
-            <Spinner size="lg" />
-          </div>
+          skeleton ?? (
+            <div className="space-y-3 min-h-[120px]">
+              <Skeleton className="h-4 w-1/3" />
+              <Skeleton className="h-28 w-full rounded-lg" />
+              <Skeleton className="h-3 w-2/3" />
+            </div>
+          )
         ) : (
           children
         )}
