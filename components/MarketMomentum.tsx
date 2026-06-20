@@ -50,7 +50,7 @@ export function MarketMomentum({ avgRsi7, avgRsi14, exchangeLabel = 'OKX' }: Mar
         </div>
 
         {/* Daily RSI Values - Show on hover with smooth transition */}
-        <div className="flex items-center justify-between text-[11px] max-h-0 opacity-0 overflow-hidden transition-all duration-200 ease-out group-hover/momentum:max-h-10 group-hover/momentum:opacity-100 group-hover/momentum:mt-3">
+        <div className="flex items-center justify-between text-[11px] max-h-0 opacity-0 overflow-hidden transition-[max-height,opacity,margin] duration-200 ease-out group-hover/momentum:max-h-10 group-hover/momentum:opacity-100 group-hover/momentum:mt-3 group-focus-within/momentum:max-h-10 group-focus-within/momentum:opacity-100 group-focus-within/momentum:mt-3 [@media(hover:none)]:max-h-10 [@media(hover:none)]:opacity-100 [@media(hover:none)]:mt-3">
           <div className="flex items-center gap-1.5">
             <span className="text-muted-foreground">D-RSI7 Avg</span>
             <span className={`px-2 py-0.5 rounded-md font-semibold tabular-nums min-w-[42px] text-center ${getRsiPillStyle(avgRsi7)}`}>

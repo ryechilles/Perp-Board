@@ -256,13 +256,21 @@ export function ExchangeBoard({
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-muted">
+      {/* Skip link — first focusable element, jumps keyboard users past the header */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[200] focus:rounded-md focus:bg-card focus:px-3 focus:py-2 focus:text-sm focus:shadow-md focus:ring-1 focus:ring-ring"
+      >
+        Skip to content
+      </a>
+
       {/* Header */}
       <div className="bg-card border-b border-gray-950/[0.05] dark:border-white/[0.05] pt-safe">
         <Header />
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col px-safe pt-4 pb-safe overflow-hidden">
+      <main id="main-content" className="flex-1 flex flex-col px-safe pt-4 pb-safe overflow-hidden">
         <div className="max-w-[1600px] mx-auto w-full flex flex-col flex-1 overflow-hidden">
 
           {/* Main grid: 4 sections with responsive order
@@ -462,7 +470,7 @@ export function ExchangeBoard({
             </div>
           </div>
         </div>
-      </div>
+      </main>
 
       {/* Footer */}
       <div className="px-6 flex-shrink-0">

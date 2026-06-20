@@ -25,7 +25,7 @@ export function RsiFilter({ label, value, onChange }: RsiFilterProps) {
   const focusHandler = (e: React.FocusEvent<HTMLInputElement>) => setTimeout(() => e.target.select(), 0);
   const clickHandler = (e: React.MouseEvent<HTMLInputElement>) => setTimeout(() => (e.target as HTMLInputElement).select(), 0);
 
-  const buttonBase = "px-2 py-1 rounded-md text-xs font-medium transition-all";
+  const buttonBase = "px-2 py-1 rounded-md text-xs font-medium transition-[color,background-color,box-shadow]";
   const buttonActive = "bg-background text-foreground shadow-sm";
   const buttonInactive = "text-muted-foreground hover:text-foreground";
 
@@ -61,7 +61,7 @@ export function RsiFilter({ label, value, onChange }: RsiFilterProps) {
             e.currentTarget.querySelector('input')?.focus();
           }}
           className={cn(
-            "flex items-center px-2 py-1 rounded-md text-xs font-medium transition-all cursor-pointer",
+            "flex items-center px-2 py-1 rounded-md text-xs font-medium transition-[color,background-color,box-shadow] cursor-pointer",
             isCustomLess
               ? buttonActive
               : cn(buttonInactive, "focus-within:bg-background focus-within:shadow-sm focus-within:text-foreground")
@@ -97,7 +97,7 @@ export function RsiFilter({ label, value, onChange }: RsiFilterProps) {
             if (!(e.target instanceof HTMLInputElement)) e.currentTarget.querySelector('input')?.focus();
           }}
           className={cn(
-            "flex items-center px-2 py-1 rounded-md text-xs font-medium transition-all cursor-pointer",
+            "flex items-center px-2 py-1 rounded-md text-xs font-medium transition-[color,background-color,box-shadow] cursor-pointer",
             isCustomRange
               ? buttonActive
               : cn(buttonInactive, "focus-within:bg-background focus-within:shadow-sm focus-within:text-foreground")
@@ -149,7 +149,7 @@ export function RsiFilter({ label, value, onChange }: RsiFilterProps) {
             e.currentTarget.querySelector('input')?.focus();
           }}
           className={cn(
-            "flex items-center px-2 py-1 rounded-md text-xs font-medium transition-all cursor-pointer",
+            "flex items-center px-2 py-1 rounded-md text-xs font-medium transition-[color,background-color,box-shadow] cursor-pointer",
             isCustomGreater
               ? buttonActive
               : cn(buttonInactive, "focus-within:bg-background focus-within:shadow-sm focus-within:text-foreground")

@@ -90,7 +90,7 @@ export function LargeWidget({
             <span className="text-muted-foreground flex-shrink-0">{icon}</span>
           )}
           <div className="min-w-0">
-            <h3 className="font-semibold text-foreground truncate">{title}</h3>
+            <h2 className="font-semibold text-foreground truncate text-pretty">{title}</h2>
             {subtitle && (
               <p className="text-sm text-muted-foreground truncate">{subtitle}</p>
             )}

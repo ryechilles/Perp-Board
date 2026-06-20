@@ -75,6 +75,52 @@ export function Controls({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showCustomizePanel]);
 
+  // Drawer a11y: Escape to close, focus trap, focus restore, inert when closed
+  useEffect(() => {
+    const panel = customizePanelRef.current;
+    if (!panel) return;
+
+    if (!showCustomizePanel) {
+      panel.inert = true;
+      return;
+    }
+    panel.inert = false;
+
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const focusables = () =>
+      panel.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+    focusables()[0]?.focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setShowCustomizePanel(false);
+        return;
+      }
+      if (e.key === 'Tab') {
+        const items = focusables();
+        if (items.length === 0) return;
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      previouslyFocused?.focus?.();
+    };
+  }, [showCustomizePanel]);
+
   // Determine active quick filter based on current filters
   const getActiveQuickFilter = (): QuickFilter => {
     if (filters.rank === '1-25' && !filters.rsi7 && !filters.rsi14 && !filters.isMeme && !filters.hasSpot) return 'top25';
@@ -478,6 +524,7 @@ export function Controls({
       {/* Sidebar Overlay */}
       {showCustomizePanel && (
         <div
+          aria-hidden="true"
           className="fixed inset-0 bg-black/20 z-[100]"
           onClick={() => setShowCustomizePanel(false)}
         />
@@ -486,7 +533,10 @@ export function Controls({
       {/* Sidebar Panel */}
       <div
         ref={customizePanelRef}
-        className={`fixed top-0 right-0 h-full w-[500px] bg-card shadow-xl z-[101] transform transition-transform duration-300 ease-in-out overflow-hidden ${
+        role="dialog"
+        aria-modal="true"
+        aria-label="Customize columns and filters"
+        className={`fixed top-0 right-0 h-full w-[500px] max-w-[100vw] bg-card shadow-xl z-[101] transform transition-transform duration-300 ease-in-out overflow-hidden ${
           showCustomizePanel ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -518,7 +568,7 @@ export function Controls({
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto overflow-x-hidden p-4">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain p-4">
 
           {/* Columns tab content */}
           {customizeTab === 'columns' && (

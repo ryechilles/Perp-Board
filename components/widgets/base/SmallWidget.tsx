@@ -107,9 +107,9 @@ export function SmallWidget({
           )}
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <h3 className="font-medium text-sm truncate">
+              <h2 className="font-medium text-sm truncate text-pretty">
                 {title}
-              </h3>
+              </h2>
               {tooltip && (
                 <Button
                   variant="ghost"

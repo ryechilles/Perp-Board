@@ -114,10 +114,12 @@ function PillButton<T extends string = string>({
       <button
         ref={buttonRef}
         onClick={onClick}
+        onFocus={onMouseEnter}
+        onBlur={onMouseLeave}
         disabled={option.disabled}
         className={cn(
           'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md font-medium',
-          'ring-offset-background transition-all',
+          'ring-offset-background transition-[color,background-color,box-shadow]',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
           sizeStyles[size],
           active

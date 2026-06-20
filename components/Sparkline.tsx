@@ -109,6 +109,7 @@ export function Sparkline({ data, change, width = 50, height = 20, className = '
       height={height}
       className={className}
       viewBox={`0 0 ${width} ${height}`}
+      aria-hidden="true"
     >
       {/* Gradient definition for shadow/fill effect */}
       <defs>

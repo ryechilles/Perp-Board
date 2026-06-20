@@ -171,7 +171,7 @@ export function AltcoinVsBTC({ tickers, rsiData, marketCapData, onTokenClick, on
       </div>
 
       {/* Ratio Section - Show on hover */}
-      <div className="max-h-0 overflow-hidden opacity-0 group-hover:max-h-40 group-hover:opacity-100 group-hover:mt-3 group-hover:pt-3 group-hover:border-t group-hover:border-gray-950/[0.10] dark:group-hover:border-white/[0.10] transition-all duration-200">
+      <div className="max-h-0 overflow-hidden opacity-0 group-hover:max-h-40 group-hover:opacity-100 group-hover:mt-3 group-hover:pt-3 group-hover:border-t group-hover:border-gray-950/[0.10] dark:group-hover:border-white/[0.10] group-focus-within:max-h-40 group-focus-within:opacity-100 group-focus-within:mt-3 group-focus-within:pt-3 group-focus-within:border-t group-focus-within:border-gray-950/[0.10] dark:group-focus-within:border-white/[0.10] [@media(hover:none)]:max-h-40 [@media(hover:none)]:opacity-100 [@media(hover:none)]:mt-3 [@media(hover:none)]:pt-3 transition-[max-height,opacity,margin,padding] duration-200">
         <div className="text-[11px] text-muted-foreground mb-2">Altcoin / BTC Ratio</div>
         <div className="space-y-1.5">
           {(['top10', 'top20', 'top50'] as const).map((tier) => {

@@ -113,7 +113,7 @@ export function AHR999Indicator() {
       </div>
 
       {/* Zone Legend - Show on hover */}
-      <div className="space-y-1 mt-0 max-h-0 overflow-hidden opacity-0 group-hover:mt-3 group-hover:max-h-32 group-hover:opacity-100 transition-all duration-200">
+      <div className="space-y-1 mt-0 max-h-0 overflow-hidden opacity-0 group-hover:mt-3 group-hover:max-h-32 group-hover:opacity-100 group-focus-within:mt-3 group-focus-within:max-h-32 group-focus-within:opacity-100 [@media(hover:none)]:mt-3 [@media(hover:none)]:max-h-32 [@media(hover:none)]:opacity-100 transition-[max-height,opacity,margin] duration-200">
         {AHR999_ZONE_LEGEND.map((zone) => (
           <div
             key={zone.label}
