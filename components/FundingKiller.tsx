@@ -33,23 +33,32 @@ function KillerSectionHeader({
 }) {
   const dotColor = color === 'green' ? 'bg-green-500' : 'bg-red-500';
   const canClick = count > 0 && onClick;
-
-  return (
-    <div
-      className={`flex items-center justify-between mb-3 pb-2 border-b border-gray-950/[0.10] dark:border-white/[0.10] ${
-        canClick ? 'cursor-pointer hover:opacity-80' : ''
-      }`}
-      onClick={() => canClick && onClick()}
-    >
-      <div className="flex items-center gap-2">
-        <span className={`w-2 h-2 rounded-full ${dotColor}`} />
-        <span className="text-[12px] font-medium text-foreground">{title}</span>
-        <span className="text-[11px] text-muted-foreground tabular-nums">
-          {isLoading ? '--' : count}
-        </span>
-      </div>
+  const baseClass =
+    'flex items-center justify-between mb-3 pb-2 border-b border-gray-950/[0.10] dark:border-white/[0.10]';
+  const inner = (
+    <div className="flex items-center gap-2">
+      <span className={`w-2 h-2 rounded-full ${dotColor}`} aria-hidden="true" />
+      <span className="text-[12px] font-medium text-foreground">{title}</span>
+      <span className="text-[11px] text-muted-foreground tabular-nums">
+        {isLoading ? '--' : count}
+      </span>
     </div>
   );
+
+  if (canClick) {
+    return (
+      <button
+        type="button"
+        className={`${baseClass} w-full text-left cursor-pointer hover:opacity-80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm`}
+        onClick={() => onClick()}
+        aria-label={`${title} (${count})`}
+      >
+        {inner}
+      </button>
+    );
+  }
+
+  return <div className={baseClass}>{inner}</div>;
 }
 
 export function FundingKiller({
@@ -93,10 +102,12 @@ export function FundingKiller({
   const isLoading = tickers.size === 0;
 
   const renderTokenRow = (token: TokenWithApr, index: number, colorClass: string, showSign: boolean) => (
-    <div
+    <button
+      type="button"
       key={token.instId}
-      className="flex items-center justify-between py-1.5 cursor-pointer hover:bg-muted/50 rounded -mx-2 px-2"
+      className="w-full text-left flex items-center justify-between py-1.5 cursor-pointer hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded -mx-2 px-2"
       onClick={() => onTokenClick?.(token.symbol)}
+      aria-label={token.symbol}
     >
       <div className="flex items-center gap-2">
         <span className="text-[11px] text-muted-foreground w-4">{index + 1}</span>
@@ -111,7 +122,7 @@ export function FundingKiller({
           {showSign && token.apr > 0 ? '+' : ''}{token.apr.toFixed(1)}%
         </span>
       </div>
-    </div>
+    </button>
   );
 
   const aprThreshold = FUNDING.KILLER_APR_THRESHOLD;

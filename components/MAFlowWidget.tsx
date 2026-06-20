@@ -80,23 +80,32 @@ function SectionHeader({
   onClick?: () => void;
 }) {
   const canClick = count > 0 && onClick;
-
-  return (
-    <div
-      className={`flex items-center justify-between mb-3 pb-2 border-b border-gray-950/[0.10] dark:border-white/[0.10] ${
-        canClick ? 'cursor-pointer hover:opacity-80' : ''
-      }`}
-      onClick={() => canClick && onClick()}
-    >
-      <div className="flex items-center gap-2">
-        <span className={`w-2 h-2 rounded-full ${DOT_COLORS[color]}`} />
-        <span className="text-[12px] font-medium text-foreground">{title}</span>
-        <span className="text-[11px] text-muted-foreground tabular-nums">
-          {isLoading ? '--' : count}
-        </span>
-      </div>
+  const baseClass =
+    'flex items-center justify-between mb-3 pb-2 border-b border-gray-950/[0.10] dark:border-white/[0.10]';
+  const inner = (
+    <div className="flex items-center gap-2">
+      <span className={`w-2 h-2 rounded-full ${DOT_COLORS[color]}`} aria-hidden="true" />
+      <span className="text-[12px] font-medium text-foreground">{title}</span>
+      <span className="text-[11px] text-muted-foreground tabular-nums">
+        {isLoading ? '--' : count}
+      </span>
     </div>
   );
+
+  if (canClick) {
+    return (
+      <button
+        type="button"
+        className={`${baseClass} w-full text-left cursor-pointer hover:opacity-80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm`}
+        onClick={() => onClick()}
+        aria-label={`${title} (${count})`}
+      >
+        {inner}
+      </button>
+    );
+  }
+
+  return <div className={baseClass}>{inner}</div>;
 }
 
 // Type-safe accessor for MA values by timeframe key
@@ -178,10 +187,12 @@ export function MAFlowWidget({
   const isLoading = tickers.size === 0 || maFlowData.size === 0;
 
   const renderTokenRow = (token: ConvergingToken, index: number) => (
-    <div
+    <button
+      type="button"
       key={token.instId}
-      className="flex items-center justify-between py-1.5 cursor-pointer hover:bg-muted/50 rounded -mx-2 px-2"
+      className="w-full text-left flex items-center justify-between py-1.5 cursor-pointer hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded -mx-2 px-2"
       onClick={() => onTokenClick?.(token.symbol)}
+      aria-label={token.symbol}
     >
       <div className="flex items-center gap-2">
         <span className="text-[11px] text-muted-foreground w-4">{index + 1}</span>
@@ -198,7 +209,7 @@ export function MAFlowWidget({
           {token.convergence.toFixed(1)}%
         </span>
       </div>
-    </div>
+    </button>
   );
 
   return (
@@ -242,7 +253,7 @@ export function MAFlowWidget({
                 <div className="text-center py-3 text-[11px] text-muted-foreground">
                   {maFlowData.size > 0
                     ? `No tokens with spread ≤ ${THRESHOLD}%`
-                    : 'Loading...'}
+                    : 'Loading…'}
                 </div>
               )}
             </div>

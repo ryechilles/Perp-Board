@@ -50,6 +50,9 @@ export function AHR999Indicator() {
     <img
       src="https://assets.coingecko.com/coins/images/1/small/bitcoin.png"
       alt="BTC"
+      width={20}
+      height={20}
+      loading="lazy"
       className="w-5 h-5 rounded-full"
     />
   );

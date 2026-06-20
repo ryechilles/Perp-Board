@@ -96,10 +96,12 @@ export function AltcoinTopGainers({ tickers, rsiData, marketCapData, onTokenClic
           topGainers.map((token, i) => {
             const change = getChangeByTimeFrame(token, timeFrame);
             return (
-              <div
+              <button
+                type="button"
                 key={token.instId}
-                className="flex items-center justify-between py-1.5 cursor-pointer hover:bg-muted/50 rounded -mx-2 px-2"
+                className="w-full text-left flex items-center justify-between py-1.5 cursor-pointer hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded -mx-2 px-2"
                 onClick={() => onTokenClick?.(token.symbol)}
+                aria-label={token.symbol}
               >
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] text-muted-foreground w-4">{i + 1}</span>
@@ -112,7 +114,7 @@ export function AltcoinTopGainers({ tickers, rsiData, marketCapData, onTokenClic
                     {formatChange(change).text}
                   </span>
                 </div>
-              </div>
+              </button>
             );
           })
         )}

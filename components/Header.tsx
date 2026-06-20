@@ -104,7 +104,7 @@ export const Header = memo(function Header() {
   };
 
   return (
-    <header className="px-4 sm:px-6 py-2 flex-shrink-0">
+    <header className="px-safe py-2 flex-shrink-0">
       <div className="max-w-[1600px] mx-auto w-full flex items-center justify-between">
         {/* Left: Logo + Title + Version */}
         <div className="flex items-center gap-3">

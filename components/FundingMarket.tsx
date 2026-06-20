@@ -101,29 +101,35 @@ export function FundingMarket({
         {/* Main Stats */}
         <div className="flex items-center justify-around">
           {/* Positive */}
-          <div
-            className={`text-center ${onGroupClick && positiveCount > 0 ? 'cursor-pointer hover:opacity-70' : ''}`}
+          <button
+            type="button"
+            disabled={!(onGroupClick && positiveCount > 0)}
+            className="text-center enabled:cursor-pointer enabled:hover:opacity-70 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
             onClick={() => positiveCount > 0 && onGroupClick?.(positiveSymbols)}
+            aria-label={`Positive funding: ${positiveCount}`}
           >
             <div className="text-[28px] font-bold text-green-500">
               {isLoading ? '--' : positiveCount}
             </div>
             <div className="text-[11px] text-muted-foreground">Positive</div>
-          </div>
+          </button>
 
           {/* Divider */}
-          <div className="h-12 w-px bg-muted" />
+          <div className="h-12 w-px bg-muted" aria-hidden="true" />
 
           {/* Negative */}
-          <div
-            className={`text-center ${onGroupClick && negativeCount > 0 ? 'cursor-pointer hover:opacity-70' : ''}`}
+          <button
+            type="button"
+            disabled={!(onGroupClick && negativeCount > 0)}
+            className="text-center enabled:cursor-pointer enabled:hover:opacity-70 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
             onClick={() => negativeCount > 0 && onGroupClick?.(negativeSymbols)}
+            aria-label={`Negative funding: ${negativeCount}`}
           >
             <div className="text-[28px] font-bold text-red-500">
               {isLoading ? '--' : negativeCount}
             </div>
             <div className="text-[11px] text-muted-foreground">Negative</div>
-          </div>
+          </button>
         </div>
 
         {/* Visual Bar */}
@@ -131,11 +137,11 @@ export function FundingMarket({
           {total > 0 && (
             <>
               <div
-                className="bg-green-500 transition-all duration-300"
+                className="bg-green-500 transition-[width] duration-300"
                 style={{ width: `${positivePercent}%` }}
               />
               <div
-                className="bg-red-500 transition-all duration-300"
+                className="bg-red-500 transition-[width] duration-300"
                 style={{ width: `${negativePercent}%` }}
               />
             </>

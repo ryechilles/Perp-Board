@@ -132,35 +132,42 @@ export function AltcoinVsBTC({ tickers, rsiData, marketCapData, onTokenClick, on
             const avg = getAvg(tier);
             const n = tier === 'top10' ? 10 : tier === 'top20' ? 20 : 50;
             return (
-              <div
+              <button
+                type="button"
                 key={tier}
-                className="flex items-center justify-between cursor-pointer hover:bg-muted/50 rounded -mx-1 px-1 py-0.5"
+                className="w-full text-left flex items-center justify-between cursor-pointer hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded -mx-1 px-1 py-0.5"
                 onClick={() => onTopNClick?.(getTopNSymbols(n))}
+                aria-label={`${label} altcoins`}
               >
                 <span className="text-[12px] text-muted-foreground">{label}</span>
                 <span className={`text-[13px] font-semibold tabular-nums ${formatChange(avg).color}`}>
                   {formatChange(avg).text}
                 </span>
-              </div>
+              </button>
             );
           })}
         </div>
 
         {/* Right column - BTC */}
-        <div
-          className="flex flex-col items-center justify-center bg-orange-50 rounded-lg py-2 cursor-pointer hover:bg-orange-100"
+        <button
+          type="button"
+          className="flex flex-col items-center justify-center bg-orange-50 dark:bg-orange-950/40 rounded-lg py-2 cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           onClick={() => onTokenClick?.('BTC')}
+          aria-label="BTC"
         >
           <img
             src="https://assets.coingecko.com/coins/images/1/small/bitcoin.png"
             alt="BTC"
+            width={24}
+            height={24}
+            loading="lazy"
             className="w-6 h-6 rounded-full mb-1"
           />
           <span className="text-[11px] text-muted-foreground">BTC</span>
           <span className={`text-[14px] font-bold tabular-nums ${formatChange(getBtcChange()).color}`}>
             {formatChange(getBtcChange()).text}
           </span>
-        </div>
+        </button>
       </div>
 
       {/* Ratio Section - Show on hover */}

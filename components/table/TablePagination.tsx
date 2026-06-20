@@ -22,6 +22,9 @@ export function TablePagination({
   const startItem = (currentPage - 1) * pageSize + 1;
   const endItem = Math.min(currentPage * pageSize, totalItems);
 
+  const statusLabel =
+    status === 'live' ? 'Live' : status === 'connecting' ? 'Connecting…' : 'Reconnecting…';
+
   return (
     <div className="flex items-center justify-between px-4 py-3 border-t border-gray-950/[0.10] dark:border-white/[0.10] flex-shrink-0">
       <div className="flex items-center gap-3">
@@ -29,6 +32,7 @@ export function TablePagination({
           {startItem}-{endItem} of {totalItems}
         </span>
         <span
+          aria-hidden="true"
           className={`w-1.5 h-1.5 rounded-full ${
             status === 'live'
               ? 'bg-green-500'
@@ -36,14 +40,11 @@ export function TablePagination({
                 ? 'bg-yellow-500 animate-pulse'
                 : 'bg-red-500'
           }`}
-          title={
-            status === 'live'
-              ? 'Live'
-              : status === 'connecting'
-                ? 'Connecting...'
-                : 'Reconnecting...'
-          }
+          title={statusLabel}
         />
+        <span className="sr-only" role="status" aria-live="polite">
+          {statusLabel}
+        </span>
       </div>
       <div className="flex items-center gap-1">
         <Button

@@ -368,12 +368,17 @@ export function Controls({
     <>
       {/* Mobile Search Row - minimal style */}
       <div className="md:hidden mb-3 w-full">
-        <label className="flex items-center gap-2 w-full border-b border-border pb-2 cursor-text">
-          <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        <label className="flex items-center gap-2 w-full border-b border-border pb-2 cursor-text focus-within:border-ring">
+          <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
           <input
             ref={mobileSearchInputRef}
             type="text"
-            placeholder=""
+            name="search"
+            inputMode="search"
+            enterKeyHint="search"
+            autoComplete="off"
+            spellCheck={false}
+            placeholder="Search…"
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
             className="bg-transparent border-none outline-none text-[14px] text-foreground placeholder:text-muted-foreground flex-1"
@@ -450,12 +455,17 @@ export function Controls({
             <Settings className="w-4 h-4 text-muted-foreground" />
           </Button>
 
-          <label className="inline-flex items-center gap-1 cursor-text">
-            <Search className="w-4 h-4 text-muted-foreground" />
+          <label className="inline-flex items-center gap-1 cursor-text rounded-sm focus-within:ring-1 focus-within:ring-ring">
+            <Search className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <input
               ref={searchInputRef}
               type="text"
-              placeholder=""
+              name="search"
+              inputMode="search"
+              enterKeyHint="search"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="Search…"
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
               className="bg-transparent border-none outline-none text-[13px] text-foreground w-[60px]"

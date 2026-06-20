@@ -22,8 +22,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Apply saved theme before paint: prevents flash + keeps color-scheme/theme-color in sync */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');var d=t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches);var el=document.documentElement;if(d)el.classList.add('dark');el.style.colorScheme=d?'dark':'light';var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',d?'#0a0a0a':'#fafafa');}catch(e){}})();`,
+          }}
+        />
         {/* Google Analytics */}
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
@@ -37,6 +43,11 @@ export default function RootLayout({
             gtag('config', '${GA_MEASUREMENT_ID}');
           `}
         </Script>
+        {/* Preconnect to asset/font CDNs to cut connection latency */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://assets.coingecko.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://assets.coincap.io" crossOrigin="anonymous" />
         {/* Responsive: mobile renders a card layout, desktop the full table */}
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         {/* Version meta tag */}
@@ -48,7 +59,8 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         {/* Safari pinned tab */}
         <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#22B96A" />
-        <meta name="theme-color" content="#22B96A" />
+        {/* Default matches light page background; init script + ThemeToggle keep it in sync with the active theme */}
+        <meta name="theme-color" content="#fafafa" />
       </head>
       <body>
         <TooltipProvider>

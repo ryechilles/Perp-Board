@@ -91,10 +91,12 @@ export function RsiThresholdWidget({
       <div className="space-y-1">
         {tokens.length > 0 ? (
           tokens.map((token, i) => (
-            <div
+            <button
+              type="button"
               key={token.instId}
-              className="flex items-center justify-between py-1.5 cursor-pointer hover:bg-muted/50 rounded -mx-2 px-2"
+              className="w-full text-left flex items-center justify-between py-1.5 cursor-pointer hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded -mx-2 px-2"
               onClick={() => onTokenClick?.(token.symbol)}
+              aria-label={token.symbol}
             >
               <div className="flex items-center gap-2">
                 <span className="text-[11px] text-muted-foreground w-4">{i + 1}</span>
@@ -107,7 +109,7 @@ export function RsiThresholdWidget({
                   {token.avgRsi.toFixed(1)}
                 </span>
               </div>
-            </div>
+            </button>
           ))
         ) : (
           <div className="text-center py-4 text-[11px] text-muted-foreground">

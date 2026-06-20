@@ -20,13 +20,13 @@ export function ThemeToggle() {
   const toggle = () => {
     const next = !isDark;
     setIsDark(next);
-    if (next) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
+    const el = document.documentElement;
+    el.classList.toggle('dark', next);
+    el.style.colorScheme = next ? 'dark' : 'light';
+    localStorage.setItem('theme', next ? 'dark' : 'light');
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', next ? '#0a0a0a' : '#fafafa');
   };
 
   if (!mounted) {

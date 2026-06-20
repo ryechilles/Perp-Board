@@ -257,12 +257,12 @@ export function ExchangeBoard({
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-muted">
       {/* Header */}
-      <div className="bg-card border-b border-gray-950/[0.05] dark:border-white/[0.05]">
+      <div className="bg-card border-b border-gray-950/[0.05] dark:border-white/[0.05] pt-safe">
         <Header />
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col px-4 sm:px-6 pt-4 pb-4 overflow-hidden">
+      <div className="flex-1 flex flex-col px-safe pt-4 pb-safe overflow-hidden">
         <div className="max-w-[1600px] mx-auto w-full flex flex-col flex-1 overflow-hidden">
 
           {/* Main grid: 4 sections with responsive order

@@ -111,6 +111,9 @@ export const BtcLogo = () => (
   <img
     src="https://assets.coingecko.com/coins/images/1/small/bitcoin.png"
     alt="BTC"
+    width={16}
+    height={16}
+    loading="lazy"
     className="w-4 h-4 rounded-full"
   />
 );

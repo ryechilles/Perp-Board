@@ -70,6 +70,8 @@ export function RsiFilter({ label, value, onChange }: RsiFilterProps) {
           <span>&lt;</span>
           <input
             type="number" min="1" max="100" step="1"
+            inputMode="numeric"
+            aria-label={`${label} less than`}
             value={isCustomLess && value ? value.slice(1) : ''}
             onChange={(e) => {
               let val = e.target.value;
@@ -103,6 +105,8 @@ export function RsiFilter({ label, value, onChange }: RsiFilterProps) {
         >
           <input
             type="number" min="1" max="100" step="1"
+            inputMode="numeric"
+            aria-label={`${label} range minimum`}
             value={rangeMin}
             onChange={(e) => {
               const val = e.target.value;
@@ -119,6 +123,8 @@ export function RsiFilter({ label, value, onChange }: RsiFilterProps) {
           <span>~</span>
           <input
             type="number" min="1" max="100" step="1"
+            inputMode="numeric"
+            aria-label={`${label} range maximum`}
             value={rangeMax}
             onChange={(e) => {
               const val = e.target.value;
@@ -152,6 +158,8 @@ export function RsiFilter({ label, value, onChange }: RsiFilterProps) {
           <span>&gt;</span>
           <input
             type="number" min="1" max="100" step="1"
+            inputMode="numeric"
+            aria-label={`${label} greater than`}
             value={isCustomGreater && value ? value.slice(1) : ''}
             onChange={(e) => {
               let val = e.target.value;
