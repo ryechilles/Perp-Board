@@ -11,6 +11,17 @@ import pkg from '../package.json';
 export const APP_VERSION = pkg.version;
 
 // ===========================================
+// Active Universe Cap
+// ===========================================
+// Hard cap on the instrument universe processed and displayed across the board
+// (table rows, RSI fetches, funding fan-out). Only the top-N crypto perps by
+// market-cap rank are kept; stock perps (STOCK_SYMBOLS, which have no CoinLore
+// rank) are always kept. Crypto without a rank is dropped. Tune in one place.
+export const UNIVERSE = {
+  MAX_CRYPTO: 100,
+} as const;
+
+// ===========================================
 // API Endpoints
 // ===========================================
 export const API = {

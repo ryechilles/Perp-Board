@@ -22,6 +22,7 @@ import {
   DataManager,
 } from '@/lib/types';
 import { fetchMarketCapData } from '@/lib/api/marketcap';
+import { selectUniverse, selectUniverseInstIds } from '@/lib/filters';
 import { TIMING, MA_FLOW } from '@/lib/constants';
 import {
   getMarketCapCache,
@@ -118,8 +119,13 @@ export class ExchangeController {
   private getSortedInstIds(tickerMap: Map<string, ProcessedTicker>): string[] {
     const marketCapData = this.store.getSnapshot().marketCapData;
     const volUsd = (t: ProcessedTicker) => (parseFloat(t.volCcy24h) || 0) * t.priceNum;
-    return this.adapter
-      .preFilterTickers(Array.from(tickerMap.values()))
+    // Cap to the active universe (top-N crypto by rank + stock perps) so RSI is
+    // only fetched for that set — the 100+ tier3 work disappears entirely.
+    const universe = selectUniverse(
+      this.adapter.preFilterTickers(Array.from(tickerMap.values())),
+      marketCapData
+    );
+    return universe
       .sort((a, b) => {
         const rankA = marketCapData.get(a.baseSymbol)?.rank ?? Number.MAX_SAFE_INTEGER;
         const rankB = marketCapData.get(b.baseSymbol)?.rank ?? Number.MAX_SAFE_INTEGER;
@@ -127,6 +133,22 @@ export class ExchangeController {
         return volUsd(b) - volUsd(a);
       })
       .map((t) => t.instId);
+  }
+
+  /**
+   * Build the capped-universe instId set for gating the OKX funding fan-out.
+   * Returns undefined when tickers or market-cap data aren't ready yet — callers
+   * then fetch the full set (graceful cold-start fallback).
+   */
+  private getUniverseInstIds(): Set<string> | undefined {
+    const tickers = this.dataManager?.getTickers();
+    if (!tickers || tickers.size === 0) return undefined;
+    const marketCapData = this.store.getSnapshot().marketCapData;
+    if (marketCapData.size === 0) return undefined;
+    return selectUniverseInstIds(
+      this.adapter.preFilterTickers(Array.from(tickers.values())),
+      marketCapData
+    );
   }
 
   /** Fetch RSI — cancellable via AbortController, optional tier filtering. */
@@ -232,7 +254,7 @@ export class ExchangeController {
     // so it must not block first paint; columns/filters that need it fill in
     // progressively once it resolves.
     this.adapter
-      .fetchInitialData()
+      .fetchInitialData(this.getUniverseInstIds())
       .then((initialData) => {
         if (this.disposed) return; // ← Don't update store if disposed
         this.store.setSpot(initialData.spotSymbols);
@@ -325,7 +347,8 @@ export class ExchangeController {
       const { fetchFundingRates } = await import('@/lib/api/okx-rest');
       this.intervals.push(
         setInterval(async () => {
-          const newFundingRates = await fetchFundingRates();
+          // Cap the funding fan-out to the active universe (~100 instead of ~250).
+          const newFundingRates = await fetchFundingRates(this.getUniverseInstIds());
           if (this.disposed) return;
           this.store.setFunding(newFundingRates);
         }, TIMING.FUNDING_RATES_REFRESH)

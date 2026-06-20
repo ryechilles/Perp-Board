@@ -36,7 +36,9 @@ export const hyperliquidAdapter: ExchangeAdapter = {
     return fetchRSIBatchGeneric(ids, existing, fetchHyperliquidRSIForInstrument, onProgress, onUpdate, tier, signal);
   },
 
-  async fetchInitialData() {
+  // Hyperliquid extracts funding from tickers, so `allowedInstIds` is unused here.
+  async fetchInitialData(_allowedInstIds?: Set<string>) {
+    void _allowedInstIds;
     const spotSymbols = await fetchHyperliquidSpotSymbols().catch((error: unknown) => {
       console.error('[Hyperliquid] Failed to fetch spot symbols:', error);
       return new Set<string>();

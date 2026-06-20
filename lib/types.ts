@@ -352,7 +352,12 @@ export interface ExchangeAdapter {
     tier?: 'top50' | 'tier2' | 'tier3' | 'all',
     signal?: AbortSignal
   ): Promise<void>;
-  fetchInitialData(): Promise<{
+  /**
+   * Fetch exchange-specific initial data (spot symbols, listings, funding).
+   * `allowedInstIds`, when provided, caps the funding fan-out to the active
+   * universe; omit/undefined to fetch funding for all instruments.
+   */
+  fetchInitialData(allowedInstIds?: Set<string>): Promise<{
     spotSymbols: Set<string>;
     listingData?: Map<string, ListingData>;
     fundingRateData?: Map<string, FundingRateData>;

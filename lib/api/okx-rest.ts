@@ -80,7 +80,9 @@ export async function fetchListingDates(): Promise<Map<string, ListingData>> {
 }
 
 // Fetch funding rates for all SWAP instruments
-export async function fetchFundingRates(): Promise<Map<string, FundingRateData>> {
+export async function fetchFundingRates(
+  allowedInstIds?: Set<string>
+): Promise<Map<string, FundingRateData>> {
   try {
     // First get the list of all SWAP instruments
     const response = await okxFetch(`${OKX_REST_BASE}/public/instruments?instType=SWAP`);
@@ -93,6 +95,9 @@ export async function fetchFundingRates(): Promise<Map<string, FundingRateData>>
     const result = new Map<string, FundingRateData>();
     const instIds = instData.data
       .filter((inst: OKXInstrument) => inst.instId.includes('-USDT-'))
+      // Cap to the active universe when provided — shrinks the per-instrument
+      // fan-out (~250 → ~100). Omit to fetch all (cold-start fallback).
+      .filter((inst: OKXInstrument) => !allowedInstIds || allowedInstIds.has(inst.instId))
       .map((inst: OKXInstrument) => inst.instId);
 
     // Fetch funding rates in batches

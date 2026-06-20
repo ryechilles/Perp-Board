@@ -14,7 +14,7 @@ import {
   RsiSignalType,
   AssetCategory,
 } from './types';
-import { MEME_TOKENS, STOCK_SYMBOLS } from './constants';
+import { MEME_TOKENS, STOCK_SYMBOLS, UNIVERSE } from './constants';
 import { getRsiSignal } from './utils';
 
 // ===========================================
@@ -73,6 +73,66 @@ export function applyRsiFilter(
     return rsiValue > threshold;
   }
   return true;
+}
+
+// ===========================================
+// Active Universe Cap
+// ===========================================
+
+/**
+ * Select the active instrument universe — the single source of truth for which
+ * instruments the board processes and displays (table rows, RSI, funding).
+ *
+ * Rule (hard cap):
+ *  - Stock perps (STOCK_SYMBOLS) are always kept — they never carry a CoinLore
+ *    market-cap rank, so a rank cut would wrongly drop them.
+ *  - Crypto perps are kept only if they have a market-cap rank, then trimmed to
+ *    the top `limit` by rank (volume breaks ties). Unranked crypto is dropped.
+ *
+ * Graceful degradation: before market-cap data has loaded (cold first paint),
+ * the map is empty — return everything uncapped so the table still renders, and
+ * the cap kicks in once ranks arrive.
+ */
+export function selectUniverse(
+  data: ProcessedTicker[],
+  marketCapData: Map<string, MarketCapData>,
+  limit: number = UNIVERSE.MAX_CRYPTO
+): ProcessedTicker[] {
+  if (marketCapData.size === 0) return data;
+
+  const volUsd = (t: ProcessedTicker) => (parseFloat(t.volCcy24h) || 0) * t.priceNum;
+
+  const stocks: ProcessedTicker[] = [];
+  const rankedCrypto: ProcessedTicker[] = [];
+  for (const t of data) {
+    if (STOCK_SYMBOLS.has(t.baseSymbol)) {
+      stocks.push(t);
+    } else if (marketCapData.get(t.baseSymbol)?.rank !== undefined) {
+      rankedCrypto.push(t);
+    }
+    // Unranked crypto is intentionally dropped.
+  }
+
+  rankedCrypto.sort((a, b) => {
+    const rankA = marketCapData.get(a.baseSymbol)!.rank;
+    const rankB = marketCapData.get(b.baseSymbol)!.rank;
+    if (rankA !== rankB) return rankA - rankB;
+    return volUsd(b) - volUsd(a);
+  });
+
+  return [...stocks, ...rankedCrypto.slice(0, limit)];
+}
+
+/**
+ * Set of instId values in the active universe — convenient for gating fetches
+ * (RSI, funding) to the capped set.
+ */
+export function selectUniverseInstIds(
+  data: ProcessedTicker[],
+  marketCapData: Map<string, MarketCapData>,
+  limit: number = UNIVERSE.MAX_CRYPTO
+): Set<string> {
+  return new Set(selectUniverse(data, marketCapData, limit).map(t => t.instId));
 }
 
 // ===========================================
@@ -464,6 +524,11 @@ export function filterAndSort(
   if (preFilter) {
     filtered = preFilter(filtered);
   }
+
+  // Active universe cap — top-N crypto by market-cap rank + all stock perps.
+  // Applied before everything else so the rest of the pipeline (and the table)
+  // only ever sees the capped set.
+  filtered = selectUniverse(filtered, ctx.marketCapData);
 
   // Search filter
   filtered = applySearchFilter(filtered, searchTerm);

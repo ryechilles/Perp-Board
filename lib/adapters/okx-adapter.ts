@@ -32,11 +32,11 @@ export const okxAdapter: ExchangeAdapter = {
     return tickers.filter(t => t.instId.includes('-USDT-'));
   },
 
-  async fetchInitialData() {
+  async fetchInitialData(allowedInstIds?: Set<string>) {
     const [spotSymbols, listingData, fundingRateData] = await Promise.all([
       fetchSpotSymbols(),
       fetchListingDates(),
-      fetchFundingRates(),
+      fetchFundingRates(allowedInstIds),
     ]);
     return { spotSymbols, listingData, fundingRateData };
   },
