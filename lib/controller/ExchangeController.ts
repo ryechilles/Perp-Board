@@ -173,26 +173,6 @@ export class ExchangeController {
       this.store.setMarketCap(cachedMarketCap);
     }
 
-    // Fetch exchange-specific initial data (spot symbols, listings, funding).
-    const initialData = await this.adapter.fetchInitialData();
-    if (this.disposed) return; // ← Bail if cleanup already ran
-
-    this.store.setSpot(initialData.spotSymbols);
-    if (initialData.listingData) this.store.setListing(initialData.listingData);
-    if (initialData.fundingRateData) this.store.setFunding(initialData.fundingRateData);
-
-    // Fetch market-cap data (non-blocking).
-    fetchMarketCapData()
-      .then((marketCap) => {
-        if (this.disposed) return; // ← Don't update store if disposed
-        console.log(`[MarketCap] Received ${marketCap.size} coins`);
-        this.store.setMarketCap(marketCap);
-        setMarketCapCache(marketCap);
-      })
-      .catch((error) => {
-        console.error('[MarketCap] Failed to fetch:', error);
-      });
-
     // Create and start the data manager.
     const handleTickerUpdate = (newTickers: Map<string, ProcessedTicker>) => {
       if (this.disposed) return; // ← Don't update store if disposed
@@ -222,6 +202,11 @@ export class ExchangeController {
     };
 
     this.dataManager = this.adapter.createDataManager(handleTickerUpdate, handleStatusUpdate);
+    // Start the ticker feed FIRST so the row list paints immediately — it depends
+    // on nothing from fetchInitialData (spot/listing/funding only feed columns &
+    // filters). Awaiting fetchInitialData here previously blocked first paint
+    // behind ~250 throttled funding-rate requests (the funding fan-out shares the
+    // 8 req/s OKX limiter), so the table sat in skeleton state for ~30s.
     await this.dataManager.start();
     if (this.disposed) {
       // ← Bail if cleanup ran during start()
@@ -229,6 +214,34 @@ export class ExchangeController {
       this.dataManager = null;
       return;
     }
+
+    // Fetch market-cap data (non-blocking — feeds ranks/sorting, not the row list).
+    fetchMarketCapData()
+      .then((marketCap) => {
+        if (this.disposed) return; // ← Don't update store if disposed
+        console.log(`[MarketCap] Received ${marketCap.size} coins`);
+        this.store.setMarketCap(marketCap);
+        setMarketCapCache(marketCap);
+      })
+      .catch((error) => {
+        console.error('[MarketCap] Failed to fetch:', error);
+      });
+
+    // Fetch exchange-specific initial data in the BACKGROUND (spot symbols,
+    // listings, funding). The OKX funding fetch fans out ~250 throttled requests,
+    // so it must not block first paint; columns/filters that need it fill in
+    // progressively once it resolves.
+    this.adapter
+      .fetchInitialData()
+      .then((initialData) => {
+        if (this.disposed) return; // ← Don't update store if disposed
+        this.store.setSpot(initialData.spotSymbols);
+        if (initialData.listingData) this.store.setListing(initialData.listingData);
+        if (initialData.fundingRateData) this.store.setFunding(initialData.fundingRateData);
+      })
+      .catch((error) => {
+        console.error('[InitialData] Failed to fetch:', error);
+      });
 
     // Initial RSI fetch (all tiers).
     const initialRsiTimeout = setTimeout(() => {

@@ -75,6 +75,31 @@ export function ExchangeBoard({
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const cardsWrapperRef = useRef<HTMLDivElement>(null);
 
+  // Skeleton row counts — derived from the real container height so the loading
+  // state has the SAME geometry as the eventual virtualized list. A fixed count
+  // (e.g. 12) under-fills tall viewports, leaving a blank strip at the bottom of
+  // the table card that reads as an empty trailing row. We slightly over-fill
+  // (ceil) so the skeleton always reaches the bottom edge.
+  const [tableSkeletonRows, setTableSkeletonRows] = useState(12);
+  const [cardSkeletonRows, setCardSkeletonRows] = useState(8);
+  useEffect(() => {
+    const measure = () => {
+      const tableH = tableContainerRef.current?.clientHeight ?? 0;
+      if (tableH > 0) setTableSkeletonRows(Math.max(8, Math.ceil(tableH / 44)));
+      const vh = typeof window !== 'undefined' ? window.innerHeight : 0;
+      if (vh > 0) setCardSkeletonRows(Math.max(6, Math.ceil(vh / 76)));
+    };
+    measure();
+    const el = tableContainerRef.current;
+    const ro = el ? new ResizeObserver(measure) : null;
+    if (el && ro) ro.observe(el);
+    window.addEventListener('resize', measure);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, []);
+
   // URL state sync — always called (Rules of Hooks), but gated by `enabled`
   useUrlState(
     {
@@ -337,7 +362,7 @@ export function ExchangeBoard({
                   <tbody>
                     {filteredData.length === 0 ? (
                       store.tickers.size === 0 ? (
-                        Array.from({ length: 12 }).map((_, i) => (
+                        Array.from({ length: tableSkeletonRows }).map((_, i) => (
                           <TableRowSkeleton
                             key={i}
                             visibleColumns={visibleColumns}
@@ -402,7 +427,7 @@ export function ExchangeBoard({
               {filteredData.length === 0 ? (
                 store.tickers.size === 0 ? (
                   <div className="space-y-2">
-                    {Array.from({ length: 8 }).map((_, i) => (
+                    {Array.from({ length: cardSkeletonRows }).map((_, i) => (
                       <TokenCardSkeleton key={i} />
                     ))}
                   </div>
