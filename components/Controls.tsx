@@ -277,7 +277,7 @@ export function Controls({
 
   // Asset category options (Crypto / Stock / All toggle)
   const assetCategoryOptions: PillButtonOption<string>[] = [
-    { value: 'crypto', label: 'Crypto' },
+    { value: 'crypto', label: 'Crypto', tooltip: 'Top 100 tokens by market cap only' },
     { value: 'stock', label: 'Stock' },
     { value: 'all', label: 'All' },
   ];

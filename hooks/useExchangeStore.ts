@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useMemo, useState, useSyncExternalStore } from 'react';
 import { ProcessedTicker, ExchangeAdapter } from '@/lib/types';
-import { filterAndSort, FilterContext } from '@/lib/filters';
+import { filterAndSort, selectUniverse, FilterContext } from '@/lib/filters';
 import { calculateRsiAverages, calculateTopMovers, calculateQuickFilterCounts } from '@/lib/store-utils';
 import { getCacheForExchange } from '@/lib/cache';
 import { MarketStore } from '@/lib/store/marketStore';
@@ -103,6 +103,15 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
   // Exchange-specific pre-filter (stable reference via adapter)
   const preFilter = adapter.preFilterTickers;
 
+  // Active universe (top-N crypto by market-cap rank + all stock perps), as a
+  // Map. Single source of truth that ALL derived data — RSI averages, quick
+  // filter counts, top movers, and the sidebar widgets — consumes, so they stay
+  // consistent with the capped table instead of scanning the full universe.
+  const universeTickers = useMemo(() => {
+    const capped = selectUniverse(preFilter(Array.from(tickers.values())), marketCapData);
+    return new Map(capped.map(t => [t.instId, t]));
+  }, [tickers, marketCapData, preFilter]);
+
   // P3 decouple: does the current sort/filter actually depend on RSI data?
   // If not (e.g. the default rank sort with no RSI filter), an RSI update does
   // NOT change the row list — each row pulls its own RSI via a selector — so we
@@ -165,24 +174,24 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
 
   const getFilteredData = useCallback(() => filteredData, [filteredData]);
 
-  // RSI averages (memoized)
+  // RSI averages (memoized) — capped universe only
   const rsiAverages = useMemo(() => {
-    return calculateRsiAverages(tickers, marketCapData, rsiData);
-  }, [tickers, marketCapData, rsiData]);
+    return calculateRsiAverages(universeTickers, marketCapData, rsiData);
+  }, [universeTickers, marketCapData, rsiData]);
 
   const getRsiAverages = useCallback(() => rsiAverages, [rsiAverages]);
 
-  // Quick filter counts (memoized, filtered by current asset category)
+  // Quick filter counts (memoized, filtered by current asset category) — capped universe only
   const quickFilterCounts = useMemo(() => {
-    return calculateQuickFilterCounts(tickers, rsiData, filtersHook.filters.assetCategory);
-  }, [tickers, rsiData, filtersHook.filters.assetCategory]);
+    return calculateQuickFilterCounts(universeTickers, rsiData, filtersHook.filters.assetCategory);
+  }, [universeTickers, rsiData, filtersHook.filters.assetCategory]);
 
   const getQuickFilterCounts = useCallback(() => quickFilterCounts, [quickFilterCounts]);
 
-  // Top movers
+  // Top movers — capped universe only
   const getTopMovers = useCallback((timeframe: '4h' | '24h' | '7d', limit: number = 5) => {
-    return calculateTopMovers(tickers, rsiData, timeframe, limit);
-  }, [tickers, rsiData]);
+    return calculateTopMovers(universeTickers, rsiData, timeframe, limit);
+  }, [universeTickers, rsiData]);
 
   // Paginated data
   const getPaginatedData = useCallback(() => {
@@ -202,6 +211,7 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
 
     // Data
     tickers,
+    universeTickers,
     rsiData,
     fundingRateData,
     listingData,

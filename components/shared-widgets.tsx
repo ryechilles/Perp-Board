@@ -28,7 +28,7 @@ export function createRsiWidgets(exchangeLabel?: string) {
       marketMomentum: <MarketMomentum avgRsi7={avgRsi7} avgRsi14={avgRsi14} exchangeLabel={exchangeLabel} />,
       rsiOversold: (
         <RsiOversold
-          tickers={store.tickers}
+          tickers={store.universeTickers}
           rsiData={store.rsiData}
           marketCapData={store.marketCapData}
           onTokenClick={handleTokenClick}
@@ -37,7 +37,7 @@ export function createRsiWidgets(exchangeLabel?: string) {
       ),
       rsiOverbought: (
         <RsiOverbought
-          tickers={store.tickers}
+          tickers={store.universeTickers}
           rsiData={store.rsiData}
           marketCapData={store.marketCapData}
           onTokenClick={handleTokenClick}
@@ -52,7 +52,7 @@ export function createFundingWidgets(exchangeLabel?: string) {
   return ({ store, handleTokenClick, handleGroupClick }: WidgetContext) => ({
     fundingMarket: (
       <FundingMarket
-        tickers={store.tickers}
+        tickers={store.universeTickers}
         fundingRateData={store.fundingRateData}
         marketCapData={store.marketCapData}
         onGroupClick={handleGroupClick}
@@ -61,7 +61,7 @@ export function createFundingWidgets(exchangeLabel?: string) {
     ),
     fundingKiller: (
       <FundingKiller
-        tickers={store.tickers}
+        tickers={store.universeTickers}
         fundingRateData={store.fundingRateData}
         marketCapData={store.marketCapData}
         onTokenClick={handleTokenClick}
@@ -76,7 +76,7 @@ export function createAltcoinWidgets(exchangeLabel?: string) {
   return ({ store, handleTokenClick, handleGroupClick }: WidgetContext) => ({
     topGainers: (
       <AltcoinTopGainers
-        tickers={store.tickers}
+        tickers={store.universeTickers}
         rsiData={store.rsiData}
         marketCapData={store.marketCapData}
         onTokenClick={handleTokenClick}
@@ -85,7 +85,7 @@ export function createAltcoinWidgets(exchangeLabel?: string) {
     ),
     vsBtc: (
       <AltcoinVsBTC
-        tickers={store.tickers}
+        tickers={store.universeTickers}
         rsiData={store.rsiData}
         marketCapData={store.marketCapData}
         onTokenClick={handleTokenClick}
