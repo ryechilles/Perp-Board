@@ -9,7 +9,7 @@ export function Total2MiniChart() {
   }, []);
 
   return (
-    <div role="img" aria-label="TOTAL2 (altcoin market cap) mini chart">
+    <div role="img" aria-label="TOTAL2 (altcoin market cap) mini chart" className="min-h-[120px]">
       {/* @ts-ignore - TradingView Web Component */}
       <tv-mini-chart symbol="CRYPTOCAP:TOTAL2"></tv-mini-chart>
     </div>

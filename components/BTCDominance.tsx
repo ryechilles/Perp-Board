@@ -12,7 +12,7 @@ export function BTCDominance() {
   }, []);
 
   return (
-    <div ref={containerRef} role="img" aria-label="Bitcoin dominance mini chart">
+    <div ref={containerRef} role="img" aria-label="Bitcoin dominance mini chart" className="min-h-[120px]">
       {/* @ts-ignore - TradingView Web Component */}
       <tv-mini-chart symbol="CRYPTOCAP:BTC.D"></tv-mini-chart>
     </div>

@@ -103,7 +103,7 @@ export function SmallWidget({
       <CardHeader className="flex flex-row items-center justify-between px-widget-header-px-sm py-widget-header-py border-b border-gray-950/[0.10] dark:border-white/[0.10] space-y-0">
         <div className="flex items-center gap-2 min-w-0">
           {icon && (
-            <span className="text-muted-foreground flex-shrink-0">{icon}</span>
+            <span className="text-muted-foreground flex-shrink-0" aria-hidden="true">{icon}</span>
           )}
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">

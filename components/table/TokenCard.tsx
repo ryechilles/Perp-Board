@@ -64,7 +64,7 @@ export const TokenCard = memo(function TokenCard({
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => onToggleFavorite(instId)}
-            className={`text-base leading-none ${isFavorite ? 'text-yellow-400' : 'text-muted-foreground/50'}`}
+            className={`text-base leading-none rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${isFavorite ? 'text-yellow-400' : 'text-muted-foreground/50'}`}
             aria-label={isFavorite ? `Remove ${base} from favorites` : `Add ${base} to favorites`}
             aria-pressed={isFavorite}
           >

@@ -87,7 +87,7 @@ export function LargeWidget({
       <div className="flex items-center justify-between px-widget-header-px-lg py-widget-header-py border-b border-gray-950/[0.10] dark:border-white/[0.10]">
         <div className="flex items-center gap-3 min-w-0">
           {icon && (
-            <span className="text-muted-foreground flex-shrink-0">{icon}</span>
+            <span className="text-muted-foreground flex-shrink-0" aria-hidden="true">{icon}</span>
           )}
           <div className="min-w-0">
             <h2 className="font-semibold text-foreground truncate text-pretty">{title}</h2>
