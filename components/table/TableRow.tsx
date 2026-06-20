@@ -181,7 +181,7 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
         return (
           <td key={key} className={`${baseClass} font-semibold`} style={getCellStyle(key)}>
             <div className="flex flex-col leading-tight">
-              <div className="truncate">
+              <div className="truncate" translate="no">
                 <span className="text-foreground">{base}</span>
                 <span className="text-muted-foreground font-normal">/{quote}</span>
               </div>

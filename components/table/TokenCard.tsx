@@ -74,7 +74,7 @@ export const TokenCard = memo(function TokenCard({
             {index + 1}
           </span>
           <TokenAvatar symbol={base} logo={marketCap?.logo} size="lg" />
-          <span className="font-semibold text-[15px] truncate">
+          <span className="font-semibold text-[15px] truncate" translate="no">
             {base}
             <span className="text-muted-foreground font-normal text-[12px]">/{quote}</span>
           </span>
