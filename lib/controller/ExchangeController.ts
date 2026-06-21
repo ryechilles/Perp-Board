@@ -60,6 +60,9 @@ export class ExchangeController {
   private isFetchingRsi = false;
   /** Set true by dispose() so async initialize() steps and timers bail out. */
   private disposed = false;
+  /** Set true by pause() while the page is hidden — acquisition is suspended
+   *  but the store is preserved, so resume() can repaint + refresh. */
+  private paused = false;
 
   // RSI batch buffer — collects synchronous onUpdate calls and flushes once per
   // microtask into a single store write.
@@ -179,8 +182,16 @@ export class ExchangeController {
   }
 
   // ───────────────────────── lifecycle ───────────────────────────────────
+
+  /** Acquisition should neither run nor commit results when disposed (unmounted)
+   *  or paused (page hidden). Async fetches and timers check this before writing. */
+  private get inactive(): boolean {
+    return this.disposed || this.paused;
+  }
+
   async initialize(): Promise<void> {
     this.disposed = false;
+    this.paused = false;
     checkVersionAndClearCache();
 
     // Load cached RSI (instant paint of indicators on revisit).
@@ -195,9 +206,20 @@ export class ExchangeController {
       this.store.setMarketCap(cachedMarketCap);
     }
 
+    await this.startAcquisition();
+  }
+
+  /**
+   * Stand up all live data ACQUISITION: the data manager (WebSocket + REST
+   * polling), the one-shot initial fetches, and every refresh interval. Split
+   * out of initialize() so resume() can re-establish acquisition after pause()
+   * WITHOUT re-running the version check / cache seeding — the store already
+   * holds the last data. Bails if disposed or paused mid-async-start.
+   */
+  private async startAcquisition(): Promise<void> {
     // Create and start the data manager.
     const handleTickerUpdate = (newTickers: Map<string, ProcessedTicker>) => {
-      if (this.disposed) return; // ← Don't update store if disposed
+      if (this.inactive) return; // ← Don't update store if disposed/paused
 
       this.store.setTickers(newTickers);
       // Extract funding from tickers for exchanges that embed it (Hyperliquid).
@@ -219,7 +241,7 @@ export class ExchangeController {
       newStatus: 'connecting' | 'live' | 'error',
       time?: Date
     ) => {
-      if (this.disposed) return; // ← Don't update state if disposed
+      if (this.inactive) return; // ← Don't update state if disposed/paused
       this.cb.onStatus(newStatus, time);
     };
 
@@ -230,9 +252,10 @@ export class ExchangeController {
     // behind ~250 throttled funding-rate requests (the funding fan-out shares the
     // 8 req/s OKX limiter), so the table sat in skeleton state for ~30s.
     await this.dataManager.start();
-    if (this.disposed) {
-      // ← Bail if cleanup ran during start()
-      this.dataManager.stop();
+    if (this.inactive) {
+      // ← Bail if cleanup/pause ran during start(). teardown() may already have
+      //    stopped+nulled the manager, so guard with ?. before stopping again.
+      this.dataManager?.stop();
       this.dataManager = null;
       return;
     }
@@ -240,13 +263,15 @@ export class ExchangeController {
     // Fetch market-cap data (non-blocking — feeds ranks/sorting, not the row list).
     fetchMarketCapData()
       .then((marketCap) => {
-        if (this.disposed) return; // ← Don't update store if disposed
+        if (this.inactive) return; // ← Don't update store if disposed/paused
         console.log(`[MarketCap] Received ${marketCap.size} coins`);
         this.store.setMarketCap(marketCap);
         setMarketCapCache(marketCap);
       })
       .catch((error) => {
-        console.error('[MarketCap] Failed to fetch:', error);
+        // Fetch rejected — keep whatever (cached) market-cap data is already in
+        // the store rather than clobbering it. See fetchMarketCapData contract.
+        console.error('[MarketCap] Initial fetch failed, keeping cached data:', error);
       });
 
     // Fetch exchange-specific initial data in the BACKGROUND (spot symbols,
@@ -256,7 +281,7 @@ export class ExchangeController {
     this.adapter
       .fetchInitialData(this.getUniverseInstIds())
       .then((initialData) => {
-        if (this.disposed) return; // ← Don't update store if disposed
+        if (this.inactive) return; // ← Don't update store if disposed/paused
         this.store.setSpot(initialData.spotSymbols);
         if (initialData.listingData) this.store.setListing(initialData.listingData);
         if (initialData.fundingRateData) this.store.setFunding(initialData.fundingRateData);
@@ -335,10 +360,17 @@ export class ExchangeController {
     // Refresh market cap.
     this.intervals.push(
       setInterval(async () => {
-        const newMarketCap = await fetchMarketCapData();
-        if (this.disposed) return;
-        this.store.setMarketCap(newMarketCap);
-        setMarketCapCache(newMarketCap);
+        try {
+          const newMarketCap = await fetchMarketCapData();
+          if (this.inactive) return;
+          this.store.setMarketCap(newMarketCap);
+          setMarketCapCache(newMarketCap);
+        } catch (error) {
+          // Transient upstream failure — keep the last good market-cap data
+          // rather than overwriting it with nothing (which would collapse the
+          // default market-cap sort and uncap the universe).
+          console.error('[MarketCap] Refresh failed, keeping previous data:', error);
+        }
       }, TIMING.MARKET_CAP_REFRESH)
     );
 
@@ -349,18 +381,20 @@ export class ExchangeController {
         setInterval(async () => {
           // Cap the funding fan-out to the active universe (~100 instead of ~250).
           const newFundingRates = await fetchFundingRates(this.getUniverseInstIds());
-          if (this.disposed) return;
+          if (this.inactive) return;
           this.store.setFunding(newFundingRates);
         }, TIMING.FUNDING_RATES_REFRESH)
       );
     }
   }
 
-  /** Tear down — aborts in-flight RSI fetches instantly and clears all timers. */
-  dispose(): void {
-    // Mark disposed so initialize() and callbacks bail out.
-    this.disposed = true;
-
+  /**
+   * Stop all acquisition: abort in-flight RSI, clear every timer, stop the data
+   * manager (closes the WebSocket + REST polling). Does NOT set any flag and does
+   * NOT touch the store, so the last-seen data stays on screen. Shared by pause()
+   * and dispose().
+   */
+  private teardown(): void {
     // Abort RSI fetch loop immediately.
     this.rsiAbort?.abort();
     this.rsiAbort = null;
@@ -383,5 +417,36 @@ export class ExchangeController {
     }
     this.dataManager?.stop();
     this.dataManager = null;
+  }
+
+  /**
+   * Pause acquisition when the page is hidden (tab switch / app backgrounded /
+   * screen lock). Closes the WebSocket, clears all refresh timers and aborts the
+   * RSI loop, so a backgrounded tab consumes zero network/CPU — and can no longer
+   * clobber good data with a failed background refresh. The store is left intact,
+   * so resume() repaints instantly from the last data before refreshing.
+   */
+  pause(): void {
+    if (this.disposed || this.paused) return;
+    this.paused = true;
+    this.teardown();
+  }
+
+  /**
+   * Resume acquisition when the page becomes visible again: reconnect the data
+   * manager, re-run the one-shot fetches and restart every refresh interval.
+   * No-op unless currently paused (and not disposed).
+   */
+  resume(): void {
+    if (this.disposed || !this.paused) return;
+    this.paused = false;
+    void this.startAcquisition();
+  }
+
+  /** Tear down for unmount — like pause() but permanent (initialize() bails). */
+  dispose(): void {
+    // Mark disposed so initialize() and callbacks bail out.
+    this.disposed = true;
+    this.teardown();
   }
 }

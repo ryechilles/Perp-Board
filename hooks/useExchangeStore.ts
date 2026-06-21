@@ -99,6 +99,9 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
 
   const initialize = useCallback(() => controller.initialize(), [controller]);
   const cleanup = useCallback(() => controller.dispose(), [controller]);
+  // Suspend/resume acquisition when the page is hidden/visible (see ExchangeBoard).
+  const pause = useCallback(() => controller.pause(), [controller]);
+  const resume = useCallback(() => controller.resume(), [controller]);
 
   // Exchange-specific pre-filter (stable reference via adapter)
   const preFilter = adapter.preFilterTickers;
@@ -237,6 +240,8 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
     // Actions
     initialize,
     cleanup,
+    pause,
+    resume,
     toggleFavorite: favoritesHook.toggleFavorite,
     updateColumn: columnsHook.updateColumn,
     setColumnsPreset: columnsHook.setColumnsPreset,

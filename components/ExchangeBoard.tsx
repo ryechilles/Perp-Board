@@ -131,6 +131,24 @@ export function ExchangeBoard({
     };
   }, []);
 
+  // Pause background acquisition while the tab is hidden (tab switch, app
+  // backgrounded, screen lock), and resume + refresh when it becomes visible
+  // again. Keeps a backgrounded tab at zero network/CPU and stops failed
+  // background refreshes from clobbering good data. visibilitychange (not
+  // focus/blur) is the right primitive — it also covers mobile backgrounding.
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        store.pause();
+      } else {
+        store.resume();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Scroll handler
   const handleScroll = useCallback(() => {
     const container = tableContainerRef.current;

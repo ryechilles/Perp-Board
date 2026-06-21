@@ -10,6 +10,13 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
+// NOTE: this in-memory cache is BEST-EFFORT on Cloudflare Workers. Worker
+// isolates are stateless and per-isolate, so this module-level variable (and the
+// `next: { revalidate }` Data Cache below) only dedupe requests that land on the
+// same warm isolate; they are NOT durable or shared across isolates. That still
+// meaningfully protects CoinLore from concurrent users on a warm isolate. To make
+// the 5-minute cache globally durable, configure an incremental cache (R2/KV) in
+// open-next.config.ts, or use the Cloudflare Cache API (caches.default) here.
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 let cache: { data: unknown; timestamp: number } | null = null;
 
