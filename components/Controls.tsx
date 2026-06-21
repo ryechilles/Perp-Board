@@ -256,6 +256,9 @@ export function Controls({
   }, []);
 
   const handleAssetCategoryChange = (value: string) => {
+    // Clear any active token search so the category view isn't masked
+    // (mirrors handleQuickFilter, which also clears search on click)
+    onSearchChange('');
     const category = value as 'crypto' | 'stock' | 'all';
     if (category === 'all') {
       // 'All' means no asset category filter — show both crypto and stock
