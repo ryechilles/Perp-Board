@@ -442,13 +442,24 @@ const SORT_EXTRACTORS: Record<string, (t: ProcessedTicker, ctx: SortExtractorCon
   rsi14: (t, ctx) => ctx.rsiData.get(t.instId)?.rsi14 ?? 0,
   rsiW7: (t, ctx) => ctx.rsiData.get(t.instId)?.rsiW7 ?? 0,
   rsiW14: (t, ctx) => ctx.rsiData.get(t.instId)?.rsiW14 ?? 0,
-  // TD signal: sell = positive, buy = negative, 13 stronger than 9, none = 0
-  // desc → S13, S9, --, B9, B13; asc → B13 first
+  // TD state: sell = positive, buy = negative; magnitude ranks
+  // signal 13 (400) > signal 9 (300) > countdown 1-12 (101-112) > setup 1-8 (1-8) > none (0)
+  // desc → S13, S9, S·N, S setup, --, B setup, B·N, B9, B13; asc → strongest buy first
   tdSeq: (t, ctx) => {
-    const td = ctx.rsiData.get(t.instId)?.tdSignal;
+    const td = ctx.rsiData.get(t.instId)?.td;
     if (!td) return 0;
-    const magnitude = td.count === 13 ? 2 : 1;
-    return td.type === 'sell' ? magnitude : -magnitude;
+    if (td.signal) {
+      const mag = td.signal.count === 13 ? 400 : 300;
+      return td.signal.type === 'sell' ? mag : -mag;
+    }
+    if (td.countdown) {
+      const mag = 100 + td.countdown.count;
+      return td.countdown.type === 'sell' ? mag : -mag;
+    }
+    if (td.setup) {
+      return td.setup.type === 'sell' ? td.setup.count : -td.setup.count;
+    }
+    return 0;
   },
   hasSpot: (t, ctx) => {
     const spotKey = ctx.spotSymbolFormat === 'base-usdt' ? `${t.baseSymbol}-USDT` : t.baseSymbol;

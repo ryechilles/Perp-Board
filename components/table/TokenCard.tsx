@@ -14,7 +14,7 @@ import {
   formatFundingApr,
   getFundingAprClass,
   getRsiSignal,
-  getTdSignalDisplay,
+  getTdDisplay,
 } from '@/lib/utils';
 import { ChangeWithSparkline } from '@/components/Sparkline';
 
@@ -59,8 +59,9 @@ export const TokenCard = memo(function TokenCard({
 
   const dSignal = getRsiSignal(rsi?.rsi7 ?? null, rsi?.rsi14 ?? null);
   const wSignal = getRsiSignal(rsi?.rsiW7 ?? null, rsi?.rsiW14 ?? null);
-  const tdSignal = rsi?.tdSignal;
-  const td = getTdSignalDisplay(tdSignal);
+  // Mobile card: only show TD pill on a completed 9/13 signal (space is tight)
+  const tdSignal = rsi?.td?.signal;
+  const td = getTdDisplay(tdSignal ? rsi!.td : null);
 
   return (
     <div className="bg-card rounded-xl border border-gray-950/[0.08] dark:border-white/[0.08] px-3 py-2.5">

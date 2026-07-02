@@ -25,7 +25,7 @@ import {
   formatListDate,
   formatSettlementInterval,
   getRsiSignal,
-  getTdSignalDisplay,
+  getTdDisplay,
 } from '@/lib/utils';
 import { ChangeWithSparkline } from '@/components/Sparkline';
 
@@ -327,10 +327,13 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
       }
 
       case 'tdSeq': {
-        const td = getTdSignalDisplay(rsi?.tdSignal);
+        const td = getTdDisplay(rsi?.td);
         return (
           <td key={key} className={baseClass}>
-            <span className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold tabular-nums min-w-[42px] text-center ${td.pillStyle}`}>
+            <span
+              title={td.title}
+              className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold tabular-nums min-w-[42px] text-center whitespace-nowrap ${td.pillStyle}`}
+            >
               {td.label}
             </span>
           </td>

@@ -144,6 +144,19 @@ export interface TDSignal {
   count: 9 | 13;
 }
 
+// An in-progress TD count (setup streak or countdown)
+export interface TDCount {
+  type: 'buy' | 'sell';
+  count: number;
+}
+
+// Full TD Sequential state as of the latest candle
+export interface TDState {
+  signal: TDSignal | null;    // Setup 9 / Countdown 13 completed on the latest candle
+  setup: TDCount | null;      // in-progress setup streak (1-8) on the latest candle
+  countdown: TDCount | null;  // active countdown (1-12)
+}
+
 // RSI data for a single instrument
 export interface RSIData {
   rsi7: number | null;      // Daily RSI7
@@ -155,7 +168,7 @@ export interface RSIData {
   change7d: number | null;  // 7-day change %
   sparkline7d?: number[];   // 7-day price data from daily candles (OKX)
   sparkline24h?: number[];  // 24h price data from hourly candles (OKX)
-  tdSignal?: TDSignal | null; // Daily TD Sequential signal (optional: absent in old cached entries)
+  td?: TDState | null;      // Daily TD Sequential state (optional: absent in old cached entries)
   lastUpdated: number;
 }
 

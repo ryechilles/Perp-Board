@@ -34,11 +34,11 @@ export const COLUMN_TOOLTIPS: Partial<Record<ColumnKey, string[]>> = {
   ],
   tdSeq: [
     'TD Sequential (daily candles)',
-    'B9: Buy Setup complete (9 closes below close 4 bars ago)',
-    'S9: Sell Setup complete (9 closes above close 4 bars ago)',
-    'B13/S13: Countdown complete — stronger reversal signal',
-    'Shown only when the latest candle triggers 9 or 13',
-    'Today\'s candle is unclosed — signal may change intraday',
+    'B 9 / S 9: Setup complete (9 closes below/above close 4 bars ago)',
+    'B 13 / S 13: Countdown complete — stronger reversal signal',
+    'Gray B/S 4-8: Setup in progress (shown from 4)',
+    'Gray B/S ·1-12: Countdown in progress',
+    'Today\'s candle is unclosed — counts may change intraday',
   ],
 };
 

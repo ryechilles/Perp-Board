@@ -6,7 +6,7 @@
  * Mutex/RateLimiter → see lib/concurrency.ts
  */
 
-import { OKXTicker, ProcessedTicker, RsiSignalType, TDSignal } from './types';
+import { OKXTicker, ProcessedTicker, RsiSignalType, TDSignal, TDState } from './types';
 import { MEME_TOKENS as MEME_TOKENS_SET, RSI, UI } from './constants';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -197,7 +197,7 @@ export function calculate7DChange(candles: number[][]): number | null {
 // ===========================================
 
 /**
- * Calculate the TD Sequential signal for the LATEST candle.
+ * Calculate the full TD Sequential state as of the LATEST candle.
  *
  * Candle format: [timestamp, open, high, low, close], chronological order.
  *
@@ -209,10 +209,12 @@ export function calculate7DChange(candles: number[][]): number | null {
  * - An opposite Setup 9 cancels an active countdown; a same-direction Setup 9
  *   restarts it (recycle).
  *
- * Returns a signal ONLY if the latest candle completes a Setup 9 or a
- * Countdown 13; otherwise null.
+ * Returns:
+ * - signal: set ONLY if the latest candle completes a Setup 9 or a Countdown 13
+ * - setup: in-progress setup streak (1-8) as of the latest candle
+ * - countdown: active countdown (1-12), possibly started long before the window end
  */
-export function calculateTDSignal(candles: number[][]): TDSignal | null {
+export function calculateTDState(candles: number[][]): TDState | null {
   const n = candles.length;
   if (n < 14) return null; // need close[i-4] history + a meaningful streak
 
@@ -265,23 +267,55 @@ export function calculateTDSignal(candles: number[][]): TDSignal | null {
     }
   }
 
-  return signal;
+  const setup = buyStreak > 0
+    ? { type: 'buy' as const, count: buyStreak }
+    : sellStreak > 0
+      ? { type: 'sell' as const, count: sellStreak }
+      : null;
+
+  return {
+    signal,
+    setup,
+    countdown: countdown && countdown.count > 0 ? countdown : null,
+  };
 }
 
-/** Display label + pill style for a TD signal (shared by table row and mobile card) */
-export function getTdSignalDisplay(td: TDSignal | null | undefined): { label: string; pillStyle: string } {
-  if (!td) return { label: '--', pillStyle: 'text-muted-foreground' };
-  const label = `${td.type === 'buy' ? 'B' : 'S'}${td.count}`;
-  if (td.type === 'buy') {
+/** Minimum in-progress setup count worth displaying (1-3 are noise) */
+export const TD_SETUP_DISPLAY_MIN = 4;
+
+/**
+ * Display label + pill style for the TD column (shared by table row and mobile card).
+ * Priority: completed 9/13 (highlighted) > active countdown (muted, "·N") >
+ * setup streak >= TD_SETUP_DISPLAY_MIN (muted) > "--".
+ */
+export function getTdDisplay(td: TDState | null | undefined): { label: string; pillStyle: string; title?: string } {
+  if (td?.signal) {
+    const s = td.signal;
+    const label = `${s.type === 'buy' ? 'B' : 'S'} ${s.count}`;
+    const title = `${s.type === 'buy' ? 'Buy' : 'Sell'} ${s.count === 13 ? 'Countdown 13' : 'Setup 9'} completed`;
+    if (s.type === 'buy') {
+      return { label, title, pillStyle: s.count === 13 ? 'bg-green-500 text-white' : 'bg-green-500/15 text-green-500' };
+    }
+    return { label, title, pillStyle: s.count === 13 ? 'bg-red-500 text-white' : 'bg-red-500/15 text-red-500' };
+  }
+  const setup = td?.setup && td.setup.count >= TD_SETUP_DISPLAY_MIN ? td.setup : null;
+  const countdown = td?.countdown ?? null;
+  // When both are active, show the one closer to completion (setup/9 vs countdown/13)
+  if (setup && (!countdown || setup.count / 9 >= countdown.count / 13)) {
     return {
-      label,
-      pillStyle: td.count === 13 ? 'bg-green-500 text-white' : 'bg-green-500/15 text-green-500',
+      label: `${setup.type === 'buy' ? 'B' : 'S'} ${setup.count}`,
+      title: `${setup.type === 'buy' ? 'Buy' : 'Sell'} Setup ${setup.count}/9`,
+      pillStyle: 'bg-muted text-muted-foreground',
     };
   }
-  return {
-    label,
-    pillStyle: td.count === 13 ? 'bg-red-500 text-white' : 'bg-red-500/15 text-red-500',
-  };
+  if (countdown) {
+    return {
+      label: `${countdown.type === 'buy' ? 'B' : 'S'} ·${countdown.count}`,
+      title: `${countdown.type === 'buy' ? 'Buy' : 'Sell'} Countdown ${countdown.count}/13`,
+      pillStyle: 'bg-muted text-muted-foreground',
+    };
+  }
+  return { label: '--', pillStyle: 'text-muted-foreground' };
 }
 
 // ===========================================
