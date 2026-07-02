@@ -32,6 +32,14 @@ export const COLUMN_TOOLTIPS: Partial<Record<ColumnKey, string[]>> = {
     '≤85: Overbought',
     '>85: Extreme Overbought',
   ],
+  tdSeq: [
+    'TD Sequential (daily candles)',
+    'B9: Buy Setup complete (9 closes below close 4 bars ago)',
+    'S9: Sell Setup complete (9 closes above close 4 bars ago)',
+    'B13/S13: Countdown complete — stronger reversal signal',
+    'Shown only when the latest candle triggers 9 or 13',
+    'Today\'s candle is unclosed — signal may change intraday',
+  ],
 };
 
 // Column definitions - all columns centered except symbol (left-aligned)
@@ -50,6 +58,7 @@ export const COLUMN_DEFINITIONS: Record<ColumnKey, { label: string; width: numbe
   volume24h: { label: 'Vol 24h', width: 85, align: 'center', sortable: true },
   marketCap: { label: 'Market Cap', width: 90, align: 'center', sortable: true },
   dRsiSignal: { label: 'D-RSI Avg Signal', width: 125, align: 'center', sortable: true },
+  tdSeq: { label: 'D-TD Signal', width: 90, align: 'center', sortable: true },
   wRsiSignal: { label: 'W-RSI Avg Signal', width: 125, align: 'center', sortable: true },
   rsi7: { label: 'D-RSI7', width: 58, align: 'center', sortable: true },
   rsi14: { label: 'D-RSI14', width: 62, align: 'center', sortable: true },

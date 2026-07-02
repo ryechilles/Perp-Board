@@ -8,8 +8,8 @@
  * Candles must be in chronological order (oldest first).
  */
 
-import { RSIData } from '../types';
-import { calculateRSI, calculate7DChange, Mutex, RateLimiter } from '../utils';
+import { RSIData, TDSignal } from '../types';
+import { calculateRSI, calculate7DChange, calculateTDSignal, Mutex, RateLimiter } from '../utils';
 import { TIMING } from '../constants';
 
 /**
@@ -57,6 +57,7 @@ export async function calculateRSIForInstrument(
     let change7d: number | null = null;
     let sparkline7d: number[] | undefined;
     let sparkline24h: number[] | undefined;
+    let tdSignal: TDSignal | null = null;
 
     // ===== Daily candles for RSI + 7D change =====
     const dailyCandles = await fetcher.fetchCandles(symbol, dailyInterval, 100);
@@ -67,6 +68,7 @@ export async function calculateRSIForInstrument(
       rsi14 = calculateRSI(closes, 14);
       change7d = calculate7DChange(dailyCandles);
       sparkline7d = closes.slice(-7);
+      tdSignal = calculateTDSignal(dailyCandles);
     }
 
     // Small delay before weekly request
@@ -144,6 +146,7 @@ export async function calculateRSIForInstrument(
       change7d,
       sparkline7d,
       sparkline24h,
+      tdSignal,
       lastUpdated: Date.now(),
     };
   } catch (error) {

@@ -137,6 +137,13 @@ export interface ProcessedTicker {
   rawData: OKXTicker | HyperliquidRawTicker;
 }
 
+// TD Sequential signal — only emitted when the latest candle completes
+// a Setup 9 or a Countdown 13
+export interface TDSignal {
+  type: 'buy' | 'sell';
+  count: 9 | 13;
+}
+
 // RSI data for a single instrument
 export interface RSIData {
   rsi7: number | null;      // Daily RSI7
@@ -148,6 +155,7 @@ export interface RSIData {
   change7d: number | null;  // 7-day change %
   sparkline7d?: number[];   // 7-day price data from daily candles (OKX)
   sparkline24h?: number[];  // 24h price data from hourly candles (OKX)
+  tdSignal?: TDSignal | null; // Daily TD Sequential signal (optional: absent in old cached entries)
   lastUpdated: number;
 }
 
@@ -192,6 +200,7 @@ export type ColumnKey =
   | 'marketCap'
   | 'dRsiSignal'
   | 'wRsiSignal'
+  | 'tdSeq'
   | 'rsi7'
   | 'rsi14'
   | 'rsiW7'

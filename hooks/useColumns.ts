@@ -117,7 +117,7 @@ export function useColumns(exchange: 'okx' | 'hyperliquid' = 'okx') {
         fundingRate: true, fundingApr: true, fundingInterval: true,
         change4h: true, change: true, change7d: true,
         volume24h: true, marketCap: true,
-        dRsiSignal: true, wRsiSignal: true,
+        dRsiSignal: true, wRsiSignal: true, tdSeq: true,
         rsi7: true, rsi14: true, rsiW7: true, rsiW14: true,
         listDate: true, hasSpot: false
       };
@@ -127,7 +127,7 @@ export function useColumns(exchange: 'okx' | 'hyperliquid' = 'okx') {
         fundingRate: false, fundingApr: false, fundingInterval: false,
         change4h: false, change: false, change7d: false,
         volume24h: false, marketCap: false,
-        dRsiSignal: false, wRsiSignal: false,
+        dRsiSignal: false, wRsiSignal: false, tdSeq: false,
         rsi7: false, rsi14: false, rsiW7: false, rsiW14: false,
         listDate: false, hasSpot: false
       };

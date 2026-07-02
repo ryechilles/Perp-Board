@@ -442,6 +442,14 @@ const SORT_EXTRACTORS: Record<string, (t: ProcessedTicker, ctx: SortExtractorCon
   rsi14: (t, ctx) => ctx.rsiData.get(t.instId)?.rsi14 ?? 0,
   rsiW7: (t, ctx) => ctx.rsiData.get(t.instId)?.rsiW7 ?? 0,
   rsiW14: (t, ctx) => ctx.rsiData.get(t.instId)?.rsiW14 ?? 0,
+  // TD signal: sell = positive, buy = negative, 13 stronger than 9, none = 0
+  // desc → S13, S9, --, B9, B13; asc → B13 first
+  tdSeq: (t, ctx) => {
+    const td = ctx.rsiData.get(t.instId)?.tdSignal;
+    if (!td) return 0;
+    const magnitude = td.count === 13 ? 2 : 1;
+    return td.type === 'sell' ? magnitude : -magnitude;
+  },
   hasSpot: (t, ctx) => {
     const spotKey = ctx.spotSymbolFormat === 'base-usdt' ? `${t.baseSymbol}-USDT` : t.baseSymbol;
     return ctx.spotSymbols.has(spotKey) ? 1 : 0;

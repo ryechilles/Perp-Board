@@ -22,6 +22,7 @@ function CellSkeleton({ col }: { col: ColumnKey }) {
     case 'dRsiSignal':
     case 'wRsiSignal':
       return <Skeleton className="h-5 w-16 rounded-md mx-auto" />;
+    case 'tdSeq':
     case 'rsi7':
     case 'rsi14':
     case 'rsiW7':

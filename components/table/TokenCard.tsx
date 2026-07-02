@@ -14,6 +14,7 @@ import {
   formatFundingApr,
   getFundingAprClass,
   getRsiSignal,
+  getTdSignalDisplay,
 } from '@/lib/utils';
 import { ChangeWithSparkline } from '@/components/Sparkline';
 
@@ -58,6 +59,8 @@ export const TokenCard = memo(function TokenCard({
 
   const dSignal = getRsiSignal(rsi?.rsi7 ?? null, rsi?.rsi14 ?? null);
   const wSignal = getRsiSignal(rsi?.rsiW7 ?? null, rsi?.rsiW14 ?? null);
+  const tdSignal = rsi?.tdSignal;
+  const td = getTdSignalDisplay(tdSignal);
 
   return (
     <div className="bg-card rounded-xl border border-gray-950/[0.08] dark:border-white/[0.08] px-3 py-2.5">
@@ -96,6 +99,11 @@ export const TokenCard = memo(function TokenCard({
             </span>
           </span>
           <span className="flex gap-1.5 flex-wrap justify-end">
+            {tdSignal && (
+              <span className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold whitespace-nowrap ${td.pillStyle}`}>
+                TD {td.label}
+              </span>
+            )}
             <span className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold whitespace-nowrap ${dSignal.pillStyle}`}>
               D {dSignal.label}
             </span>

@@ -6,7 +6,7 @@
  * Mutex/RateLimiter → see lib/concurrency.ts
  */
 
-import { OKXTicker, ProcessedTicker, RsiSignalType } from './types';
+import { OKXTicker, ProcessedTicker, RsiSignalType, TDSignal } from './types';
 import { MEME_TOKENS as MEME_TOKENS_SET, RSI, UI } from './constants';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -190,6 +190,98 @@ export function calculate7DChange(candles: number[][]): number | null {
   const close7dAgo = candles[candles.length - 7][4];
   if (close7dAgo === 0) return null;
   return ((currentClose - close7dAgo) / close7dAgo) * 100;
+}
+
+// ===========================================
+// TD Sequential (Tom DeMark)
+// ===========================================
+
+/**
+ * Calculate the TD Sequential signal for the LATEST candle.
+ *
+ * Candle format: [timestamp, open, high, low, close], chronological order.
+ *
+ * Rules implemented:
+ * - Setup: 9 consecutive closes below (buy) / above (sell) the close 4 bars earlier.
+ * - Countdown: starts when a Setup 9 completes (the setup bar 9 itself is eligible
+ *   as countdown bar 1). Buy: close <= low 2 bars earlier. Sell: close >= high
+ *   2 bars earlier. Bars need not be consecutive. Completes at 13.
+ * - An opposite Setup 9 cancels an active countdown; a same-direction Setup 9
+ *   restarts it (recycle).
+ *
+ * Returns a signal ONLY if the latest candle completes a Setup 9 or a
+ * Countdown 13; otherwise null.
+ */
+export function calculateTDSignal(candles: number[][]): TDSignal | null {
+  const n = candles.length;
+  if (n < 14) return null; // need close[i-4] history + a meaningful streak
+
+  const HIGH = 2, LOW = 3, CLOSE = 4;
+
+  let buyStreak = 0;
+  let sellStreak = 0;
+  let countdown: { type: 'buy' | 'sell'; count: number } | null = null;
+  let signal: TDSignal | null = null; // signal completed on bar i (kept only for last bar)
+
+  for (let i = 4; i < n; i++) {
+    signal = null;
+    const close = candles[i][CLOSE];
+    const close4ago = candles[i - 4][CLOSE];
+
+    // ── Setup counting ──
+    if (close < close4ago) {
+      buyStreak++;
+      sellStreak = 0;
+    } else if (close > close4ago) {
+      sellStreak++;
+      buyStreak = 0;
+    } else {
+      buyStreak = 0;
+      sellStreak = 0;
+    }
+
+    if (buyStreak === 9) {
+      buyStreak = 0; // allow a fresh setup (recycle) on continued weakness
+      countdown = { type: 'buy', count: 0 }; // cancels sell countdown / recycles buy
+      signal = { type: 'buy', count: 9 };
+    } else if (sellStreak === 9) {
+      sellStreak = 0;
+      countdown = { type: 'sell', count: 0 };
+      signal = { type: 'sell', count: 9 };
+    }
+
+    // ── Countdown counting (setup bar 9 itself is eligible) ──
+    if (countdown && i >= 2) {
+      const qualifies = countdown.type === 'buy'
+        ? close <= candles[i - 2][LOW]
+        : close >= candles[i - 2][HIGH];
+      if (qualifies) {
+        countdown.count++;
+        if (countdown.count === 13) {
+          signal = { type: countdown.type, count: 13 };
+          countdown = null;
+        }
+      }
+    }
+  }
+
+  return signal;
+}
+
+/** Display label + pill style for a TD signal (shared by table row and mobile card) */
+export function getTdSignalDisplay(td: TDSignal | null | undefined): { label: string; pillStyle: string } {
+  if (!td) return { label: '--', pillStyle: 'text-muted-foreground' };
+  const label = `${td.type === 'buy' ? 'B' : 'S'}${td.count}`;
+  if (td.type === 'buy') {
+    return {
+      label,
+      pillStyle: td.count === 13 ? 'bg-green-500 text-white' : 'bg-green-500/15 text-green-500',
+    };
+  }
+  return {
+    label,
+    pillStyle: td.count === 13 ? 'bg-red-500 text-white' : 'bg-red-500/15 text-red-500',
+  };
 }
 
 // ===========================================

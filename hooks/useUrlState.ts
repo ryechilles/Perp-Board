@@ -22,6 +22,7 @@ const ALL_COLUMNS_VISIBLE: ColumnVisibility = {
   marketCap: true,
   dRsiSignal: true,
   wRsiSignal: true,
+  tdSeq: true,
   rsi7: true,
   rsi14: true,
   rsiW7: true,
