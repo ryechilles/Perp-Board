@@ -33,12 +33,21 @@ export const okxAdapter: ExchangeAdapter = {
   },
 
   async fetchInitialData(allowedInstIds?: Set<string>) {
-    const [spotSymbols, listingData, fundingRateData] = await Promise.all([
+    // Each fetch REJECTS on failure (no empty fallbacks). allSettled keeps the
+    // parts independent: one failing source must not discard the others.
+    const [spot, listing, funding] = await Promise.allSettled([
       fetchSpotSymbols(),
       fetchListingDates(),
       fetchFundingRates(allowedInstIds),
     ]);
-    return { spotSymbols, listingData, fundingRateData };
+    if (spot.status === 'rejected') console.error('[OKX] Spot symbols failed:', spot.reason);
+    if (listing.status === 'rejected') console.error('[OKX] Listing dates failed:', listing.reason);
+    if (funding.status === 'rejected') console.error('[OKX] Funding rates failed:', funding.reason);
+    return {
+      spotSymbols: spot.status === 'fulfilled' ? spot.value : null,
+      listingData: listing.status === 'fulfilled' ? listing.value : null,
+      fundingRateData: funding.status === 'fulfilled' ? funding.value : null,
+    };
   },
 
   spotSymbolFormat: 'base-usdt',

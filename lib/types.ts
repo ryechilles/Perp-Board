@@ -379,10 +379,14 @@ export interface ExchangeAdapter {
    * `allowedInstIds`, when provided, caps the funding fan-out to the active
    * universe; omit/undefined to fetch funding for all instruments.
    */
+  /**
+   * Each part is null when its fetch failed — the controller then keeps the
+   * previous store data and retries, instead of wiping columns with empties.
+   */
   fetchInitialData(allowedInstIds?: Set<string>): Promise<{
-    spotSymbols: Set<string>;
-    listingData?: Map<string, ListingData>;
-    fundingRateData?: Map<string, FundingRateData>;
+    spotSymbols: Set<string> | null;
+    listingData?: Map<string, ListingData> | null;
+    fundingRateData?: Map<string, FundingRateData> | null;
   }>;
   extractFundingFromTickers?(tickers: Map<string, ProcessedTicker>): Map<string, FundingRateData>;
   /** Pre-filter tickers before the filter pipeline (e.g. OKX keeps only USDT swaps) */

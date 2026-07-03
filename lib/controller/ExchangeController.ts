@@ -154,6 +154,48 @@ export class ExchangeController {
     );
   }
 
+  /**
+   * Load spot symbols / listings / funding. Each part is null when its fetch
+   * failed (adapter contract) — previous store data is kept for that part and
+   * the load retries with exponential backoff until every required part
+   * succeeds (or retries are exhausted). This prevents the "transient OKX
+   * hiccup wipes funding + spot for the whole session" failure mode.
+   */
+  private loadInitialData(attempt = 0): void {
+    const MAX_RETRIES = 3;
+    this.adapter
+      .fetchInitialData(this.getUniverseInstIds())
+      .then((initialData) => {
+        if (this.inactive) return; // ← Don't update store if disposed/paused
+        if (initialData.spotSymbols) this.store.setSpot(initialData.spotSymbols);
+        if (initialData.listingData) this.store.setListing(initialData.listingData);
+        if (initialData.fundingRateData) this.store.setFunding(initialData.fundingRateData);
+
+        const incomplete =
+          !initialData.spotSymbols ||
+          (this.adapter.features.listingDates && !initialData.listingData) ||
+          (this.adapter.features.separateFundingFetch && !initialData.fundingRateData);
+        if (incomplete && attempt < MAX_RETRIES) {
+          this.scheduleInitialDataRetry(attempt);
+        }
+      })
+      .catch((error) => {
+        // fetchInitialData itself should not reject (parts fail as null), but
+        // guard anyway so a bug here can't kill the retry chain silently.
+        console.error('[InitialData] Failed to fetch:', error);
+        if (!this.inactive && attempt < MAX_RETRIES) {
+          this.scheduleInitialDataRetry(attempt);
+        }
+      });
+  }
+
+  private scheduleInitialDataRetry(attempt: number): void {
+    const delay = TIMING.INITIAL_DATA_RETRY_BASE * Math.pow(2, attempt);
+    console.warn(`[InitialData] Incomplete — retrying in ${delay / 1000}s (attempt ${attempt + 1})`);
+    const retryTimeout = setTimeout(() => this.loadInitialData(attempt + 1), delay);
+    this.timeouts.push(retryTimeout);
+  }
+
   /** Fetch RSI — cancellable via AbortController, optional tier filtering. */
   private async fetchRsi(
     tickerMap: Map<string, ProcessedTicker>,
@@ -277,18 +319,9 @@ export class ExchangeController {
     // Fetch exchange-specific initial data in the BACKGROUND (spot symbols,
     // listings, funding). The OKX funding fetch fans out ~250 throttled requests,
     // so it must not block first paint; columns/filters that need it fill in
-    // progressively once it resolves.
-    this.adapter
-      .fetchInitialData(this.getUniverseInstIds())
-      .then((initialData) => {
-        if (this.inactive) return; // ← Don't update store if disposed/paused
-        this.store.setSpot(initialData.spotSymbols);
-        if (initialData.listingData) this.store.setListing(initialData.listingData);
-        if (initialData.fundingRateData) this.store.setFunding(initialData.fundingRateData);
-      })
-      .catch((error) => {
-        console.error('[InitialData] Failed to fetch:', error);
-      });
+    // progressively once it resolves. Failed parts come back as null (previous
+    // data is kept) and the whole load retries with backoff until complete.
+    this.loadInitialData();
 
     // Initial RSI fetch (all tiers).
     const initialRsiTimeout = setTimeout(() => {
@@ -379,10 +412,16 @@ export class ExchangeController {
       const { fetchFundingRates } = await import('@/lib/api/okx-rest');
       this.intervals.push(
         setInterval(async () => {
-          // Cap the funding fan-out to the active universe (~100 instead of ~250).
-          const newFundingRates = await fetchFundingRates(this.getUniverseInstIds());
-          if (this.inactive) return;
-          this.store.setFunding(newFundingRates);
+          try {
+            // Cap the funding fan-out to the active universe (~100 instead of ~250).
+            const newFundingRates = await fetchFundingRates(this.getUniverseInstIds());
+            if (this.inactive) return;
+            this.store.setFunding(newFundingRates);
+          } catch (error) {
+            // Transient upstream failure — keep the last good funding data
+            // rather than wiping the column until the next refresh.
+            console.error('[Funding] Refresh failed, keeping previous data:', error);
+          }
         }, TIMING.FUNDING_RATES_REFRESH)
       );
     }

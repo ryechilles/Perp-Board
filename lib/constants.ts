@@ -50,6 +50,7 @@ export const TIMING = {
   MARKET_CAP_REFRESH: 5 * 60 * 1000,     // 5 minutes
   FUNDING_RATES_REFRESH: 5 * 60 * 1000,  // 5 minutes
   REST_POLLING_INTERVAL: 5 * 1000,       // 5 seconds
+  INITIAL_DATA_RETRY_BASE: 15 * 1000,    // 15s, doubled per attempt (15/30/60s)
 
   // Initial delays
   INITIAL_RSI_FETCH_DELAY: 2000,         // 2 seconds

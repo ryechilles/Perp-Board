@@ -39,9 +39,10 @@ export const hyperliquidAdapter: ExchangeAdapter = {
   // Hyperliquid extracts funding from tickers, so `allowedInstIds` is unused here.
   async fetchInitialData(_allowedInstIds?: Set<string>) {
     void _allowedInstIds;
+    // null on failure → controller keeps previous data and retries (no empty wipe)
     const spotSymbols = await fetchHyperliquidSpotSymbols().catch((error: unknown) => {
       console.error('[Hyperliquid] Failed to fetch spot symbols:', error);
-      return new Set<string>();
+      return null;
     });
     return { spotSymbols };
   },
