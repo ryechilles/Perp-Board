@@ -283,20 +283,25 @@ export function calculateTDState(candles: number[][]): TDState | null {
 /** Minimum in-progress setup count worth displaying (1-3 are noise) */
 export const TD_SETUP_DISPLAY_MIN = 4;
 
+/** Complete class set for a highlighted signal pill */
+const TD_PILL_BASE = 'inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold tabular-nums whitespace-nowrap';
+/** In-progress counts: no container — bare faded text so only 9/13 signals carry visual weight */
+const TD_TEXT_MUTED = 'inline-block text-[11px] font-normal tabular-nums whitespace-nowrap text-muted-foreground opacity-75';
+
 /**
- * Display label + pill style for the TD column (shared by table row and mobile card).
- * Priority: completed 9/13 (highlighted) > active countdown (muted, "·N") >
- * setup streak >= TD_SETUP_DISPLAY_MIN (muted) > "--".
+ * Display label + complete className for the TD column (shared by table row and mobile card).
+ * Priority: completed 9/13 (colored pill) > active countdown ("·N", faded text) >
+ * setup streak >= TD_SETUP_DISPLAY_MIN (faded text) > "--".
  */
-export function getTdDisplay(td: TDState | null | undefined): { label: string; pillStyle: string; title?: string } {
+export function getTdDisplay(td: TDState | null | undefined): { label: string; className: string; title?: string } {
   if (td?.signal) {
     const s = td.signal;
     const label = `${s.type === 'buy' ? 'B' : 'S'} ${s.count}`;
     const title = `${s.type === 'buy' ? 'Buy' : 'Sell'} ${s.count === 13 ? 'Countdown 13' : 'Setup 9'} completed`;
-    if (s.type === 'buy') {
-      return { label, title, pillStyle: s.count === 13 ? 'bg-green-500 text-white' : 'bg-green-500/15 text-green-500' };
-    }
-    return { label, title, pillStyle: s.count === 13 ? 'bg-red-500 text-white' : 'bg-red-500/15 text-red-500' };
+    const color = s.type === 'buy'
+      ? (s.count === 13 ? 'bg-green-500 text-white' : 'bg-green-500/15 text-green-500')
+      : (s.count === 13 ? 'bg-red-500 text-white' : 'bg-red-500/15 text-red-500');
+    return { label, title, className: `${TD_PILL_BASE} ${color}` };
   }
   const setup = td?.setup && td.setup.count >= TD_SETUP_DISPLAY_MIN ? td.setup : null;
   const countdown = td?.countdown ?? null;
@@ -305,17 +310,17 @@ export function getTdDisplay(td: TDState | null | undefined): { label: string; p
     return {
       label: `${setup.type === 'buy' ? 'B' : 'S'} ${setup.count}`,
       title: `${setup.type === 'buy' ? 'Buy' : 'Sell'} Setup ${setup.count}/9`,
-      pillStyle: 'bg-muted text-muted-foreground',
+      className: TD_TEXT_MUTED,
     };
   }
   if (countdown) {
     return {
       label: `${countdown.type === 'buy' ? 'B' : 'S'} ·${countdown.count}`,
       title: `${countdown.type === 'buy' ? 'Buy' : 'Sell'} Countdown ${countdown.count}/13`,
-      pillStyle: 'bg-muted text-muted-foreground',
+      className: TD_TEXT_MUTED,
     };
   }
-  return { label: '--', pillStyle: 'text-muted-foreground' };
+  return { label: '--', className: 'inline-block text-[11px] text-muted-foreground' };
 }
 
 // ===========================================

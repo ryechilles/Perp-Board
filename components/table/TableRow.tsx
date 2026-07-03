@@ -330,10 +330,7 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
         const td = getTdDisplay(rsi?.td);
         return (
           <td key={key} className={baseClass}>
-            <span
-              title={td.title}
-              className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold tabular-nums min-w-[42px] text-center whitespace-nowrap ${td.pillStyle}`}
-            >
+            <span title={td.title} className={`min-w-[42px] text-center ${td.className}`}>
               {td.label}
             </span>
           </td>

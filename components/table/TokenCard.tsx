@@ -101,7 +101,7 @@ export const TokenCard = memo(function TokenCard({
           </span>
           <span className="flex gap-1.5 flex-wrap justify-end">
             {tdSignal && (
-              <span className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold whitespace-nowrap ${td.pillStyle}`}>
+              <span className={td.className}>
                 TD {td.label}
               </span>
             )}
