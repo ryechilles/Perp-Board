@@ -28,8 +28,6 @@ function CellSkeleton({ col }: { col: ColumnKey }) {
     case 'rsiW7':
     case 'rsiW14':
       return <Skeleton className="h-5 w-[42px] rounded-md" />;
-    case 'hasSpot':
-      return <Skeleton className="h-4 w-8 rounded ml-auto" />;
     default:
       // Numeric / text columns (price, funding, changes, market cap, volume…)
       return <Skeleton className="h-3 w-14 ml-auto" />;

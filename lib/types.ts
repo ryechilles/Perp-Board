@@ -218,8 +218,7 @@ export type ColumnKey =
   | 'rsi14'
   | 'rsiW7'
   | 'rsiW14'
-  | 'listDate'
-  | 'hasSpot';
+  | 'listDate';
 
 // Column visibility settings — auto-synced with ColumnKey
 export type ColumnVisibility = Record<ColumnKey, boolean>;
@@ -254,7 +253,6 @@ export interface Filters {
   rsi14?: string;
   rsiW7?: string;   // Weekly RSI7 filter
   rsiW14?: string;  // Weekly RSI14 filter
-  hasSpot?: string;
   fundingRate?: string;
   listAge?: string;  // Listing age filter (e.g., '>1y', '<30d')
   isMeme?: string;   // Meme token filter
@@ -384,7 +382,7 @@ export interface ExchangeAdapter {
    * previous store data and retries, instead of wiping columns with empties.
    */
   fetchInitialData(allowedInstIds?: Set<string>): Promise<{
-    spotSymbols: Set<string> | null;
+    spotSymbols?: Set<string> | null;
     listingData?: Map<string, ListingData> | null;
     fundingRateData?: Map<string, FundingRateData> | null;
   }>;
@@ -397,5 +395,7 @@ export interface ExchangeAdapter {
     maFlow: boolean;
     listingDates: boolean;
     separateFundingFetch: boolean;
+    /** Exchange has spot data → crypto without a spot listing is cut from the universe. */
+    excludeNoSpotCrypto: boolean;
   };
 }

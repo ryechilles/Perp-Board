@@ -64,8 +64,7 @@ export const COLUMN_DEFINITIONS: Record<ColumnKey, { label: string; width: numbe
   rsi14: { label: 'D-RSI14', width: 62, align: 'center', sortable: true },
   rsiW7: { label: 'W-RSI7', width: 58, align: 'center', sortable: true },
   rsiW14: { label: 'W-RSI14', width: 62, align: 'center', sortable: true },
-  listDate: { label: 'Listed', width: 75, align: 'center', sortable: true },
-  hasSpot: { label: 'Spot', width: 48, align: 'center', sortable: true }
+  listDate: { label: 'Listed', width: 75, align: 'center', sortable: true }
 };
 
 // Format funding APR (annualized)

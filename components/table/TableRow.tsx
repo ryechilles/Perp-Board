@@ -9,7 +9,6 @@ import {
   useFunding,
   useListing,
   useMarketCap,
-  useHasSpot,
 } from '@/hooks/useMarketSelectors';
 import { Button, TokenAvatar } from '@/components/ui';
 import {
@@ -71,7 +70,6 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
   const listingRaw = useListing(marketStore, instId);
   const listingData = exchange === 'okx' ? listingRaw : undefined;
   const marketCap = useMarketCap(marketStore, baseSymbol);
-  const hasSpot = useHasSpot(marketStore, baseSymbol, exchange);
 
   const displayRank = (currentPage - 1) * pageSize + index + 1;
   const parts = instId.split('-');
@@ -186,11 +184,6 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
                 <span className="text-foreground">{base}</span>
                 <span className="text-muted-foreground font-normal">/{quote}</span>
               </div>
-              {!hasSpot && exchange !== 'hyperliquid' && (
-                <span className="text-[11px] text-muted-foreground font-normal">
-                  No Spot on {exchange === 'okx' ? 'OKX' : exchange}
-                </span>
-              )}
               {listingAgeInfo && (
                 <span
                   className={`text-[11px] font-normal ${listingAgeInfo.isNew ? 'text-blue-500' : 'text-muted-foreground'}`}
@@ -377,21 +370,6 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
         return (
           <td key={key} className={`${baseClass} text-[12px] text-muted-foreground`}>
             {formatListDate(listingData?.listTime)}
-          </td>
-        );
-
-      case 'hasSpot':
-        return (
-          <td key={key} className={baseClass}>
-            <span
-              className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                hasSpot
-                  ? 'bg-green-500/15 text-green-500'
-                  : 'bg-muted text-muted-foreground'
-              }`}
-            >
-              {hasSpot ? 'Yes' : 'No'}
-            </span>
           </td>
         );
 

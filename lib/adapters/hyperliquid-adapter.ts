@@ -15,7 +15,6 @@ import {
 } from '../types';
 import { HyperliquidDataManager } from '../api/hyperliquid-data-manager';
 import { fetchHyperliquidRSIForInstrument } from '../api/hyperliquid-rsi';
-import { fetchHyperliquidSpotSymbols } from '../api/hyperliquid-rest';
 import { fetchRSIBatchGeneric } from '../api/rsi-batch';
 
 export const hyperliquidAdapter: ExchangeAdapter = {
@@ -37,14 +36,11 @@ export const hyperliquidAdapter: ExchangeAdapter = {
   },
 
   // Hyperliquid extracts funding from tickers, so `allowedInstIds` is unused here.
+  // No initial data needed: spot symbols aren't used on Hyperliquid (the board
+  // shows no spot info there and the no-spot universe cut is OKX-only).
   async fetchInitialData(_allowedInstIds?: Set<string>) {
     void _allowedInstIds;
-    // null on failure → controller keeps previous data and retries (no empty wipe)
-    const spotSymbols = await fetchHyperliquidSpotSymbols().catch((error: unknown) => {
-      console.error('[Hyperliquid] Failed to fetch spot symbols:', error);
-      return null;
-    });
-    return { spotSymbols };
+    return {};
   },
 
   preFilterTickers(tickers: ProcessedTicker[]): ProcessedTicker[] {
@@ -82,5 +78,6 @@ export const hyperliquidAdapter: ExchangeAdapter = {
     maFlow: false,
     listingDates: false,
     separateFundingFetch: false,
+    excludeNoSpotCrypto: false,
   },
 };

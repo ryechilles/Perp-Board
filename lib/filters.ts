@@ -32,6 +32,8 @@ export interface FilterContext {
   listingData?: Map<string, ListingData>; // OKX only
   spotSymbolFormat: 'base-usdt' | 'base'; // OKX: 'BTC-USDT', HL: 'BTC'
   defaultSettlementInterval: number; // OKX: 8, HL: 1
+  /** When true (OKX), crypto without a spot listing is cut from the universe. */
+  excludeNoSpotCrypto: boolean;
 }
 
 /**
@@ -41,11 +43,18 @@ export type SortExtractorContext = {
   rsiData: Map<string, RSIData>;
   marketCapData: Map<string, MarketCapData>;
   fundingRateData: Map<string, FundingRateData>;
-  spotSymbols: Set<string>;
   listingData?: Map<string, ListingData>;
-  spotSymbolFormat: 'base-usdt' | 'base';
   defaultSettlementInterval: number;
 };
+
+/**
+ * Spot context for the universe cut — which symbols have a spot listing and
+ * how to derive the spot lookup key from a perp's base symbol.
+ */
+export interface SpotUniverseContext {
+  spotSymbols: Set<string>;
+  spotSymbolFormat: 'base-usdt' | 'base';
+}
 
 // ===========================================
 // RSI Filter Helper
@@ -88,14 +97,22 @@ export function applyRsiFilter(
  *    market-cap rank, so a rank cut would wrongly drop them.
  *  - Crypto perps are kept only if they have a market-cap rank, then trimmed to
  *    the top `limit` by rank (volume breaks ties). Unranked crypto is dropped.
+ *  - When `spot` is provided (OKX), crypto WITHOUT a spot listing is then cut
+ *    from that top-`limit` slice. The cut happens AFTER the rank slice on
+ *    purpose: lower-ranked tokens must NOT backfill the freed slots, so the
+ *    list may hold fewer than `limit` crypto rows. Stocks are exempt (they
+ *    never have spot).
  *
  * Graceful degradation: before market-cap data has loaded (cold first paint),
  * the map is empty — return everything uncapped so the table still renders, and
- * the cap kicks in once ranks arrive.
+ * the cap kicks in once ranks arrive. Same for spot: while the spot symbol set
+ * is empty (not yet loaded / fetch failed), the spot cut is skipped rather than
+ * wiping every crypto row.
  */
 export function selectUniverse(
   data: ProcessedTicker[],
   marketCapData: Map<string, MarketCapData>,
+  spot?: SpotUniverseContext | null,
   limit: number = UNIVERSE.MAX_CRYPTO
 ): ProcessedTicker[] {
   if (marketCapData.size === 0) return data;
@@ -120,7 +137,17 @@ export function selectUniverse(
     return volUsd(b) - volUsd(a);
   });
 
-  return [...stocks, ...rankedCrypto.slice(0, limit)];
+  let crypto = rankedCrypto.slice(0, limit);
+
+  // No-spot cut — after the rank slice, so freed slots are not backfilled.
+  if (spot && spot.spotSymbols.size > 0) {
+    crypto = crypto.filter(t => {
+      const spotKey = spot.spotSymbolFormat === 'base-usdt' ? `${t.baseSymbol}-USDT` : t.baseSymbol;
+      return spot.spotSymbols.has(spotKey);
+    });
+  }
+
+  return [...stocks, ...crypto];
 }
 
 /**
@@ -130,9 +157,10 @@ export function selectUniverse(
 export function selectUniverseInstIds(
   data: ProcessedTicker[],
   marketCapData: Map<string, MarketCapData>,
+  spot?: SpotUniverseContext | null,
   limit: number = UNIVERSE.MAX_CRYPTO
 ): Set<string> {
-  return new Set(selectUniverse(data, marketCapData, limit).map(t => t.instId));
+  return new Set(selectUniverse(data, marketCapData, spot, limit).map(t => t.instId));
 }
 
 // ===========================================
@@ -353,24 +381,6 @@ export function applyMemeFilter(
 }
 
 /**
- * Apply spot trading availability filter
- */
-export function applyHasSpotFilter(
-  data: ProcessedTicker[],
-  hasSpotFilter: string | undefined,
-  spotSymbols: Set<string>,
-  spotSymbolFormat: 'base-usdt' | 'base'
-): ProcessedTicker[] {
-  if (!hasSpotFilter) return data;
-
-  return data.filter(t => {
-    const spotKey = spotSymbolFormat === 'base-usdt' ? `${t.baseSymbol}-USDT` : t.baseSymbol;
-    const hasSpot = spotSymbols.has(spotKey);
-    return hasSpotFilter === 'yes' ? hasSpot : !hasSpot;
-  });
-}
-
-/**
  * Apply RSI signal filter for daily RSI
  */
 export function applyDRsiSignalFilter(
@@ -461,10 +471,6 @@ const SORT_EXTRACTORS: Record<string, (t: ProcessedTicker, ctx: SortExtractorCon
     }
     return 0;
   },
-  hasSpot: (t, ctx) => {
-    const spotKey = ctx.spotSymbolFormat === 'base-usdt' ? `${t.baseSymbol}-USDT` : t.baseSymbol;
-    return ctx.spotSymbols.has(spotKey) ? 1 : 0;
-  },
   fundingRate: (t, ctx) => ctx.fundingRateData.get(t.instId)?.fundingRate ?? 0,
   fundingApr: (t, ctx) => {
     const fr = ctx.fundingRateData.get(t.instId);
@@ -544,10 +550,17 @@ export function filterAndSort(
     filtered = preFilter(filtered);
   }
 
-  // Active universe cap — top-N crypto by market-cap rank + all stock perps.
+  // Active universe cap — top-N crypto by market-cap rank + all stock perps,
+  // minus no-spot crypto where the exchange supports the cut (OKX).
   // Applied before everything else so the rest of the pipeline (and the table)
   // only ever sees the capped set.
-  filtered = selectUniverse(filtered, ctx.marketCapData);
+  filtered = selectUniverse(
+    filtered,
+    ctx.marketCapData,
+    ctx.excludeNoSpotCrypto
+      ? { spotSymbols: ctx.spotSymbols, spotSymbolFormat: ctx.spotSymbolFormat }
+      : null
+  );
 
   // Search filter
   filtered = applySearchFilter(filtered, searchTerm);
@@ -562,7 +575,6 @@ export function filterAndSort(
   filtered = applyMarketCapFilter(filtered, filters.marketCapMin, ctx.marketCapData);
   filtered = applyListAgeFilter(filtered, filters.listAge, ctx.listingData);
   filtered = applyMemeFilter(filtered, filters.isMeme, ctx.marketCapData);
-  filtered = applyHasSpotFilter(filtered, filters.hasSpot, ctx.spotSymbols, ctx.spotSymbolFormat);
   filtered = applyDRsiSignalFilter(filtered, filters.dRsiSignal, ctx.rsiData);
   filtered = applyWRsiSignalFilter(filtered, filters.wRsiSignal, ctx.rsiData);
   filtered = applyAssetCategoryFilter(filtered, filters.assetCategory);

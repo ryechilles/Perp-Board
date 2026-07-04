@@ -22,7 +22,7 @@ import {
   DataManager,
 } from '@/lib/types';
 import { fetchMarketCapData } from '@/lib/api/marketcap';
-import { selectUniverse, selectUniverseInstIds } from '@/lib/filters';
+import { selectUniverse, selectUniverseInstIds, SpotUniverseContext } from '@/lib/filters';
 import { TIMING, MA_FLOW } from '@/lib/constants';
 import {
   getMarketCapCache,
@@ -122,11 +122,13 @@ export class ExchangeController {
   private getSortedInstIds(tickerMap: Map<string, ProcessedTicker>): string[] {
     const marketCapData = this.store.getSnapshot().marketCapData;
     const volUsd = (t: ProcessedTicker) => (parseFloat(t.volCcy24h) || 0) * t.priceNum;
-    // Cap to the active universe (top-N crypto by rank + stock perps) so RSI is
-    // only fetched for that set — the 100+ tier3 work disappears entirely.
+    // Cap to the active universe (top-N crypto by rank + stock perps, minus
+    // no-spot crypto on OKX) so RSI is only fetched for that set — the 100+
+    // tier3 work disappears entirely.
     const universe = selectUniverse(
       this.adapter.preFilterTickers(Array.from(tickerMap.values())),
-      marketCapData
+      marketCapData,
+      this.getSpotUniverseContext()
     );
     return universe
       .sort((a, b) => {
@@ -150,8 +152,22 @@ export class ExchangeController {
     if (marketCapData.size === 0) return undefined;
     return selectUniverseInstIds(
       this.adapter.preFilterTickers(Array.from(tickers.values())),
-      marketCapData
+      marketCapData,
+      this.getSpotUniverseContext()
     );
+  }
+
+  /**
+   * Spot context for the universe's no-spot crypto cut (OKX only). Null when
+   * the adapter has no spot data — selectUniverse then skips the cut. Also
+   * degrades gracefully while the spot set is still empty (not yet loaded).
+   */
+  private getSpotUniverseContext(): SpotUniverseContext | null {
+    if (!this.adapter.features.excludeNoSpotCrypto) return null;
+    return {
+      spotSymbols: this.store.getSnapshot().spotSymbols,
+      spotSymbolFormat: this.adapter.spotSymbolFormat,
+    };
   }
 
   /**
@@ -172,7 +188,7 @@ export class ExchangeController {
         if (initialData.fundingRateData) this.store.setFunding(initialData.fundingRateData);
 
         const incomplete =
-          !initialData.spotSymbols ||
+          (this.adapter.features.excludeNoSpotCrypto && !initialData.spotSymbols) ||
           (this.adapter.features.listingDates && !initialData.listingData) ||
           (this.adapter.features.separateFundingFetch && !initialData.fundingRateData);
         if (incomplete && attempt < MAX_RETRIES) {

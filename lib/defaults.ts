@@ -27,8 +27,7 @@ export const DEFAULT_COLUMNS: ColumnVisibility = {
   rsi14: false,
   rsiW7: false,
   rsiW14: false,
-  listDate: false,
-  hasSpot: false
+  listDate: false
 };
 
 // Get default columns (kept for backward compatibility, isMobile param ignored)

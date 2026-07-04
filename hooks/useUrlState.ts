@@ -27,8 +27,7 @@ const ALL_COLUMNS_VISIBLE: ColumnVisibility = {
   rsi14: true,
   rsiW7: true,
   rsiW14: true,
-  listDate: true,
-  hasSpot: true
+  listDate: true
 };
 
 // Convert readonly array to regular array for includes check
@@ -59,7 +58,7 @@ function stateToParams(state: Partial<UrlState>): URLSearchParams {
   // Filters - only include non-empty values
   if (state.filters) {
     // String-type filters
-    const stringFilterKeys = ['rank', 'rsi7', 'rsi14', 'rsiW7', 'rsiW14', 'hasSpot', 'fundingRate', 'marketCapMin', 'listAge'] as const;
+    const stringFilterKeys = ['rank', 'rsi7', 'rsi14', 'rsiW7', 'rsiW14', 'fundingRate', 'marketCapMin', 'listAge'] as const;
     stringFilterKeys.forEach(key => {
       const value = state.filters?.[key];
       if (value) {
@@ -118,7 +117,7 @@ function paramsToState(params: URLSearchParams): Partial<UrlState> {
   // Filters
   const filters: Filters = {};
   // String-type filters
-  const stringFilterKeys = ['rank', 'rsi7', 'rsi14', 'rsiW7', 'rsiW14', 'hasSpot', 'fundingRate', 'marketCapMin', 'listAge'] as const;
+  const stringFilterKeys = ['rank', 'rsi7', 'rsi14', 'rsiW7', 'rsiW14', 'fundingRate', 'marketCapMin', 'listAge'] as const;
   stringFilterKeys.forEach(key => {
     const value = params.get(`f_${key}`);
     if (value) {

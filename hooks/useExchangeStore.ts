@@ -106,14 +106,18 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
   // Exchange-specific pre-filter (stable reference via adapter)
   const preFilter = adapter.preFilterTickers;
 
-  // Active universe (top-N crypto by market-cap rank + all stock perps), as a
-  // Map. Single source of truth that ALL derived data — RSI averages, quick
-  // filter counts, top movers, and the sidebar widgets — consumes, so they stay
-  // consistent with the capped table instead of scanning the full universe.
+  // Active universe (top-N crypto by market-cap rank + all stock perps, minus
+  // no-spot crypto on OKX), as a Map. Single source of truth that ALL derived
+  // data — RSI averages, quick filter counts, top movers, and the sidebar
+  // widgets — consumes, so they stay consistent with the capped table instead
+  // of scanning the full universe.
   const universeTickers = useMemo(() => {
-    const capped = selectUniverse(preFilter(Array.from(tickers.values())), marketCapData);
+    const spot = adapter.features.excludeNoSpotCrypto
+      ? { spotSymbols, spotSymbolFormat: adapter.spotSymbolFormat }
+      : null;
+    const capped = selectUniverse(preFilter(Array.from(tickers.values())), marketCapData, spot);
     return new Map(capped.map(t => [t.instId, t]));
-  }, [tickers, marketCapData, preFilter]);
+  }, [tickers, marketCapData, preFilter, spotSymbols, adapter]);
 
   // P3 decouple: does the current sort/filter actually depend on RSI data?
   // If not (e.g. the default rank sort with no RSI filter), an RSI update does
@@ -146,6 +150,7 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
       listingData: adapter.features.listingDates ? listingData : undefined,
       spotSymbolFormat: adapter.spotSymbolFormat,
       defaultSettlementInterval: adapter.defaultSettlementInterval,
+      excludeNoSpotCrypto: adapter.features.excludeNoSpotCrypto,
     };
     return filterAndSort(
       tickers,

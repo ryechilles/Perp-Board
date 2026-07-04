@@ -7,10 +7,10 @@
  * Two subscription levels:
  *  - global   (`subscribe` / `getSnapshot`)  → used by the derived data layer
  *    (filterAndSort / averages / counts) in useExchangeStore.
- *  - per-key  (`subscribeInst` / `subscribeBase` / `subscribeSpot`) → used by
- *    individual table rows via the selector hooks. A write only notifies the
- *    keys whose value actually changed (value diff), so a price tick on one
- *    instrument re-renders only that row.
+ *  - per-key  (`subscribeInst` / `subscribeBase`) → used by individual table
+ *    rows via the selector hooks. A write only notifies the keys whose value
+ *    actually changed (value diff), so a price tick on one instrument
+ *    re-renders only that row.
  */
 
 import {
@@ -95,7 +95,6 @@ export class MarketStore {
   private globalListeners = new Set<Listener>();
   private instListeners = new Map<string, Set<Listener>>(); // ticker / rsi / funding / listing
   private baseListeners = new Map<string, Set<Listener>>(); // marketCap (keyed by baseSymbol)
-  private spotListeners = new Set<Listener>();
 
   // ───────────────────────── global subscription ─────────────────────────
   subscribe = (l: Listener): (() => void) => {
@@ -114,13 +113,6 @@ export class MarketStore {
 
   subscribeBase(baseSymbol: string, l: Listener): () => void {
     return this.addKeyListener(this.baseListeners, baseSymbol, l);
-  }
-
-  subscribeSpot(l: Listener): () => void {
-    this.spotListeners.add(l);
-    return () => {
-      this.spotListeners.delete(l);
-    };
   }
 
   private addKeyListener(
@@ -149,7 +141,6 @@ export class MarketStore {
   getFunding = (id: string): FundingRateData | undefined => this.snapshot.fundingRateData.get(id);
   getListing = (id: string): ListingData | undefined => this.snapshot.listingData.get(id);
   getMarketCap = (base: string): MarketCapData | undefined => this.snapshot.marketCapData.get(base);
-  hasSpot = (key: string): boolean => this.snapshot.spotSymbols.has(key);
 
   // ───────────────────────── notification helpers ────────────────────────
   private notifyGlobal() {
@@ -244,10 +235,9 @@ export class MarketStore {
     this.notifyKeys(this.baseListeners, affected);
   }
 
-  /** Set spot symbols (typically once). */
+  /** Set spot symbols (typically once) — powers the no-spot universe cut. */
   setSpot(next: Set<string>) {
     this.commit({ spotSymbols: next });
-    this.spotListeners.forEach((l) => l());
   }
 
   /** Remove orphaned rsi/listing entries for delisted instruments. */

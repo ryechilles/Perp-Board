@@ -9,7 +9,7 @@ import { RsiFilter } from './RsiFilter';
 import { PillButtonGroup, PillButtonOption, Button } from '@/components/ui';
 
 // Quick filter types
-type QuickFilter = 'all' | 'crypto' | 'stock' | 'top25' | 'meme' | 'noSpot' | 'newListed' | 'overbought' | 'oversold';
+type QuickFilter = 'all' | 'crypto' | 'stock' | 'top25' | 'meme' | 'newListed' | 'overbought' | 'oversold';
 
 interface ControlsProps {
   columns: ColumnVisibility;
@@ -123,9 +123,8 @@ export function Controls({
 
   // Determine active quick filter based on current filters
   const getActiveQuickFilter = (): QuickFilter => {
-    if (filters.rank === '1-25' && !filters.rsi7 && !filters.rsi14 && !filters.isMeme && !filters.hasSpot) return 'top25';
+    if (filters.rank === '1-25' && !filters.rsi7 && !filters.rsi14 && !filters.isMeme) return 'top25';
     if (filters.isMeme === 'yes' && !filters.rsi7 && !filters.rsi14) return 'meme';
-    if (filters.hasSpot === 'no' && !filters.rsi7 && !filters.rsi14) return 'noSpot';
     if (filters.listAge === '<180d' && !filters.rsi7 && !filters.rsi14) return 'newListed';
     if (filters.rsi7 === '>75' && filters.rsi14 === '>75') return 'overbought';
     if (filters.rsi7 === '<25' && filters.rsi14 === '<25') return 'oversold';
@@ -151,12 +150,6 @@ export function Controls({
       }
       case 'meme': {
         const f = { isMeme: 'yes' as const, ...(currentCategory ? { assetCategory: currentCategory } : {}) };
-        onFiltersChange(f);
-        setTempFilters(f);
-        break;
-      }
-      case 'noSpot': {
-        const f = { hasSpot: 'no' as const, ...(currentCategory ? { assetCategory: currentCategory } : {}) };
         onFiltersChange(f);
         setTempFilters(f);
         break;
@@ -187,7 +180,7 @@ export function Controls({
   const activeQuickFilter = getActiveQuickFilter();
 
   // Fixed columns that are always shown and not counted
-  const excludedColumns = ['favorite', 'rank', 'logo', 'symbol', 'hasSpot'];
+  const excludedColumns = ['favorite', 'rank', 'logo', 'symbol'];
   const visibleCount = Object.entries(columns)
     .filter(([key]) => !excludedColumns.includes(key))
     .filter(([, v]) => v).length;
@@ -311,14 +304,6 @@ export function Controls({
       activeColor: 'text-orange-500',
       tooltip: 'Meme Tokens Only'
     },
-    // Only show No Spot for exchanges that have spot data
-    ...(exchange !== 'hyperliquid' ? [{
-      value: 'noSpot' as QuickFilter,
-      label: '🚫 No Spot',
-      activeColor: 'text-purple-500',
-      hiddenOnMobile: true,
-      tooltip: `Tokens without Spot listing on ${exchangeLabel}`
-    }] : []),
     // Only show New Listed for exchanges that have listing date data
     ...(exchange !== 'hyperliquid' ? [{
       value: 'newListed' as QuickFilter,
@@ -715,23 +700,6 @@ export function Controls({
                   size="sm"
                 />
               </div>
-
-              {/* Has Spot - only for exchanges with spot data */}
-              {exchange !== 'hyperliquid' && (
-                <div>
-                  <div className="text-[11px] text-muted-foreground font-medium mb-2">Has Spot on {exchangeLabel}</div>
-                  <PillButtonGroup
-                    options={[
-                      { value: 'yes', label: 'Yes' },
-                      { value: 'no', label: 'No' },
-                    ]}
-                    value={filters.hasSpot || ''}
-                    onChange={(v) => onFiltersChange({ ...filters, hasSpot: v || undefined })}
-                    allowDeselect
-                    size="sm"
-                  />
-                </div>
-              )}
 
               {/* Listing Age - only for exchanges with listing date data */}
               {exchange !== 'hyperliquid' && (

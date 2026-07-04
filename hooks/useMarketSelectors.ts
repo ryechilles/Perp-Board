@@ -47,14 +47,3 @@ export function useMarketCap(store: MarketStore, baseSymbol: string): MarketCapD
   const get = useCallback(() => store.getMarketCap(baseSymbol), [store, baseSymbol]);
   return useSyncExternalStore(subscribe, get, get);
 }
-
-export function useHasSpot(
-  store: MarketStore,
-  baseSymbol: string,
-  exchange: 'okx' | 'hyperliquid'
-): boolean {
-  const spotKey = exchange === 'okx' ? `${baseSymbol}-USDT` : baseSymbol;
-  const subscribe = useCallback((cb: () => void) => store.subscribeSpot(cb), [store]);
-  const get = useCallback(() => store.hasSpot(spotKey), [store, spotKey]);
-  return useSyncExternalStore(subscribe, get, get);
-}

@@ -57,5 +57,6 @@ export const okxAdapter: ExchangeAdapter = {
     maFlow: true,
     listingDates: true,
     separateFundingFetch: true,
+    excludeNoSpotCrypto: true,
   },
 };
