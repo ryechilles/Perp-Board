@@ -131,7 +131,7 @@ function PillButton<T extends string = string>({
         {option.icon}
         {option.label}
         {option.badge !== undefined && (
-          <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
+          <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[0.625rem]">
             {option.badge}
           </Badge>
         )}
@@ -148,7 +148,7 @@ function PillButton<T extends string = string>({
           >
             {typeof option.tooltip === 'string' ? (
               <>
-                <div className="text-[11px] font-medium text-muted-foreground mb-1">Filter Criteria</div>
+                <div className="text-[0.6875rem] font-medium text-muted-foreground mb-1">Filter Criteria</div>
                 <div className="text-xs">{option.tooltip}</div>
               </>
             ) : (

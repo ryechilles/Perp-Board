@@ -330,8 +330,8 @@ export function Controls({
       activeColor: 'text-red-600',
       tooltip: (
         <>
-          <div className="text-[11px] font-medium text-muted-foreground mb-1">Daily Overbought</div>
-          <div className="text-[12px] flex flex-col gap-0.5">
+          <div className="text-[0.6875rem] font-medium text-muted-foreground mb-1">Daily Overbought</div>
+          <div className="text-[0.75rem] flex flex-col gap-0.5">
             <span className="text-foreground">{scopeLabel}</span>
             <span className="text-foreground">D-RSI7 &gt; 75</span>
             <span className="text-foreground">D-RSI14 &gt; 75</span>
@@ -346,8 +346,8 @@ export function Controls({
       activeColor: 'text-green-600',
       tooltip: (
         <>
-          <div className="text-[11px] font-medium text-muted-foreground mb-1">Daily Oversold</div>
-          <div className="text-[12px] flex flex-col gap-0.5">
+          <div className="text-[0.6875rem] font-medium text-muted-foreground mb-1">Daily Oversold</div>
+          <div className="text-[0.75rem] flex flex-col gap-0.5">
             <span className="text-foreground">{scopeLabel}</span>
             <span className="text-foreground">D-RSI7 &lt; 25</span>
             <span className="text-foreground">D-RSI14 &lt; 25</span>
@@ -416,7 +416,7 @@ export function Controls({
             placeholder="Search…"
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="bg-transparent border-none outline-none text-[14px] text-foreground placeholder:text-muted-foreground flex-1"
+            className="bg-transparent border-none outline-none text-[0.875rem] text-foreground placeholder:text-muted-foreground flex-1"
             aria-label="Search tokens"
           />
         </label>
@@ -503,7 +503,7 @@ export function Controls({
               placeholder="Search…"
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="bg-transparent border-none outline-none text-[13px] text-foreground w-[60px]"
+              className="bg-transparent border-none outline-none text-[0.8125rem] text-foreground w-[60px]"
               aria-label="Search tokens"
             />
           </label>
@@ -567,7 +567,7 @@ export function Controls({
                 const activeKeys = groupKeys.filter(k => columns[k]);
                 return (
                   <div key={group.label}>
-                    <div className="text-[11px] text-muted-foreground font-medium mb-2">{group.label}</div>
+                    <div className="text-[0.6875rem] text-muted-foreground font-medium mb-2">{group.label}</div>
                     <PillButtonGroup
                       options={group.columns.map(col => ({ value: col.key, label: col.label }))}
                       value={activeKeys}
@@ -595,7 +595,7 @@ export function Controls({
             <div className="space-y-4">
               {/* Market Cap Rank */}
               <div>
-                <div className="text-[11px] text-muted-foreground font-medium mb-2">Market Cap Rank</div>
+                <div className="text-[0.6875rem] text-muted-foreground font-medium mb-2">Market Cap Rank</div>
                 <PillButtonGroup
                   options={[
                     { value: '1-20', label: 'Top 20' },
@@ -612,7 +612,7 @@ export function Controls({
 
               {/* Market Cap */}
               <div>
-                <div className="text-[11px] text-muted-foreground font-medium mb-2">Market Cap</div>
+                <div className="text-[0.6875rem] text-muted-foreground font-medium mb-2">Market Cap</div>
                 <PillButtonGroup
                   options={[
                     { value: '20-100', label: '$20M-$100M' },
@@ -628,7 +628,7 @@ export function Controls({
 
               {/* Funding Rate */}
               <div>
-                <div className="text-[11px] text-muted-foreground font-medium mb-2">Funding Rate</div>
+                <div className="text-[0.6875rem] text-muted-foreground font-medium mb-2">Funding Rate</div>
                 <PillButtonGroup
                   options={[
                     { value: 'positive', label: 'Positive' },
@@ -643,7 +643,7 @@ export function Controls({
 
               {/* RSI */}
               <div>
-                <div className="text-[11px] text-muted-foreground font-medium mb-2">RSI Indicators</div>
+                <div className="text-[0.6875rem] text-muted-foreground font-medium mb-2">RSI Indicators</div>
                 <div className="flex flex-col gap-3">
                   {/* Daily RSI Row */}
                   <div className="flex flex-wrap gap-x-4 gap-y-3">
@@ -660,7 +660,7 @@ export function Controls({
 
               {/* RSI Signal Filters */}
               <div>
-                <div className="text-[11px] text-muted-foreground font-medium mb-2">D-RSI Avg Signal</div>
+                <div className="text-[0.6875rem] text-muted-foreground font-medium mb-2">D-RSI Avg Signal</div>
                 <PillButtonGroup<RsiSignalType>
                   options={[
                     { value: 'extreme-oversold', label: 'Extreme Oversold' },
@@ -681,7 +681,7 @@ export function Controls({
               </div>
 
               <div>
-                <div className="text-[11px] text-muted-foreground font-medium mb-2">W-RSI Avg Signal</div>
+                <div className="text-[0.6875rem] text-muted-foreground font-medium mb-2">W-RSI Avg Signal</div>
                 <PillButtonGroup<RsiSignalType>
                   options={[
                     { value: 'extreme-oversold', label: 'Extreme Oversold' },
@@ -704,7 +704,7 @@ export function Controls({
               {/* Listing Age - only for exchanges with listing date data */}
               {exchange !== 'hyperliquid' && (
                 <div>
-                  <div className="text-[11px] text-muted-foreground font-medium mb-2">Listing Age</div>
+                  <div className="text-[0.6875rem] text-muted-foreground font-medium mb-2">Listing Age</div>
                   <PillButtonGroup
                     options={[
                       { value: '<30d', label: '<30d' },

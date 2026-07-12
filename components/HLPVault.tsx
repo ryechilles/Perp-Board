@@ -78,11 +78,11 @@ export function HLPVault() {
           {/* TVL & APR Row */}
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-[11px] text-muted-foreground">TVL</div>
+              <div className="text-[0.6875rem] text-muted-foreground">TVL</div>
               <div className="text-lg font-semibold tabular-nums">{formatUsd(data.tvl)}</div>
             </div>
             <div className="text-right">
-              <div className="text-[11px] text-muted-foreground">APR</div>
+              <div className="text-[0.6875rem] text-muted-foreground">APR</div>
               <div className={`text-lg font-semibold tabular-nums ${data.apr >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                 {data.apr.toFixed(1)}%
               </div>
@@ -91,23 +91,23 @@ export function HLPVault() {
 
           {/* PnL Grid */}
           <div className="border-t border-gray-950/[0.10] dark:border-white/[0.10] pt-3">
-            <div className="text-[11px] text-muted-foreground mb-2">PnL</div>
+            <div className="text-[0.6875rem] text-muted-foreground mb-2">PnL</div>
             <div className="grid grid-cols-3 gap-2">
               <div>
-                <div className="text-[10px] text-muted-foreground">24h</div>
-                <div className={`text-[12px] font-medium tabular-nums ${data.pnlDay >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                <div className="text-[0.625rem] text-muted-foreground">24h</div>
+                <div className={`text-[0.75rem] font-medium tabular-nums ${data.pnlDay >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                   {formatPnl(data.pnlDay)}
                 </div>
               </div>
               <div>
-                <div className="text-[10px] text-muted-foreground">7d</div>
-                <div className={`text-[12px] font-medium tabular-nums ${data.pnl7d >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                <div className="text-[0.625rem] text-muted-foreground">7d</div>
+                <div className={`text-[0.75rem] font-medium tabular-nums ${data.pnl7d >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                   {formatPnl(data.pnl7d)}
                 </div>
               </div>
               <div>
-                <div className="text-[10px] text-muted-foreground">30d</div>
-                <div className={`text-[12px] font-medium tabular-nums ${data.pnl30d >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                <div className="text-[0.625rem] text-muted-foreground">30d</div>
+                <div className={`text-[0.75rem] font-medium tabular-nums ${data.pnl30d >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                   {formatPnl(data.pnl30d)}
                 </div>
               </div>
@@ -116,14 +116,14 @@ export function HLPVault() {
 
           {/* All-time PnL */}
           <div className="border-t pt-3 flex items-center justify-between">
-            <span className="text-[11px] text-muted-foreground">All-time PnL</span>
-            <span className={`text-[13px] font-semibold tabular-nums ${data.pnlAllTime >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+            <span className="text-[0.6875rem] text-muted-foreground">All-time PnL</span>
+            <span className={`text-[0.8125rem] font-semibold tabular-nums ${data.pnlAllTime >= 0 ? 'text-green-500' : 'text-red-500'}`}>
               {formatPnl(data.pnlAllTime)}
             </span>
           </div>
         </div>
       ) : (
-        <div className="text-center py-4 text-[11px] text-muted-foreground">
+        <div className="text-center py-4 text-[0.6875rem] text-muted-foreground">
           {error || 'Failed to load HLP data'}
         </div>
       )}

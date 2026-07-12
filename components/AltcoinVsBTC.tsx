@@ -139,8 +139,8 @@ export function AltcoinVsBTC({ tickers, rsiData, marketCapData, onTokenClick, on
                 onClick={() => onTopNClick?.(getTopNSymbols(n))}
                 aria-label={`${label} altcoins`}
               >
-                <span className="text-[12px] text-muted-foreground">{label}</span>
-                <span className={`text-[13px] font-semibold tabular-nums ${formatChange(avg).color}`}>
+                <span className="text-[0.75rem] text-muted-foreground">{label}</span>
+                <span className={`text-[0.8125rem] font-semibold tabular-nums ${formatChange(avg).color}`}>
                   {formatChange(avg).text}
                 </span>
               </button>
@@ -163,8 +163,8 @@ export function AltcoinVsBTC({ tickers, rsiData, marketCapData, onTokenClick, on
             loading="lazy"
             className="w-6 h-6 rounded-full mb-1"
           />
-          <span className="text-[11px] text-muted-foreground">BTC</span>
-          <span className={`text-[14px] font-bold tabular-nums ${formatChange(getBtcChange()).color}`}>
+          <span className="text-[0.6875rem] text-muted-foreground">BTC</span>
+          <span className={`text-[0.875rem] font-bold tabular-nums ${formatChange(getBtcChange()).color}`}>
             {formatChange(getBtcChange()).text}
           </span>
         </button>
@@ -172,7 +172,7 @@ export function AltcoinVsBTC({ tickers, rsiData, marketCapData, onTokenClick, on
 
       {/* Ratio Section - Show on hover */}
       <div className="max-h-0 overflow-hidden opacity-0 group-hover:max-h-40 group-hover:opacity-100 group-hover:mt-3 group-hover:pt-3 group-hover:border-t group-hover:border-gray-950/[0.10] dark:group-hover:border-white/[0.10] group-focus-within:max-h-40 group-focus-within:opacity-100 group-focus-within:mt-3 group-focus-within:pt-3 group-focus-within:border-t group-focus-within:border-gray-950/[0.10] dark:group-focus-within:border-white/[0.10] [@media(hover:none)]:max-h-40 [@media(hover:none)]:opacity-100 [@media(hover:none)]:mt-3 [@media(hover:none)]:pt-3 transition-[max-height,opacity,margin,padding] duration-200">
-        <div className="text-[11px] text-muted-foreground mb-2">Altcoin / BTC Ratio</div>
+        <div className="text-[0.6875rem] text-muted-foreground mb-2">Altcoin / BTC Ratio</div>
         <div className="space-y-1.5">
           {(['top10', 'top20', 'top50'] as const).map((tier) => {
             const alt = getAvg(tier);
@@ -193,7 +193,7 @@ export function AltcoinVsBTC({ tickers, rsiData, marketCapData, onTokenClick, on
             const btcColor = btc !== null ? (btc >= 0 ? 'text-green-500' : 'text-red-500') : 'text-muted-foreground';
 
             return (
-              <div key={tier} className="flex items-center text-[12px]">
+              <div key={tier} className="flex items-center text-[0.75rem]">
                 <span className="text-muted-foreground w-16">{tierLabel}</span>
                 <span className="text-muted-foreground w-12 tabular-nums">{ratio}</span>
                 <span className="text-muted-foreground/50 mx-2">|</span>

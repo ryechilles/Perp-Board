@@ -1,11 +1,21 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
+import { Inter } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/react';
 import { APP_CONFIG } from '@/lib/config';
 import { TooltipProvider } from '@/components/ui';
 import './globals.css';
 
 const GA_MEASUREMENT_ID = 'G-VJB7B5NH29';
+
+// Self-hosted variable Inter via next/font: no render-blocking @import,
+// automatic font-display swap, preload, and zero layout shift (adjustFontFallback).
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+  axes: ['opsz'], // keep optical sizing axis (font-optical-sizing: auto in globals.css)
+});
 
 export const metadata: Metadata = {
   title: APP_CONFIG.title,
@@ -22,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={inter.variable}>
       <head>
         {/* Apply saved theme before paint: prevents flash + keeps color-scheme/theme-color in sync */}
         <script
@@ -43,9 +53,7 @@ export default function RootLayout({
             gtag('config', '${GA_MEASUREMENT_ID}');
           `}
         </Script>
-        {/* Preconnect to asset/font CDNs to cut connection latency */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Preconnect to asset CDNs to cut connection latency (fonts are self-hosted via next/font) */}
         <link rel="preconnect" href="https://assets.coingecko.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://assets.coincap.io" crossOrigin="anonymous" />
         {/* Responsive: mobile renders a card layout, desktop the full table */}

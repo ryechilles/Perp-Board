@@ -67,7 +67,7 @@ export function RsiThresholdWidget({
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex items-center justify-between py-1.5">
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted-foreground w-4">{i}</span>
+                <span className="text-[0.6875rem] text-muted-foreground w-4">{i}</span>
                 <Skeleton className="w-5 h-5 rounded-full" />
                 <Skeleton className="w-10 h-3" />
               </div>
@@ -99,20 +99,20 @@ export function RsiThresholdWidget({
               aria-label={token.symbol}
             >
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted-foreground w-4">{i + 1}</span>
+                <span className="text-[0.6875rem] text-muted-foreground w-4">{i + 1}</span>
                 <TokenAvatar symbol={token.symbol} logo={token.logo} />
-                <span className="text-[12px] font-medium text-foreground">{token.symbol}</span>
+                <span className="text-[0.75rem] font-medium text-foreground">{token.symbol}</span>
               </div>
               <div className="flex items-center">
-                <span className="text-[11px] text-muted-foreground tabular-nums w-16 text-center">{formatPrice(token.price)}</span>
-                <span className={`text-[11px] font-semibold tabular-nums w-14 text-center py-0.5 rounded-md ${getRsiPillStyle(token.avgRsi)}`}>
+                <span className="text-[0.6875rem] text-muted-foreground tabular-nums w-16 text-center">{formatPrice(token.price)}</span>
+                <span className={`text-[0.6875rem] font-semibold tabular-nums w-14 text-center py-0.5 rounded-md ${getRsiPillStyle(token.avgRsi)}`}>
                   {token.avgRsi.toFixed(1)}
                 </span>
               </div>
             </button>
           ))
         ) : (
-          <div className="text-center py-4 text-[11px] text-muted-foreground">
+          <div className="text-center py-4 text-[0.6875rem] text-muted-foreground">
             {config.emptyText} in Top {WIDGET.TOP_TOKENS_COUNT}
           </div>
         )}

@@ -108,10 +108,10 @@ export function FundingMarket({
             onClick={() => positiveCount > 0 && onGroupClick?.(positiveSymbols)}
             aria-label={`Positive funding: ${positiveCount}`}
           >
-            <div className="text-[28px] font-bold text-green-500">
+            <div className="text-[1.75rem] font-bold text-green-500">
               {isLoading ? '--' : positiveCount}
             </div>
-            <div className="text-[11px] text-muted-foreground">Positive</div>
+            <div className="text-[0.6875rem] text-muted-foreground">Positive</div>
           </button>
 
           {/* Divider */}
@@ -125,10 +125,10 @@ export function FundingMarket({
             onClick={() => negativeCount > 0 && onGroupClick?.(negativeSymbols)}
             aria-label={`Negative funding: ${negativeCount}`}
           >
-            <div className="text-[28px] font-bold text-red-500">
+            <div className="text-[1.75rem] font-bold text-red-500">
               {isLoading ? '--' : negativeCount}
             </div>
-            <div className="text-[11px] text-muted-foreground">Negative</div>
+            <div className="text-[0.6875rem] text-muted-foreground">Negative</div>
           </button>
         </div>
 

@@ -77,13 +77,13 @@ export function AHR999Indicator() {
       <div className={`rounded-lg px-4 py-3 mb-4 ${zoneInfo.bgColor || 'bg-muted'}`}>
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-[11px] text-muted-foreground mb-0.5">Current Zone</div>
+            <div className="text-[0.6875rem] text-muted-foreground mb-0.5">Current Zone</div>
             <div className={`text-lg font-bold ${zoneInfo.color}`}>
               {zoneInfo.label}
             </div>
           </div>
           <div className="text-right">
-            <div className="text-[11px] text-muted-foreground mb-0.5">Value</div>
+            <div className="text-[0.6875rem] text-muted-foreground mb-0.5">Value</div>
             <div className="text-lg font-bold text-foreground tabular-nums">
               {data?.value?.toFixed(2) ?? '--'}
             </div>
@@ -117,7 +117,7 @@ export function AHR999Indicator() {
         {AHR999_ZONE_LEGEND.map((zone) => (
           <div
             key={zone.label}
-            className={`flex items-center justify-between text-[11px] ${
+            className={`flex items-center justify-between text-[0.6875rem] ${
               zoneInfo.label === zone.label ? 'font-medium' : 'opacity-60'
             }`}
           >

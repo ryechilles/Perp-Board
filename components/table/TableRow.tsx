@@ -138,7 +138,7 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
     if (def.align === 'right') alignClass = 'text-right';
     if (def.align === 'center') alignClass = 'text-center';
 
-    const baseClass = `px-1 py-2.5 text-[13px] whitespace-nowrap ${alignClass} ${isFixed ? 'bg-card group-hover:bg-muted/50' : ''}`;
+    const baseClass = `px-1 py-2.5 text-[0.8125rem] whitespace-nowrap ${alignClass} ${isFixed ? 'bg-card group-hover:bg-muted/50' : ''}`;
 
     switch (key) {
       case 'favorite':
@@ -169,7 +169,7 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
         return (
           <td
             key={key}
-            className={`${baseClass} text-[12px] text-muted-foreground`}
+            className={`${baseClass} text-[0.75rem] text-muted-foreground`}
             style={getCellStyle(key)}
           >
             {displayRank}
@@ -186,7 +186,7 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
               </div>
               {listingAgeInfo && (
                 <span
-                  className={`text-[11px] font-normal ${listingAgeInfo.isNew ? 'text-blue-500' : 'text-muted-foreground'}`}
+                  className={`text-[0.6875rem] font-normal ${listingAgeInfo.isNew ? 'text-blue-500' : 'text-muted-foreground'}`}
                 >
                   {listingAgeInfo.label}
                 </span>
@@ -234,7 +234,7 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
 
       case 'fundingInterval':
         return (
-          <td key={key} className={`${baseClass} text-[12px] text-muted-foreground`}>
+          <td key={key} className={`${baseClass} text-[0.75rem] text-muted-foreground`}>
             {formatSettlementInterval(fundingRate?.settlementInterval)}
           </td>
         );
@@ -291,10 +291,10 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
         return (
           <td key={key} className={`${baseClass} align-middle group/dsignal`}>
             <div className="inline-flex flex-col items-center justify-center">
-              <span className={`inline-block px-2 py-0.5 rounded-md text-[13px] font-semibold whitespace-nowrap ${dSignal.pillStyle}`}>
+              <span className={`inline-block px-2 py-0.5 rounded-md text-[0.8125rem] font-semibold whitespace-nowrap ${dSignal.pillStyle}`}>
                 {dSignal.label}
               </span>
-              <span className={`text-[10px] text-muted-foreground tabular-nums leading-none mt-0.5 whitespace-nowrap h-0 overflow-hidden group-hover/dsignal:h-auto ${hasRsiData ? '' : 'invisible'}`}>
+              <span className={`text-[0.625rem] text-muted-foreground tabular-nums leading-none mt-0.5 whitespace-nowrap h-0 overflow-hidden group-hover/dsignal:h-auto ${hasRsiData ? '' : 'invisible'}`}>
                 {rsi?.rsi7 != null ? rsi.rsi7.toFixed(1) : '--'}/{rsi?.rsi14 != null ? rsi.rsi14.toFixed(1) : '--'}
               </span>
             </div>
@@ -308,10 +308,10 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
         return (
           <td key={key} className={`${baseClass} align-middle group/wsignal`}>
             <div className="inline-flex flex-col items-center justify-center">
-              <span className={`inline-block px-2 py-0.5 rounded-md text-[13px] font-semibold whitespace-nowrap ${wSignal.pillStyle}`}>
+              <span className={`inline-block px-2 py-0.5 rounded-md text-[0.8125rem] font-semibold whitespace-nowrap ${wSignal.pillStyle}`}>
                 {wSignal.label}
               </span>
-              <span className={`text-[10px] text-muted-foreground tabular-nums leading-none mt-0.5 whitespace-nowrap h-0 overflow-hidden group-hover/wsignal:h-auto ${hasRsiData ? '' : 'invisible'}`}>
+              <span className={`text-[0.625rem] text-muted-foreground tabular-nums leading-none mt-0.5 whitespace-nowrap h-0 overflow-hidden group-hover/wsignal:h-auto ${hasRsiData ? '' : 'invisible'}`}>
                 {rsi?.rsiW7 != null ? rsi.rsiW7.toFixed(1) : '--'}/{rsi?.rsiW14 != null ? rsi.rsiW14.toFixed(1) : '--'}
               </span>
             </div>
@@ -333,7 +333,7 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
       case 'rsi7':
         return (
           <td key={key} className={baseClass}>
-            <span className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold tabular-nums min-w-[42px] text-center ${getRsiPillStyle(rsi?.rsi7)}`}>
+            <span className={`inline-block px-2 py-0.5 rounded-md text-[0.6875rem] font-semibold tabular-nums min-w-[42px] text-center ${getRsiPillStyle(rsi?.rsi7)}`}>
               {rsi?.rsi7 != null ? rsi.rsi7.toFixed(1) : '--'}
             </span>
           </td>
@@ -342,7 +342,7 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
       case 'rsi14':
         return (
           <td key={key} className={baseClass}>
-            <span className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold tabular-nums min-w-[42px] text-center ${getRsiPillStyle(rsi?.rsi14)}`}>
+            <span className={`inline-block px-2 py-0.5 rounded-md text-[0.6875rem] font-semibold tabular-nums min-w-[42px] text-center ${getRsiPillStyle(rsi?.rsi14)}`}>
               {rsi?.rsi14 != null ? rsi.rsi14.toFixed(1) : '--'}
             </span>
           </td>
@@ -351,7 +351,7 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
       case 'rsiW7':
         return (
           <td key={key} className={baseClass}>
-            <span className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold tabular-nums min-w-[42px] text-center ${getRsiPillStyle(rsi?.rsiW7)}`}>
+            <span className={`inline-block px-2 py-0.5 rounded-md text-[0.6875rem] font-semibold tabular-nums min-w-[42px] text-center ${getRsiPillStyle(rsi?.rsiW7)}`}>
               {rsi?.rsiW7 != null ? rsi.rsiW7.toFixed(1) : '--'}
             </span>
           </td>
@@ -360,7 +360,7 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
       case 'rsiW14':
         return (
           <td key={key} className={baseClass}>
-            <span className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold tabular-nums min-w-[42px] text-center ${getRsiPillStyle(rsi?.rsiW14)}`}>
+            <span className={`inline-block px-2 py-0.5 rounded-md text-[0.6875rem] font-semibold tabular-nums min-w-[42px] text-center ${getRsiPillStyle(rsi?.rsiW14)}`}>
               {rsi?.rsiW14 != null ? rsi.rsiW14.toFixed(1) : '--'}
             </span>
           </td>
@@ -368,7 +368,7 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
 
       case 'listDate':
         return (
-          <td key={key} className={`${baseClass} text-[12px] text-muted-foreground`}>
+          <td key={key} className={`${baseClass} text-[0.75rem] text-muted-foreground`}>
             {formatListDate(listingData?.listTime)}
           </td>
         );

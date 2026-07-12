@@ -38,8 +38,8 @@ function KillerSectionHeader({
   const inner = (
     <div className="flex items-center gap-2">
       <span className={`w-2 h-2 rounded-full ${dotColor}`} aria-hidden="true" />
-      <span className="text-[12px] font-medium text-foreground">{title}</span>
-      <span className="text-[11px] text-muted-foreground tabular-nums">
+      <span className="text-[0.75rem] font-medium text-foreground">{title}</span>
+      <span className="text-[0.6875rem] text-muted-foreground tabular-nums">
         {isLoading ? '--' : count}
       </span>
     </div>
@@ -110,15 +110,15 @@ export function FundingKiller({
       aria-label={token.symbol}
     >
       <div className="flex items-center gap-2">
-        <span className="text-[11px] text-muted-foreground w-4">{index + 1}</span>
+        <span className="text-[0.6875rem] text-muted-foreground w-4">{index + 1}</span>
         <TokenAvatar symbol={token.symbol} logo={token.logo} />
-        <span className="text-[12px] font-medium text-foreground">{token.symbol}</span>
+        <span className="text-[0.75rem] font-medium text-foreground">{token.symbol}</span>
       </div>
       <div className="flex items-center">
-        <span className="text-[11px] text-muted-foreground tabular-nums w-16 text-center">
+        <span className="text-[0.6875rem] text-muted-foreground tabular-nums w-16 text-center">
           {formatPrice(token.price)}
         </span>
-        <span className={`text-[12px] font-semibold tabular-nums w-16 text-center ${colorClass}`}>
+        <span className={`text-[0.75rem] font-semibold tabular-nums w-16 text-center ${colorClass}`}>
           {showSign && token.apr > 0 ? '+' : ''}{token.apr.toFixed(1)}%
         </span>
       </div>
@@ -156,7 +156,7 @@ export function FundingKiller({
             {displayLongKillers.length > 0 ? (
               displayLongKillers.map((t, i) => renderTokenRow(t, i, 'text-green-500', true))
             ) : (
-              <div className="text-center py-4 text-[11px] text-muted-foreground">
+              <div className="text-center py-4 text-[0.6875rem] text-muted-foreground">
                 No tokens with APR &gt; {aprThreshold}%
               </div>
             )}
@@ -176,7 +176,7 @@ export function FundingKiller({
             {displayShortKillers.length > 0 ? (
               displayShortKillers.map((t, i) => renderTokenRow(t, i, 'text-red-500', false))
             ) : (
-              <div className="text-center py-4 text-[11px] text-muted-foreground">
+              <div className="text-center py-4 text-[0.6875rem] text-muted-foreground">
                 No tokens with APR &lt; -{aprThreshold}%
               </div>
             )}

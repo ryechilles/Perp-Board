@@ -60,7 +60,8 @@ export function TableHeader({
 
   return (
     <thead className="sticky top-0 z-20">
-      <tr className="bg-secondary">
+      {/* No opaque row background: translucent th cells (.thead-material) must see through to scrolling content */}
+      <tr>
         {visibleColumns.map((key) => {
           const def = COLUMN_DEFINITIONS[key];
           const sortable = def.sortable !== false;
@@ -117,7 +118,7 @@ export function TableHeader({
               onDragLeave={onDragLeave}
               onDrop={(e) => onDrop(e, key)}
               onDragEnd={onDragEnd}
-              className={`px-1 py-3 text-[11px] font-medium text-muted-foreground tracking-wide bg-secondary border-b border-gray-950/[0.10] dark:border-white/[0.10] whitespace-nowrap ${alignClass} ${sortable ? 'cursor-pointer hover:bg-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring' : ''} ${!isFixed ? 'cursor-grab active:cursor-grabbing' : ''} ${isDragging ? 'opacity-50' : ''} ${isDragOver ? 'bg-accent border-l-2 border-l-primary' : ''} select-none`}
+              className={`px-1 py-3 text-[0.6875rem] font-medium text-muted-foreground tracking-wide ${isFixed ? 'bg-secondary' : 'thead-material'} border-b border-gray-950/[0.10] dark:border-white/[0.10] whitespace-nowrap ${alignClass} ${sortable ? 'cursor-pointer hover:bg-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring' : ''} ${!isFixed ? 'cursor-grab active:cursor-grabbing' : ''} ${isDragging ? 'opacity-50' : ''} ${isDragOver ? 'bg-accent border-l-2 border-l-primary' : ''} select-none`}
               style={stickyStyle}
               onClick={() => sortable && onSort(key)}
               onKeyDown={(e) => {
@@ -130,7 +131,7 @@ export function TableHeader({
               <span className="inline-flex items-center gap-0.5">
                 {def.label}
                 {key === 'symbol' && (
-                  <span className="text-[10px] text-muted-foreground font-normal ml-0.5">
+                  <span className="text-[0.625rem] text-muted-foreground font-normal ml-0.5">
                     ({totalCount})
                   </span>
                 )}
@@ -145,8 +146,8 @@ export function TableHeader({
                     <Info className="w-3 h-3 text-muted-foreground hover:text-muted-foreground cursor-pointer" aria-hidden="true" />
                     <div className={`absolute top-full mt-1.5 z-50 hidden group-hover/tooltip:block group-focus-within/tooltip:block pointer-events-none ${isRightHalf ? 'right-0' : 'left-0'}`}>
                       <div className="bg-popover border border-gray-950/[0.10] dark:border-white/[0.10] rounded-lg px-3 py-2.5 shadow-lg min-w-[200px] text-left pointer-events-auto">
-                        <div className="text-[11px] text-muted-foreground font-medium mb-1.5">{tooltipItems[0]}</div>
-                        <div className="text-[10px] text-muted-foreground space-y-0.5">
+                        <div className="text-[0.6875rem] text-muted-foreground font-medium mb-1.5">{tooltipItems[0]}</div>
+                        <div className="text-[0.625rem] text-muted-foreground space-y-0.5">
                           {tooltipItems.slice(1).map((item, i) => (
                             <div key={i}>• {item}</div>
                           ))}

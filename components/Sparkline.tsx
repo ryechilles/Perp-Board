@@ -161,7 +161,7 @@ export function ChangeWithSparkline({ change, sparklineData, showSparkline = tru
       {showSparkline && (
         <Sparkline data={sparklineData} change={change} width={45} height={16} />
       )}
-      <span className={`${colorClass} font-medium tabular-nums text-[12px]`}>
+      <span className={`${colorClass} font-medium tabular-nums text-[0.75rem]`}>
         {arrow} {Math.abs(change).toFixed(2)}%
       </span>
     </div>

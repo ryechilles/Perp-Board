@@ -74,26 +74,26 @@ export const TokenCard = memo(function TokenCard({
           >
             {isFavorite ? '★' : '☆'}
           </button>
-          <span className="text-[11px] text-muted-foreground w-4 text-right tabular-nums">
+          <span className="text-[0.6875rem] text-muted-foreground w-4 text-right tabular-nums">
             {index + 1}
           </span>
           <TokenAvatar symbol={base} logo={marketCap?.logo} size="lg" />
-          <span className="font-semibold text-[15px] truncate" translate="no">
+          <span className="font-semibold text-[0.9375rem] truncate" translate="no">
             {base}
-            <span className="text-muted-foreground font-normal text-[12px]">/{quote}</span>
+            <span className="text-muted-foreground font-normal text-[0.75rem]">/{quote}</span>
           </span>
           <div className="ml-auto text-right">
-            <div className="font-medium text-[15px] tabular-nums leading-tight">
+            <div className="font-medium text-[0.9375rem] tabular-nums leading-tight">
               {formatPrice(ticker.priceNum)}
             </div>
-            <div className="text-[12px] leading-tight">
+            <div className="text-[0.75rem] leading-tight">
               <ChangeWithSparkline change={ticker.changeNum} showSparkline={false} />
             </div>
           </div>
         </div>
 
         <div className="flex items-center justify-between gap-2 mt-2.5">
-          <span className="text-[12px] text-muted-foreground whitespace-nowrap">
+          <span className="text-[0.75rem] text-muted-foreground whitespace-nowrap">
             APR{' '}
             <span className={`font-medium tabular-nums ${getFundingAprClass(fundingRate?.fundingRate)}`}>
               {formatFundingApr(fundingRate?.fundingRate, fundingRate?.settlementInterval)}
@@ -105,10 +105,10 @@ export const TokenCard = memo(function TokenCard({
                 TD {td.label}
               </span>
             )}
-            <span className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold whitespace-nowrap ${dSignal.pillStyle}`}>
+            <span className={`inline-block px-2 py-0.5 rounded-md text-[0.6875rem] font-semibold whitespace-nowrap ${dSignal.pillStyle}`}>
               D {dSignal.label}
             </span>
-            <span className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold whitespace-nowrap ${wSignal.pillStyle}`}>
+            <span className={`inline-block px-2 py-0.5 rounded-md text-[0.6875rem] font-semibold whitespace-nowrap ${wSignal.pillStyle}`}>
               W {wSignal.label}
             </span>
           </span>

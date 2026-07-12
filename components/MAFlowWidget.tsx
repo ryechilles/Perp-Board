@@ -85,8 +85,8 @@ function SectionHeader({
   const inner = (
     <div className="flex items-center gap-2">
       <span className={`w-2 h-2 rounded-full ${DOT_COLORS[color]}`} aria-hidden="true" />
-      <span className="text-[12px] font-medium text-foreground">{title}</span>
-      <span className="text-[11px] text-muted-foreground tabular-nums">
+      <span className="text-[0.75rem] font-medium text-foreground">{title}</span>
+      <span className="text-[0.6875rem] text-muted-foreground tabular-nums">
         {isLoading ? '--' : count}
       </span>
     </div>
@@ -195,16 +195,16 @@ export function MAFlowWidget({
       aria-label={token.symbol}
     >
       <div className="flex items-center gap-2">
-        <span className="text-[11px] text-muted-foreground w-4">{index + 1}</span>
+        <span className="text-[0.6875rem] text-muted-foreground w-4">{index + 1}</span>
         <TokenAvatar symbol={token.symbol} logo={token.logo} />
-        <span className="text-[12px] font-medium text-foreground">{token.symbol}</span>
+        <span className="text-[0.75rem] font-medium text-foreground">{token.symbol}</span>
       </div>
       <div className="flex items-center">
-        <span className="text-[11px] text-muted-foreground tabular-nums w-16 text-center">
+        <span className="text-[0.6875rem] text-muted-foreground tabular-nums w-16 text-center">
           {formatPrice(token.price)}
         </span>
         <span
-          className={`text-[11px] font-semibold tabular-nums w-14 text-center py-0.5 rounded-md ${getConvergencePillStyle(token.convergence)}`}
+          className={`text-[0.6875rem] font-semibold tabular-nums w-14 text-center py-0.5 rounded-md ${getConvergencePillStyle(token.convergence)}`}
         >
           {token.convergence.toFixed(1)}%
         </span>
@@ -250,7 +250,7 @@ export function MAFlowWidget({
               {section.tokens.length > 0 ? (
                 section.tokens.map((t, i) => renderTokenRow(t, i))
               ) : (
-                <div className="text-center py-3 text-[11px] text-muted-foreground">
+                <div className="text-center py-3 text-[0.6875rem] text-muted-foreground">
                   {maFlowData.size > 0
                     ? `No tokens with spread ≤ ${THRESHOLD}%`
                     : 'Loading…'}

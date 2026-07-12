@@ -16,9 +16,9 @@ interface TokenAvatarProps {
 }
 
 const sizeClasses = {
-  sm: 'w-4 h-4 text-[8px]',
-  md: 'w-5 h-5 text-[9px]',
-  lg: 'w-6 h-6 text-[10px]',
+  sm: 'w-4 h-4 text-[0.5rem]',
+  md: 'w-5 h-5 text-[0.5625rem]',
+  lg: 'w-6 h-6 text-[0.625rem]',
 };
 
 // Intrinsic pixel size per variant — set as width/height attrs to prevent CLS

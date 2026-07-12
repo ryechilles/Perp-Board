@@ -154,7 +154,7 @@ export function SmallWidget({
             {/* Inline Tooltip - auto height */}
             {tooltip && showTooltip && (
               <div className="mt-4 pt-3 border-t border-gray-950/[0.10] dark:border-white/[0.10]">
-                <div className="text-[11px] text-muted-foreground space-y-1">
+                <div className="text-[0.6875rem] text-muted-foreground space-y-1">
                   {tooltip}
                 </div>
               </div>

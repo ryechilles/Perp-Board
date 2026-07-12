@@ -82,7 +82,7 @@ export function AltcoinTopGainers({ tickers, rsiData, marketCapData, onTokenClic
           [1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="flex items-center justify-between py-1.5">
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted-foreground w-4">{i}</span>
+                <span className="text-[0.6875rem] text-muted-foreground w-4">{i}</span>
                 <div className="w-5 h-5 rounded-full bg-muted animate-pulse" />
                 <div className="w-10 h-3 bg-muted rounded animate-pulse" />
               </div>
@@ -104,13 +104,13 @@ export function AltcoinTopGainers({ tickers, rsiData, marketCapData, onTokenClic
                 aria-label={token.symbol}
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-muted-foreground w-4">{i + 1}</span>
+                  <span className="text-[0.6875rem] text-muted-foreground w-4">{i + 1}</span>
                   <TokenAvatar symbol={token.symbol} logo={token.logo} />
-                  <span className="text-[12px] font-medium text-foreground">{token.symbol}</span>
+                  <span className="text-[0.75rem] font-medium text-foreground">{token.symbol}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-[11px] text-muted-foreground tabular-nums">{formatPrice(token.price ?? 0)}</span>
-                  <span className={`text-[12px] font-semibold tabular-nums ${formatChange(change).color}`}>
+                  <span className="text-[0.6875rem] text-muted-foreground tabular-nums">{formatPrice(token.price ?? 0)}</span>
+                  <span className={`text-[0.75rem] font-semibold tabular-nums ${formatChange(change).color}`}>
                     {formatChange(change).text}
                   </span>
                 </div>
