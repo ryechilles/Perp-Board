@@ -437,6 +437,17 @@ export function applyAssetCategoryFilter(
 // ===========================================
 
 /**
+ * Numeric value behind the RSI Avg Signal pill — same formula as getRsiSignal:
+ * avg of both RSIs, single value if only one exists, -1 (sinks below any real
+ * RSI) when no data.
+ */
+function rsiAvgValue(rsi7: number | null | undefined, rsi14: number | null | undefined): number {
+  if (rsi7 == null && rsi14 == null) return -1;
+  if (rsi7 != null && rsi14 != null) return (rsi7 + rsi14) / 2;
+  return (rsi7 ?? rsi14) as number;
+}
+
+/**
  * Sort extractor functions - each returns a numeric value for comparison
  */
 const SORT_EXTRACTORS: Record<string, (t: ProcessedTicker, ctx: SortExtractorContext) => number | string> = {
@@ -452,6 +463,15 @@ const SORT_EXTRACTORS: Record<string, (t: ProcessedTicker, ctx: SortExtractorCon
   rsi14: (t, ctx) => ctx.rsiData.get(t.instId)?.rsi14 ?? 0,
   rsiW7: (t, ctx) => ctx.rsiData.get(t.instId)?.rsiW7 ?? 0,
   rsiW14: (t, ctx) => ctx.rsiData.get(t.instId)?.rsiW14 ?? 0,
+  // RSI Avg Signal columns: sort by the avg RSI the pill is derived from
+  dRsiSignal: (t, ctx) => {
+    const rsi = ctx.rsiData.get(t.instId);
+    return rsiAvgValue(rsi?.rsi7, rsi?.rsi14);
+  },
+  wRsiSignal: (t, ctx) => {
+    const rsi = ctx.rsiData.get(t.instId);
+    return rsiAvgValue(rsi?.rsiW7, rsi?.rsiW14);
+  },
   // TD state: sell = positive, buy = negative; magnitude ranks
   // signal 13 (400) > signal 9 (300) > countdown 1-12 (101-112) > setup 1-8 (1-8) > none (0)
   // desc → S13, S9, S·N, S setup, --, B setup, B·N, B9, B13; asc → strongest buy first
