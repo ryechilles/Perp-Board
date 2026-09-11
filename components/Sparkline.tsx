@@ -50,7 +50,7 @@ export function Sparkline({ data, change, width = 64, height = 24, className = '
     const maxPrice = Math.max(...prices);
     const priceRange = maxPrice - minPrice || 1;
 
-    const padding = 3;
+    const padding = Math.round(height / 8);
     const chartHeight = height - padding * 2;
     const inset = 2.5; // room for the endpoint dot
     const chartWidth = width - inset * 2;
@@ -139,17 +139,17 @@ interface SparklineChangeProps {
   sparklineData?: number[];
 }
 
-/** Sparkline followed by the signed percentage (right-aligned table cell). */
+/** Signed percentage stacked over a compact sparkline (right-aligned table cell). */
 export function SparklineChange({ change, sparklineData }: SparklineChangeProps) {
   if (change === null || change === undefined) {
     return <span className="text-faint">—</span>;
   }
   return (
-    <span className="inline-flex items-center gap-2">
-      <Sparkline data={sparklineData} change={change} />
-      <span className={`min-w-[48px] text-right text-[0.78rem] font-medium tabular-nums ${change >= 0 ? 'text-up-ink' : 'text-down-ink'}`}>
+    <span className="inline-grid justify-items-end gap-0.5 leading-[1.15]">
+      <span className={`text-[0.78rem] font-medium tabular-nums ${change >= 0 ? 'text-up-ink' : 'text-down-ink'}`}>
         {formatSignedPercent(change)}
       </span>
+      <Sparkline data={sparklineData} change={change} width={56} height={16} />
     </span>
   );
 }

@@ -23,7 +23,14 @@ function CellSkeleton({ col }: { col: ColumnKey }) {
     case 'change4h':
       return <Skeleton className="h-6 w-[66px] rounded-md ml-auto" />;
     case 'change7d':
-      return <Skeleton className="h-5 w-28 ml-auto" />;
+    case 'fundingApr':
+      // Value stacked over a 56px graphic (sparkline / diverging bar)
+      return (
+        <div className="flex flex-col items-end gap-1.5">
+          <Skeleton className="h-3 w-12" />
+          <Skeleton className={col === 'change7d' ? 'h-3.5 w-14' : 'h-[3px] w-14'} />
+        </div>
+      );
     case 'dRsiSignal':
     case 'wRsiSignal':
       return <Skeleton className="h-3 w-20 ml-auto" />;

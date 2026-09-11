@@ -55,7 +55,7 @@ export const COLUMN_DEFINITIONS: Record<ColumnKey, { label: string; width: numbe
   fundingInterval: { label: 'Interval', width: 72, align: 'right', sortable: true },
   change4h: { label: '4h', width: 88, align: 'right', sortable: true },
   change: { label: '24h', width: 88, align: 'right', sortable: true },
-  change7d: { label: '7 days', width: 136, align: 'right', sortable: true },
+  change7d: { label: '7 days', width: 88, align: 'right', sortable: true },
   volume24h: { label: 'Volume 24h', width: 92, align: 'right', sortable: true },
   marketCap: { label: 'Market cap', width: 96, align: 'right', sortable: true },
   dRsiSignal: { label: 'Daily RSI', width: 104, align: 'right', sortable: true },
