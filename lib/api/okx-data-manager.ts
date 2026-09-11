@@ -1,9 +1,11 @@
 /**
  * OKX Hybrid Data Manager
- * Manages WebSocket connection for TOP 50 tickers + REST polling for the rest
+ * WebSocket for the active universe (what the board shows) + a single REST
+ * poll of all tickers — the full list feeds universe selection, but only
+ * universe members reach the store.
  */
 
-import { OKXTicker, ProcessedTicker, TickerUpdateCallback, StatusUpdateCallback } from '../types';
+import { OKXTicker, TickerUpdateCallback, StatusUpdateCallback } from '../types';
 import { processTicker } from '../utils';
 import { API, UI } from '../constants';
 import { BaseDataManager } from './base-data-manager';
@@ -18,7 +20,6 @@ export type { TickerUpdateCallback };
 export type StatusCallback = StatusUpdateCallback;
 
 export class OKXHybridDataManager extends BaseDataManager {
-  private top50Set: Set<string> = new Set(); // O(1) lookup instead of Array.includes
   private wsLastUpdateTime: Map<string, number> = new Map(); // Track WS update timestamps
 
   constructor(onUpdate: TickerUpdateCallback, onStatus: StatusUpdateCallback) {
@@ -29,7 +30,7 @@ export class OKXHybridDataManager extends BaseDataManager {
   protected getWebSocketUrl(): string { return OKX_WS_PUBLIC; }
 
   protected canConnectWebSocket(): boolean {
-    return this.top50Ids.length > 0;
+    return !!this.universe && this.universe.size > 0;
   }
 
   protected sendPing(): void {
@@ -37,20 +38,38 @@ export class OKXHybridDataManager extends BaseDataManager {
   }
 
   protected onWebSocketOpen(): void {
-    console.log('WebSocket connected, subscribing to TOP 50...');
+    const ids = Array.from(this.universe ?? []);
+    console.log(`WebSocket connected, subscribing to ${ids.length} universe instruments...`);
+    this.sendTickerSubscription('subscribe', ids);
+  }
 
-    // Subscribe to TOP 50 in batches
+  /** (Un)subscribe the tickers channel in batches. */
+  private sendTickerSubscription(op: 'subscribe' | 'unsubscribe', instIds: string[]): void {
     const batchSize = UI.WS_SUBSCRIBE_BATCH_SIZE;
-    for (let i = 0; i < this.top50Ids.length; i += batchSize) {
-      const batch = this.top50Ids.slice(i, i + batchSize);
-      const subscribeMsg = {
-        op: 'subscribe',
-        args: batch.map(instId => ({
-          channel: 'tickers',
-          instId: instId
-        }))
-      };
-      this.ws?.send(JSON.stringify(subscribeMsg));
+    for (let i = 0; i < instIds.length; i += batchSize) {
+      const batch = instIds.slice(i, i + batchSize);
+      this.ws?.send(JSON.stringify({
+        op,
+        args: batch.map(instId => ({ channel: 'tickers', instId })),
+      }));
+    }
+  }
+
+  /**
+   * Keep the WS subscription equal to the universe. An open socket gets the
+   * diff; a socket still connecting subscribes the current universe on open;
+   * with no socket yet (cold start: universe was unknown at start()), connect.
+   */
+  protected onUniverseChange(prev: Set<string> | null, next: Set<string>): void {
+    if (!this.isRunning) return;
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      const added = Array.from(next).filter(id => !prev?.has(id));
+      const removed = prev ? Array.from(prev).filter(id => !next.has(id)) : [];
+      if (removed.length > 0) this.sendTickerSubscription('unsubscribe', removed);
+      if (added.length > 0) this.sendTickerSubscription('subscribe', added);
+      removed.forEach(id => this.wsLastUpdateTime.delete(id));
+    } else if (!this.ws && !this.wsReconnectTimeout) {
+      this.connectWebSocket();
     }
   }
 
@@ -64,8 +83,7 @@ export class OKXHybridDataManager extends BaseDataManager {
       const data = JSON.parse(rawData);
 
       // Handle subscription confirmation
-      if (data.event === 'subscribe') {
-        console.log('Subscribed:', data.arg?.instId || 'batch');
+      if (data.event === 'subscribe' || data.event === 'unsubscribe') {
         return;
       }
 
@@ -79,12 +97,15 @@ export class OKXHybridDataManager extends BaseDataManager {
       if (data.arg?.channel === 'tickers' && data.data) {
         if (!this.isRunning) return;
         const now = Date.now();
+        let visible = false;
         data.data.forEach((ticker: OKXTicker) => {
           const processed = processTicker(ticker);
           this.tickers.set(ticker.instId, processed);
           this.wsLastUpdateTime.set(ticker.instId, now);
+          // In-flight pushes for just-unsubscribed instruments must not flush.
+          if (this.inUniverse(ticker.instId)) visible = true;
         });
-        this.scheduleUpdate('live', new Date());
+        if (visible) this.scheduleUpdate('live', new Date());
       }
     } catch (e) {
       // Ignore parse errors for non-JSON messages
@@ -105,24 +126,19 @@ export class OKXHybridDataManager extends BaseDataManager {
       );
 
       if (data.data) {
-        const usdtSwaps: ProcessedTicker[] = [];
         const currentInstIds = new Set<string>();
 
         data.data.forEach((ticker: OKXTicker) => {
           if (ticker.instId.endsWith('-USDT-SWAP')) {
-            const processed = processTicker(ticker);
-            this.tickers.set(ticker.instId, processed);
-            usdtSwaps.push(processed);
+            this.tickers.set(ticker.instId, processTicker(ticker));
             currentInstIds.add(ticker.instId);
           }
         });
 
         this.removeDelisted(currentInstIds);
-        this.updateIdLists(usdtSwaps);
-        this.top50Set = new Set(this.top50Ids);
 
-        // By reference — store keeps its own diffed copy (see scheduleUpdate)
-        this.onUpdate(this.tickers);
+        // No-op until the controller has set the universe (see emitTickers).
+        this.emitTickers();
         this.onStatus('live', new Date());
       }
     } catch (error) {
@@ -146,22 +162,21 @@ export class OKXHybridDataManager extends BaseDataManager {
         data.data.forEach((ticker: OKXTicker) => {
           if (ticker.instId.endsWith('-USDT-SWAP')) {
             currentInstIds.add(ticker.instId);
-            // Skip TOP 50 instruments that have recent WS updates (within last 10s)
-            if (this.wsConnected && this.top50Set.has(ticker.instId)) {
+            const visible = this.inUniverse(ticker.instId);
+            // Skip streamed (universe) instruments with a recent WS update (within last 10s)
+            if (visible && this.wsConnected) {
               const lastWsUpdate = this.wsLastUpdateTime.get(ticker.instId) ?? 0;
               if (now - lastWsUpdate < 10000) return; // WS data is fresh, skip REST
             }
-            const processed = processTicker(ticker);
-            this.tickers.set(ticker.instId, processed);
-            updated = true;
+            // Non-universe instruments are still refreshed (universe selection
+            // input) but don't trigger a flush.
+            this.tickers.set(ticker.instId, processTicker(ticker));
+            if (visible) updated = true;
           }
         });
 
         // Remove delisted tokens
         if (this.removeDelisted(currentInstIds)) updated = true;
-
-        // Update allIds list
-        this.allIds = Array.from(currentInstIds);
 
         if (updated) {
           this.scheduleUpdate(!this.wsConnected ? 'live' : undefined, !this.wsConnected ? new Date() : undefined);
@@ -171,8 +186,4 @@ export class OKXHybridDataManager extends BaseDataManager {
       console.error('REST polling error:', error);
     }
   }
-
-  // Legacy accessors (keep for backward compatibility)
-  getTop50InstIds(): string[] { return this.getTop50Ids(); }
-  getAllInstIds(): string[] { return this.getAllIds(); }
 }

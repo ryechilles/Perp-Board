@@ -57,6 +57,7 @@ export const TIMING = {
 
   // Initial delays
   INITIAL_RSI_FETCH_DELAY: 2000,         // 2 seconds
+  UNIVERSE_FALLBACK_DELAY: 8000,         // cold start: degrade the universe if market cap / spot haven't loaded
   API_BATCH_DELAY: 100,                  // 100ms between API batches
 
   // RSI fetch delays per tier
@@ -72,6 +73,7 @@ export const TIMING = {
   // Cache durations
   CACHE_RSI: 30 * 60 * 1000,             // 30 minutes
   CACHE_MARKET_CAP: 30 * 60 * 1000,      // 30 minutes
+  CACHE_SPOT_SYMBOLS: 24 * 60 * 60 * 1000, // 24 hours (spot listings change rarely; refetched every load)
   CACHE_LOGO: 7 * 24 * 60 * 60 * 1000,   // 7 days
   CACHE_COINGECKO_PROXY: 5 * 60 * 1000,  // 5 minutes
 
@@ -258,6 +260,7 @@ export const CACHE_KEYS = {
   COLUMNS: 'okx-columns',
   RSI_CACHE: 'okx-rsi-cache',
   MARKET_CAP_CACHE: 'okx-marketcap-cache',
+  SPOT_SYMBOLS_CACHE: 'okx-spot-symbols-cache',
   LOGO_CACHE: 'perp_board_logo_cache',
   MA_FLOW_CACHE: 'okx-ma-flow-cache',
   // Hyperliquid-specific cache keys

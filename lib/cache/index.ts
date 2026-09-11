@@ -185,6 +185,9 @@ export const maFlowCache = createMapCache<MAFlowData>(CACHE_KEYS.MA_FLOW_CACHE, 
 
 // Value caches (with TTL)
 export const logoCache = createValueCache<Record<string, string>>(CACHE_KEYS.LOGO_CACHE, TIMING.CACHE_LOGO);
+// OKX spot symbols — part of the universe definition (no-spot cut), so a cached
+// copy lets a revisit settle the universe without waiting on the spot fetch.
+export const spotSymbolsCache = createValueCache<string[]>(CACHE_KEYS.SPOT_SYMBOLS_CACHE, TIMING.CACHE_SPOT_SYMBOLS);
 export const columnsCache = createValueCache<ColumnVisibility>(CACHE_KEYS.COLUMNS, Infinity);
 export const hlColumnsCache = createValueCache<ColumnVisibility>(CACHE_KEYS.HL_COLUMNS, Infinity);
 export const filtersCache = createValueCache<Filters>(CACHE_KEYS.FILTERS, Infinity);
@@ -237,6 +240,7 @@ export function clearDataCache(): void {
   const dataCacheKeys = [
     CACHE_KEYS.RSI_CACHE,
     CACHE_KEYS.MARKET_CAP_CACHE,
+    CACHE_KEYS.SPOT_SYMBOLS_CACHE,
     CACHE_KEYS.LOGO_CACHE,
     CACHE_KEYS.MA_FLOW_CACHE,
   ];

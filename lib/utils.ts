@@ -120,6 +120,13 @@ export function processTicker(t: OKXTicker): ProcessedTicker {
   };
 }
 
+/** Same members, order-insensitive. */
+export function sameSet<T>(a: Set<T>, b: Set<T>): boolean {
+  if (a.size !== b.size) return false;
+  for (const v of a) if (!b.has(v)) return false;
+  return true;
+}
+
 // ===========================================
 // RSI Calculation & Signals
 // ===========================================

@@ -35,11 +35,10 @@ export const hyperliquidAdapter: ExchangeAdapter = {
     return fetchRSIBatchGeneric(ids, existing, fetchHyperliquidRSIForInstrument, onProgress, onUpdate, tier, signal);
   },
 
-  // Hyperliquid extracts funding from tickers, so `allowedInstIds` is unused here.
   // No initial data needed: spot symbols aren't used on Hyperliquid (the board
-  // shows no spot info there and the no-spot universe cut is OKX-only).
-  async fetchInitialData(_allowedInstIds?: Set<string>) {
-    void _allowedInstIds;
+  // shows no spot info there and the no-spot universe cut is OKX-only), and
+  // funding is extracted from tickers.
+  async fetchInitialData() {
     return {};
   },
 
@@ -77,7 +76,6 @@ export const hyperliquidAdapter: ExchangeAdapter = {
   features: {
     maFlow: false,
     listingDates: false,
-    separateFundingFetch: false,
     excludeNoSpotCrypto: false,
   },
 };

@@ -240,19 +240,17 @@ export class MarketStore {
     this.commit({ spotSymbols: next });
   }
 
-  /** Remove orphaned rsi/listing entries for delisted instruments. */
+  /**
+   * Remove RSI entries for instruments no longer emitted (delisted or dropped
+   * out of the universe); RSI is refetched if one comes back. Listing data is
+   * static and loaded once, so it is kept — a re-entering instrument still
+   * needs its listing date.
+   */
   prune(validKeys: Set<string>) {
     const removed: string[] = [];
-    const patch: Partial<MarketSnapshot> = {};
-
     const prunedRsi = this.pruneMap(this.snapshot.rsiData, validKeys, removed);
-    if (prunedRsi) patch.rsiData = prunedRsi;
-
-    const prunedListing = this.pruneMap(this.snapshot.listingData, validKeys, removed);
-    if (prunedListing) patch.listingData = prunedListing;
-
-    if (Object.keys(patch).length === 0) return;
-    this.commit(patch);
+    if (!prunedRsi) return;
+    this.commit({ rsiData: prunedRsi });
     this.notifyKeys(this.instListeners, removed);
   }
 

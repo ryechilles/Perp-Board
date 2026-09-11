@@ -105,11 +105,12 @@ export function applyRsiFilter(
  *    list may hold fewer than `limit` crypto rows. Stocks are exempt (they
  *    never have spot).
  *
- * Graceful degradation: before market-cap data has loaded (cold first paint),
- * the map is empty — return everything uncapped so the table still renders, and
- * the cap kicks in once ranks arrive. Same for spot: while the spot symbol set
- * is empty (not yet loaded / fetch failed), the spot cut is skipped rather than
- * wiping every crypto row.
+ * Graceful degradation: when market-cap data is unavailable (empty map — the
+ * controller only gets here after a load timeout / failure), crypto falls back
+ * to the top `limit` by 24h USD volume instead of going uncapped, so the board
+ * never processes the full instrument list. While the spot symbol set is empty
+ * (not yet loaded / fetch failed), the spot cut is skipped rather than wiping
+ * every crypto row.
  */
 export function selectUniverse(
   data: ProcessedTicker[],
@@ -117,32 +118,31 @@ export function selectUniverse(
   spot?: SpotUniverseContext | null,
   limit: number = UNIVERSE.MAX_CRYPTO
 ): ProcessedTicker[] {
-  if (marketCapData.size === 0) {
-    return data.filter(t => !UNIVERSE.EXCLUDED_SYMBOLS.has(t.baseSymbol));
-  }
-
+  const hasRanks = marketCapData.size > 0;
   const volUsd = (t: ProcessedTicker) => (parseFloat(t.volCcy24h) || 0) * t.priceNum;
 
   const stocks: ProcessedTicker[] = [];
-  const rankedCrypto: ProcessedTicker[] = [];
+  const candidates: ProcessedTicker[] = [];
   for (const t of data) {
     if (UNIVERSE.EXCLUDED_SYMBOLS.has(t.baseSymbol)) continue;
     if (STOCK_SYMBOLS.has(t.baseSymbol)) {
       stocks.push(t);
-    } else if (marketCapData.get(t.baseSymbol)?.rank !== undefined) {
-      rankedCrypto.push(t);
+    } else if (!hasRanks || marketCapData.get(t.baseSymbol)?.rank !== undefined) {
+      candidates.push(t);
     }
-    // Unranked crypto is intentionally dropped.
+    // Unranked crypto is intentionally dropped (when ranks are available).
   }
 
-  rankedCrypto.sort((a, b) => {
-    const rankA = marketCapData.get(a.baseSymbol)!.rank;
-    const rankB = marketCapData.get(b.baseSymbol)!.rank;
-    if (rankA !== rankB) return rankA - rankB;
+  candidates.sort((a, b) => {
+    if (hasRanks) {
+      const rankA = marketCapData.get(a.baseSymbol)!.rank;
+      const rankB = marketCapData.get(b.baseSymbol)!.rank;
+      if (rankA !== rankB) return rankA - rankB;
+    }
     return volUsd(b) - volUsd(a);
   });
 
-  let crypto = rankedCrypto.slice(0, limit);
+  let crypto = candidates.slice(0, limit);
 
   // No-spot cut — after the rank slice, so freed slots are not backfilled.
   if (spot && spot.spotSymbols.size > 0) {
@@ -153,19 +153,6 @@ export function selectUniverse(
   }
 
   return [...stocks, ...crypto];
-}
-
-/**
- * Set of instId values in the active universe — convenient for gating fetches
- * (RSI, funding) to the capped set.
- */
-export function selectUniverseInstIds(
-  data: ProcessedTicker[],
-  marketCapData: Map<string, MarketCapData>,
-  spot?: SpotUniverseContext | null,
-  limit: number = UNIVERSE.MAX_CRYPTO
-): Set<string> {
-  return new Set(selectUniverse(data, marketCapData, spot, limit).map(t => t.instId));
 }
 
 // ===========================================

@@ -348,7 +348,10 @@ export interface AppState {
 export interface DataManager {
   start(): Promise<void>;
   stop(): void;
+  /** Full instrument list (not universe-filtered). */
   getTickers(): Map<string, ProcessedTicker>;
+  /** Only these instruments are streamed and emitted to the store. */
+  setUniverse(ids: Set<string>): void;
 }
 
 /**
@@ -373,19 +376,21 @@ export interface ExchangeAdapter {
     signal?: AbortSignal
   ): Promise<void>;
   /**
-   * Fetch exchange-specific initial data (spot symbols, listings, funding).
-   * `allowedInstIds`, when provided, caps the funding fan-out to the active
-   * universe; omit/undefined to fetch funding for all instruments.
+   * Fetch exchange-specific, universe-independent initial data (spot symbols,
+   * listings). Each part is null when its fetch failed — the controller then
+   * keeps the previous store data and retries, instead of wiping columns with empties.
    */
-  /**
-   * Each part is null when its fetch failed — the controller then keeps the
-   * previous store data and retries, instead of wiping columns with empties.
-   */
-  fetchInitialData(allowedInstIds?: Set<string>): Promise<{
+  fetchInitialData(): Promise<{
     spotSymbols?: Set<string> | null;
     listingData?: Map<string, ListingData> | null;
-    fundingRateData?: Map<string, FundingRateData> | null;
   }>;
+  /**
+   * Fetch funding for exactly these instruments (the active universe). Present
+   * only for exchanges that need a separate per-instrument funding fetch (OKX).
+   * REJECTS on failure so the controller keeps the last good data.
+   */
+  fetchFundingRates?(instIds: Set<string>): Promise<Map<string, FundingRateData>>;
+  /** Exchanges that embed funding in tickers (Hyperliquid). */
   extractFundingFromTickers?(tickers: Map<string, ProcessedTicker>): Map<string, FundingRateData>;
   /** Pre-filter tickers before the filter pipeline (e.g. OKX keeps only USDT swaps) */
   preFilterTickers(tickers: ProcessedTicker[]): ProcessedTicker[];
@@ -394,7 +399,6 @@ export interface ExchangeAdapter {
   features: {
     maFlow: boolean;
     listingDates: boolean;
-    separateFundingFetch: boolean;
     /** Exchange has spot data → crypto without a spot listing is cut from the universe. */
     excludeNoSpotCrypto: boolean;
   };

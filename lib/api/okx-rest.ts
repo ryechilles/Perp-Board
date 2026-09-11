@@ -81,31 +81,16 @@ export async function fetchListingDates(): Promise<Map<string, ListingData>> {
   return result;
 }
 
-// Fetch funding rates for all SWAP instruments.
+// Fetch funding rates for the given SWAP instruments (the active universe —
+// the caller only passes live instruments, so no instruments-list lookup).
 // REJECTS on failure (never resolves with an empty map) so callers keep the
 // previous data instead of wiping the store. Individual per-instrument failures
 // inside the fan-out are tolerated; only a fully-empty result rejects.
 export async function fetchFundingRates(
-  allowedInstIds?: Set<string>
+  allowedInstIds: Set<string>
 ): Promise<Map<string, FundingRateData>> {
-  // First get the list of all SWAP instruments
-  const response = await okxFetch(`${OKX_REST_BASE}/public/instruments?instType=SWAP`);
-  if (!response.ok) {
-    throw new Error(`Funding rates: instruments HTTP ${response.status}`);
-  }
-  const instData = await response.json();
-
-  if (instData.code !== '0' || !instData.data) {
-    throw new Error(`Funding rates: instruments OKX code ${instData.code}`);
-  }
-
   const result = new Map<string, FundingRateData>();
-  const instIds = instData.data
-    .filter((inst: OKXInstrument) => inst.instId.includes('-USDT-'))
-    // Cap to the active universe when provided — shrinks the per-instrument
-    // fan-out (~250 → ~100). Omit to fetch all (cold-start fallback).
-    .filter((inst: OKXInstrument) => !allowedInstIds || allowedInstIds.has(inst.instId))
-    .map((inst: OKXInstrument) => inst.instId);
+  const instIds = Array.from(allowedInstIds);
 
   // Fetch funding rates in batches
   const batchSize = RATE_LIMIT.API_BATCH_SIZE;

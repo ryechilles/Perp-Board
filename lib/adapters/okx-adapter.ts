@@ -32,22 +32,24 @@ export const okxAdapter: ExchangeAdapter = {
     return tickers.filter(t => t.instId.includes('-USDT-'));
   },
 
-  async fetchInitialData(allowedInstIds?: Set<string>) {
+  async fetchInitialData() {
     // Each fetch REJECTS on failure (no empty fallbacks). allSettled keeps the
     // parts independent: one failing source must not discard the others.
-    const [spot, listing, funding] = await Promise.allSettled([
+    const [spot, listing] = await Promise.allSettled([
       fetchSpotSymbols(),
       fetchListingDates(),
-      fetchFundingRates(allowedInstIds),
     ]);
     if (spot.status === 'rejected') console.error('[OKX] Spot symbols failed:', spot.reason);
     if (listing.status === 'rejected') console.error('[OKX] Listing dates failed:', listing.reason);
-    if (funding.status === 'rejected') console.error('[OKX] Funding rates failed:', funding.reason);
     return {
       spotSymbols: spot.status === 'fulfilled' ? spot.value : null,
       listingData: listing.status === 'fulfilled' ? listing.value : null,
-      fundingRateData: funding.status === 'fulfilled' ? funding.value : null,
     };
+  },
+
+  // Per-instrument funding fan-out, capped to the universe by the controller.
+  fetchFundingRates(instIds: Set<string>) {
+    return fetchFundingRates(instIds);
   },
 
   spotSymbolFormat: 'base-usdt',
@@ -56,7 +58,6 @@ export const okxAdapter: ExchangeAdapter = {
   features: {
     maFlow: true,
     listingDates: true,
-    separateFundingFetch: true,
     excludeNoSpotCrypto: true,
   },
 };

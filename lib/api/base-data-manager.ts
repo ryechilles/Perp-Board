@@ -6,15 +6,22 @@
 
 import { ProcessedTicker, TickerUpdateCallback, StatusUpdateCallback } from '../types';
 import { withRetry } from '../concurrency';
-import { TIMING, UI } from '../constants';
+import { TIMING } from '../constants';
+import { sameSet } from '../utils';
 
 export abstract class BaseDataManager {
   protected ws: WebSocket | null = null;
   protected tickers: Map<string, ProcessedTicker> = new Map();
   protected onUpdate: TickerUpdateCallback;
   protected onStatus: StatusUpdateCallback;
-  protected top50Ids: string[] = [];
-  protected allIds: string[] = [];
+  /**
+   * Active universe (set by the controller via setUniverse). `tickers` holds the
+   * FULL instrument list — needed to compute the universe and notice rank
+   * changes — but only universe members are streamed (WS) and handed to the
+   * store. null = not known yet (market cap / spot still loading): nothing is emitted,
+   * so the table stays in its skeleton state instead of flashing every instrument.
+   */
+  protected universe: Set<string> | null = null;
   protected restPollInterval: NodeJS.Timeout | null = null;
   protected wsReconnectTimeout: NodeJS.Timeout | null = null;
   protected pingInterval: NodeJS.Timeout | null = null;
@@ -33,13 +40,6 @@ export abstract class BaseDataManager {
   /**
    * Schedule a throttled flush — writes to this.tickers immediately, but only
    * notifies React once per frame.
-   *
-   * The hot-path flush passes `this.tickers` BY REFERENCE (no defensive clone):
-   * MarketStore.setTickers diffs it and keeps its own `merged` copy, so the
-   * store never aliases our live map. The flush runs synchronously, and every
-   * consumer (setTickers / extractFundingFromTickers / prune) materializes
-   * what it needs before any await — so a later WS mutation can't corrupt them.
-   * This removes one full Map allocation per animation frame (~300 entries).
    */
   protected scheduleUpdate(status?: 'connecting' | 'live' | 'error', time?: Date): void {
     if (status) this.statusPending = { status, time };
@@ -48,7 +48,7 @@ export abstract class BaseDataManager {
     requestAnimationFrame(() => {
       this.updateScheduled = false;
       if (!this.isRunning) return;
-      this.onUpdate(this.tickers);
+      this.emitTickers();
       if (this.statusPending) {
         this.onStatus(this.statusPending.status, this.statusPending.time);
         this.statusPending = null;
@@ -92,22 +92,46 @@ export abstract class BaseDataManager {
     }
   }
 
+  /** Full instrument list (NOT universe-filtered) — input for universe selection. */
   getTickers(): Map<string, ProcessedTicker> {
     return new Map(this.tickers);
   }
 
-  getTop50Ids(): string[] {
-    return [...this.top50Ids];
+  /**
+   * Restrict streaming + emission to `ids`. No-op when unchanged; otherwise the
+   * subclass adjusts its stream (onUniverseChange) and the new slice is flushed.
+   */
+  setUniverse(ids: Set<string>): void {
+    if (this.universe && sameSet(this.universe, ids)) return;
+    const prev = this.universe;
+    this.universe = new Set(ids);
+    this.onUniverseChange(prev, this.universe);
+    if (this.isRunning) this.scheduleUpdate();
   }
 
-  getAllIds(): string[] {
-    return [...this.allIds];
+  protected inUniverse(id: string): boolean {
+    return this.universe?.has(id) ?? false;
+  }
+
+  /**
+   * Hand the universe slice to the store. Skipped entirely while the universe is
+   * unknown — an empty emit would make the store prune its (cached) RSI data.
+   * The slice is a fresh Map (~70 entries), so the store never aliases our live map.
+   */
+  protected emitTickers(): void {
+    if (!this.universe) return;
+    const slice = new Map<string, ProcessedTicker>();
+    for (const id of this.universe) {
+      const t = this.tickers.get(id);
+      if (t) slice.set(id, t);
+    }
+    this.onUpdate(slice);
   }
 
   // ── WebSocket lifecycle ──
 
   protected connectWebSocket(): void {
-    if (this.ws?.readyState === WebSocket.OPEN) return;
+    if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) return;
     if (!this.canConnectWebSocket()) return;
 
     try {
@@ -135,6 +159,7 @@ export abstract class BaseDataManager {
         // Reconnect after delay
         if (this.isRunning) {
           this.wsReconnectTimeout = setTimeout(() => {
+            this.wsReconnectTimeout = null;
             this.connectWebSocket();
           }, TIMING.WS_RECONNECT_DELAY);
         }
@@ -143,6 +168,7 @@ export abstract class BaseDataManager {
       console.error(`[${this.getLabel()}] Failed to create WebSocket:`, error);
       if (this.isRunning) {
         this.wsReconnectTimeout = setTimeout(() => {
+          this.wsReconnectTimeout = null;
           this.connectWebSocket();
         }, TIMING.WS_RECONNECT_FALLBACK);
       }
@@ -182,31 +208,18 @@ export abstract class BaseDataManager {
   }
 
   /**
-   * Sort tickers by 24h USD volume descending and set top50/all ID lists
-   */
-  protected updateIdLists(tickersList: ProcessedTicker[]): void {
-    tickersList.sort((a, b) => {
-      const volA = (parseFloat(a.volCcy24h) || 0) * a.priceNum;
-      const volB = (parseFloat(b.volCcy24h) || 0) * b.priceNum;
-      return volB - volA;
-    });
-
-    this.top50Ids = tickersList.slice(0, UI.TOP50_COUNT).map(t => t.instId);
-    this.allIds = tickersList.map(t => t.instId);
-  }
-
-  /**
-   * Remove delisted tokens (tokens no longer in the current set)
+   * Remove delisted tokens (tokens no longer in the current set).
+   * Returns true when a universe member was removed (i.e. the emitted slice changed).
    */
   protected removeDelisted(currentIds: Set<string>): boolean {
-    let removed = false;
+    let removedVisible = false;
     for (const id of this.tickers.keys()) {
       if (!currentIds.has(id)) {
         this.tickers.delete(id);
-        removed = true;
+        if (this.inUniverse(id)) removedVisible = true;
       }
     }
-    return removed;
+    return removedVisible;
   }
 
   // ── Abstract methods — exchange-specific hooks ──
@@ -217,8 +230,14 @@ export abstract class BaseDataManager {
   /** WebSocket URL to connect to */
   protected abstract getWebSocketUrl(): string;
 
-  /** Whether we can connect (e.g., need top50 IDs first for OKX) */
+  /** Whether we can connect (e.g., OKX needs the universe to know what to subscribe) */
   protected canConnectWebSocket(): boolean { return true; }
+
+  /** Universe changed — adjust the live stream (e.g. OKX re-subscribes the diff). */
+  protected onUniverseChange(_prev: Set<string> | null, _next: Set<string>): void {
+    void _prev;
+    void _next;
+  }
 
   /** Send ping to keep WS alive */
   protected abstract sendPing(): void;

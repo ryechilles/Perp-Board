@@ -22,11 +22,13 @@ import {
   DataManager,
 } from '@/lib/types';
 import { fetchMarketCapData } from '@/lib/api/marketcap';
-import { selectUniverse, selectUniverseInstIds, SpotUniverseContext } from '@/lib/filters';
+import { selectUniverse, SpotUniverseContext } from '@/lib/filters';
 import { TIMING, MA_FLOW } from '@/lib/constants';
+import { sameSet } from '@/lib/utils';
 import {
   getMarketCapCache,
   setMarketCapCache,
+  spotSymbolsCache,
   checkVersionAndClearCache,
   getCacheForExchange,
 } from '@/lib/cache';
@@ -58,6 +60,25 @@ export class ExchangeController {
   private timeouts: NodeJS.Timeout[] = [];
   private rsiAbort: AbortController | null = null;
   private isFetchingRsi = false;
+  /** A full RSI pass was requested while one was in flight (universe grew). */
+  private rsiRerunPending = false;
+
+  /**
+   * Active universe — the ONLY instruments that reach the store, the WS
+   * subscription and the RSI / funding / MA-Flow fetches. `universeOrder` is
+   * the same set by market-cap rank (24h volume breaks ties) for RSI tiering.
+   * null until its inputs — market cap and, on OKX, spot symbols — are loaded
+   * (or the fallback timer degrades them).
+   */
+  private universe: Set<string> | null = null;
+  private universeOrder: string[] = [];
+  /** Market cap failed / timed out with nothing cached → volume-ranked universe. */
+  private marketCapFallback = false;
+  /** Spot symbols timed out with nothing cached → skip the no-spot cut. */
+  private spotFallback = false;
+  /** Debounced RSI + funding pass after the universe appears or grows. */
+  private universeFetchTimeout: NodeJS.Timeout | null = null;
+  private fundingPending = false;
   /** Set true by dispose() so async initialize() steps and timers bail out. */
   private disposed = false;
   /** Set true by pause() while the page is hidden — acquisition is suspended
@@ -110,27 +131,30 @@ export class ExchangeController {
     }
   };
 
-  // ───────────────────────── RSI fetch ───────────────────────────────────
+  // ───────────────────────── universe ────────────────────────────────────
   /**
-   * Instrument IDs sorted by market-cap rank (uses adapter pre-filter).
-   *
-   * Rank is primary; when it's missing (and especially if the market-cap source
-   * is fully down), entries fall back to 24h USD volume descending instead of an
-   * arbitrary input order — so RSI tier ordering degrades gracefully rather than
-   * going random when CoinLore is unavailable.
+   * Recompute the active universe from the data manager's full instrument list
+   * and push it down. Runs whenever an input changes: tickers first loaded,
+   * market cap (initial / refresh / fallback) and spot symbols. Until every
+   * input is known it waits (the table stays in skeleton) rather than showing —
+   * and fetching for — instruments that are about to be cut; the fallback timer
+   * bounds that wait.
    */
-  private getSortedInstIds(tickerMap: Map<string, ProcessedTicker>): string[] {
-    const marketCapData = this.store.getSnapshot().marketCapData;
+  private refreshUniverse(): void {
+    const dm = this.dataManager;
+    if (this.inactive || !dm) return;
+    const all = dm.getTickers();
+    if (all.size === 0) return;
+    const { marketCapData, spotSymbols } = this.store.getSnapshot();
+    if (marketCapData.size === 0 && !this.marketCapFallback) return;
+    if (this.adapter.features.excludeNoSpotCrypto && spotSymbols.size === 0 && !this.spotFallback) return;
+
     const volUsd = (t: ProcessedTicker) => (parseFloat(t.volCcy24h) || 0) * t.priceNum;
-    // Cap to the active universe (top-N crypto by rank + stock perps, minus
-    // no-spot crypto on OKX) so RSI is only fetched for that set — the 100+
-    // tier3 work disappears entirely.
-    const universe = selectUniverse(
-      this.adapter.preFilterTickers(Array.from(tickerMap.values())),
+    const order = selectUniverse(
+      this.adapter.preFilterTickers(Array.from(all.values())),
       marketCapData,
       this.getSpotUniverseContext()
-    );
-    return universe
+    )
       .sort((a, b) => {
         const rankA = marketCapData.get(a.baseSymbol)?.rank ?? Number.MAX_SAFE_INTEGER;
         const rankB = marketCapData.get(b.baseSymbol)?.rank ?? Number.MAX_SAFE_INTEGER;
@@ -138,23 +162,55 @@ export class ExchangeController {
         return volUsd(b) - volUsd(a);
       })
       .map((t) => t.instId);
+    const next = new Set(order);
+    const prev = this.universe;
+
+    this.universeOrder = order;
+    // Always push: after resume() the data manager is fresh and has no universe.
+    dm.setUniverse(next);
+    if (prev && sameSet(prev, next)) return;
+
+    this.universe = next;
+    // New members need RSI + funding now, not at the next refresh interval.
+    const grew = !prev || order.some((id) => !prev.has(id));
+    if (grew) this.scheduleUniverseFetches();
   }
 
   /**
-   * Build the capped-universe instId set for gating the OKX funding fan-out.
-   * Returns undefined when tickers or market-cap data aren't ready yet — callers
-   * then fetch the full set (graceful cold-start fallback).
+   * Cold-start escape hatch for a missing universe input (nothing cached, fetch
+   * failed or slow): no market cap → rank by 24h volume; no spot symbols → skip
+   * the no-spot cut (see selectUniverse). Real data takes over when it lands.
    */
-  private getUniverseInstIds(): Set<string> | undefined {
-    const tickers = this.dataManager?.getTickers();
-    if (!tickers || tickers.size === 0) return undefined;
-    const marketCapData = this.store.getSnapshot().marketCapData;
-    if (marketCapData.size === 0) return undefined;
-    return selectUniverseInstIds(
-      this.adapter.preFilterTickers(Array.from(tickers.values())),
-      marketCapData,
-      this.getSpotUniverseContext()
-    );
+  private enableUniverseFallback(which: { marketCap?: boolean; spot?: boolean }): void {
+    if (this.inactive) return;
+    const { marketCapData, spotSymbols } = this.store.getSnapshot();
+    if (which.marketCap && !this.marketCapFallback && marketCapData.size === 0) {
+      console.warn('[Universe] Market cap unavailable — ranking by 24h volume');
+      this.marketCapFallback = true;
+    }
+    if (which.spot && !this.spotFallback && spotSymbols.size === 0) {
+      console.warn('[Universe] Spot symbols unavailable — skipping the no-spot cut');
+      this.spotFallback = true;
+    }
+    this.refreshUniverse();
+  }
+
+  /**
+   * RSI + funding pass shortly after the universe appears / grows. The short
+   * delay deduplicates bursts (market cap then spot landing back-to-back) and
+   * lets the no-spot cut settle before the funding fan-out.
+   */
+  private scheduleUniverseFetches(): void {
+    this.fundingPending = true;
+    if (this.universeFetchTimeout) return;
+    this.universeFetchTimeout = setTimeout(() => {
+      this.universeFetchTimeout = null;
+      void this.fetchRsi();
+      if (this.fundingPending) {
+        this.fundingPending = false;
+        void this.refreshFunding();
+      }
+    }, TIMING.INITIAL_RSI_FETCH_DELAY);
   }
 
   /**
@@ -171,26 +227,28 @@ export class ExchangeController {
   }
 
   /**
-   * Load spot symbols / listings / funding. Each part is null when its fetch
-   * failed (adapter contract) — previous store data is kept for that part and
-   * the load retries with exponential backoff until every required part
-   * succeeds (or retries are exhausted). This prevents the "transient OKX
-   * hiccup wipes funding + spot for the whole session" failure mode.
+   * Load spot symbols / listings. Each part is null when its fetch failed
+   * (adapter contract) — previous store data is kept for that part and the load
+   * retries with exponential backoff until every required part succeeds (or
+   * retries are exhausted). This prevents the "transient OKX hiccup wipes spot
+   * for the whole session" failure mode.
    */
   private loadInitialData(attempt = 0): void {
     const MAX_RETRIES = 3;
     this.adapter
-      .fetchInitialData(this.getUniverseInstIds())
+      .fetchInitialData()
       .then((initialData) => {
         if (this.inactive) return; // ← Don't update store if disposed/paused
-        if (initialData.spotSymbols) this.store.setSpot(initialData.spotSymbols);
+        if (initialData.spotSymbols) {
+          this.store.setSpot(initialData.spotSymbols);
+          spotSymbolsCache.set(Array.from(initialData.spotSymbols));
+          this.refreshUniverse();
+        }
         if (initialData.listingData) this.store.setListing(initialData.listingData);
-        if (initialData.fundingRateData) this.store.setFunding(initialData.fundingRateData);
 
         const incomplete =
           (this.adapter.features.excludeNoSpotCrypto && !initialData.spotSymbols) ||
-          (this.adapter.features.listingDates && !initialData.listingData) ||
-          (this.adapter.features.separateFundingFetch && !initialData.fundingRateData);
+          (this.adapter.features.listingDates && !initialData.listingData);
         if (incomplete && attempt < MAX_RETRIES) {
           this.scheduleInitialDataRetry(attempt);
         }
@@ -212,30 +270,58 @@ export class ExchangeController {
     this.timeouts.push(retryTimeout);
   }
 
-  /** Fetch RSI — cancellable via AbortController, optional tier filtering. */
-  private async fetchRsi(
-    tickerMap: Map<string, ProcessedTicker>,
-    tier?: 'top50' | 'tier2' | 'tier3'
-  ): Promise<void> {
-    if (this.isFetchingRsi) return;
-    // Abort any previous RSI fetch before starting a new one.
-    this.rsiAbort?.abort();
+  /**
+   * Funding for the universe (exchanges with a separate funding fetch — OKX;
+   * Hyperliquid extracts it from tickers). A failure keeps the last good data;
+   * while there is none yet, it retries with backoff.
+   */
+  private async refreshFunding(attempt = 0): Promise<void> {
+    const universe = this.universe;
+    if (!this.adapter.fetchFundingRates || this.inactive || !universe) return;
+    const MAX_RETRIES = 3;
+    try {
+      const rates = await this.adapter.fetchFundingRates(universe);
+      if (this.inactive) return;
+      this.store.setFunding(rates);
+    } catch (error) {
+      console.error('[Funding] Fetch failed, keeping previous data:', error);
+      if (!this.inactive && attempt < MAX_RETRIES && this.store.getSnapshot().fundingRateData.size === 0) {
+        const delay = TIMING.INITIAL_DATA_RETRY_BASE * Math.pow(2, attempt);
+        this.timeouts.push(setTimeout(() => void this.refreshFunding(attempt + 1), delay));
+      }
+    }
+  }
+
+  /** Fetch RSI for the universe — cancellable via AbortController, optional tier filtering. */
+  private async fetchRsi(tier?: 'top50' | 'tier2' | 'tier3'): Promise<void> {
+    if (this.inactive || this.universeOrder.length === 0) return;
+    if (this.isFetchingRsi) {
+      // A full pass requested mid-fetch (universe grew) runs right after.
+      if (!tier) this.rsiRerunPending = true;
+      return;
+    }
     const controller = new AbortController();
     this.rsiAbort = controller;
     this.isFetchingRsi = true;
     try {
-      const instIds = this.getSortedInstIds(tickerMap);
-      const rsiData = this.store.getSnapshot().rsiData;
       await this.adapter.fetchRSIBatch(
-        instIds,
-        rsiData,
+        this.universeOrder,
+        this.store.getSnapshot().rsiData,
         this.cb.onRsiProgress,
         this.updateRsiData,
         tier,
         controller.signal
       );
     } finally {
-      this.isFetchingRsi = false;
+      // A run aborted by teardown() must not clobber the flags of a newer run.
+      if (this.rsiAbort === controller) {
+        this.rsiAbort = null;
+        this.isFetchingRsi = false;
+        if (this.rsiRerunPending && !this.inactive) {
+          this.rsiRerunPending = false;
+          void this.fetchRsi();
+        }
+      }
     }
   }
 
@@ -258,10 +344,15 @@ export class ExchangeController {
       this.store.setRsi(cachedRsi);
     }
 
-    // Load cached market cap.
+    // Load cached market cap + spot symbols — the universe inputs, so a revisit
+    // shows its rows as soon as the ticker list lands.
     const cachedMarketCap = getMarketCapCache();
     if (cachedMarketCap) {
       this.store.setMarketCap(cachedMarketCap);
+    }
+    if (this.adapter.features.excludeNoSpotCrypto) {
+      const cachedSpot = spotSymbolsCache.get();
+      if (cachedSpot && cachedSpot.length > 0) this.store.setSpot(new Set(cachedSpot));
     }
 
     await this.startAcquisition();
@@ -279,6 +370,7 @@ export class ExchangeController {
     const handleTickerUpdate = (newTickers: Map<string, ProcessedTicker>) => {
       if (this.inactive) return; // ← Don't update store if disposed/paused
 
+      // newTickers is the universe slice only (see BaseDataManager.emitTickers).
       this.store.setTickers(newTickers);
       // Extract funding from tickers for exchanges that embed it (Hyperliquid).
       if (this.adapter.extractFundingFromTickers) {
@@ -286,7 +378,7 @@ export class ExchangeController {
         this.store.setFunding(funding);
       }
 
-      // Prune orphaned rsi/listing entries when instruments are delisted.
+      // Prune RSI for instruments that were delisted or left the universe.
       // The store no-ops (no commit) when there is nothing to prune.
       const validKeys = new Set(newTickers.keys());
       this.store.prune(validKeys);
@@ -304,11 +396,39 @@ export class ExchangeController {
     };
 
     this.dataManager = this.adapter.createDataManager(handleTickerUpdate, handleStatusUpdate);
-    // Start the ticker feed FIRST so the row list paints immediately — it depends
-    // on nothing from fetchInitialData (spot/listing/funding only feed columns &
-    // filters). Awaiting fetchInitialData here previously blocked first paint
-    // behind ~250 throttled funding-rate requests (the funding fan-out shares the
-    // 8 req/s OKX limiter), so the table sat in skeleton state for ~30s.
+
+    // Universe inputs, fetched in parallel with the ticker list (non-blocking).
+    // Market cap defines the ranking; spot symbols (OKX) drive the no-spot cut.
+    // Each landing re-runs refreshUniverse (a no-op until tickers are in).
+    fetchMarketCapData()
+      .then((marketCap) => {
+        if (this.inactive) return; // ← Don't update store if disposed/paused
+        console.log(`[MarketCap] Received ${marketCap.size} coins`);
+        this.store.setMarketCap(marketCap);
+        setMarketCapCache(marketCap);
+        this.refreshUniverse();
+      })
+      .catch((error) => {
+        // Fetch rejected — keep whatever (cached) market-cap data is already in
+        // the store rather than clobbering it. See fetchMarketCapData contract.
+        console.error('[MarketCap] Initial fetch failed, keeping cached data:', error);
+        this.enableUniverseFallback({ marketCap: true });
+      });
+    // Spot symbols + listing dates (universe-independent, one request each).
+    // Funding is universe-dependent and runs from scheduleUniverseFetches.
+    this.loadInitialData();
+    // Cold start: don't hold the table in skeleton if an input is slow/failing.
+    if (!this.universe) {
+      this.timeouts.push(
+        setTimeout(
+          () => this.enableUniverseFallback({ marketCap: true, spot: true }),
+          TIMING.UNIVERSE_FALLBACK_DELAY
+        )
+      );
+    }
+
+    // Start the ticker feed. Rows paint as soon as the universe is known — right
+    // after this on a revisit (cached inputs), else when the inputs land.
     await this.dataManager.start();
     if (this.inactive) {
       // ← Bail if cleanup/pause ran during start(). teardown() may already have
@@ -317,78 +437,42 @@ export class ExchangeController {
       this.dataManager = null;
       return;
     }
+    this.refreshUniverse();
 
-    // Fetch market-cap data (non-blocking — feeds ranks/sorting, not the row list).
-    fetchMarketCapData()
-      .then((marketCap) => {
-        if (this.inactive) return; // ← Don't update store if disposed/paused
-        console.log(`[MarketCap] Received ${marketCap.size} coins`);
-        this.store.setMarketCap(marketCap);
-        setMarketCapCache(marketCap);
-      })
-      .catch((error) => {
-        // Fetch rejected — keep whatever (cached) market-cap data is already in
-        // the store rather than clobbering it. See fetchMarketCapData contract.
-        console.error('[MarketCap] Initial fetch failed, keeping cached data:', error);
-      });
-
-    // Fetch exchange-specific initial data in the BACKGROUND (spot symbols,
-    // listings, funding). The OKX funding fetch fans out ~250 throttled requests,
-    // so it must not block first paint; columns/filters that need it fill in
-    // progressively once it resolves. Failed parts come back as null (previous
-    // data is kept) and the whole load retries with backoff until complete.
-    this.loadInitialData();
-
-    // Initial RSI fetch (all tiers).
-    const initialRsiTimeout = setTimeout(() => {
-      const currentTickers = this.dataManager?.getTickers();
-      if (currentTickers && currentTickers.size > 0) {
-        this.fetchRsi(currentTickers);
-      }
-    }, TIMING.INITIAL_RSI_FETCH_DELAY);
-    this.timeouts.push(initialRsiTimeout);
+    // Initial RSI + funding pass. On resume the universe is unchanged, so
+    // refreshUniverse() won't schedule it; on a cold start this no-ops until
+    // the universe appears (which schedules its own pass).
+    this.scheduleUniverseFetches();
 
     // Tiered RSI refresh intervals.
     this.intervals.push(
-      setInterval(() => {
-        const currentTickers = this.dataManager?.getTickers();
-        if (currentTickers && currentTickers.size > 0) {
-          this.fetchRsi(currentTickers, 'top50');
-        }
-      }, TIMING.RSI_REFRESH_TOP50)
+      setInterval(() => void this.fetchRsi('top50'), TIMING.RSI_REFRESH_TOP50)
     );
     this.intervals.push(
-      setInterval(() => {
-        const currentTickers = this.dataManager?.getTickers();
-        if (currentTickers && currentTickers.size > 0) {
-          this.fetchRsi(currentTickers, 'tier2');
-        }
-      }, TIMING.RSI_REFRESH_TIER2)
+      setInterval(() => void this.fetchRsi('tier2'), TIMING.RSI_REFRESH_TIER2)
     );
     this.intervals.push(
-      setInterval(() => {
-        const currentTickers = this.dataManager?.getTickers();
-        if (currentTickers && currentTickers.size > 0) {
-          this.fetchRsi(currentTickers, 'tier3');
-        }
-      }, TIMING.RSI_REFRESH_TIER3)
+      setInterval(() => void this.fetchRsi('tier3'), TIMING.RSI_REFRESH_TIER3)
     );
 
     // MA Flow (OKX only).
     if (this.adapter.features.maFlow) {
+      // The store holds only the universe slice, so MA Flow is capped to it too.
       const tryFetchMAFlow = (retriesLeft: number) => {
-        const currentTickers = this.dataManager?.getTickers();
-        if (currentTickers && currentTickers.size > 0) {
-          this.cb.fetchMAFlow(currentTickers).then((didFetch) => {
-            if (!didFetch && retriesLeft > 0) {
-              const retryTimeout = setTimeout(
-                () => tryFetchMAFlow(retriesLeft - 1),
-                5000
-              );
-              this.timeouts.push(retryTimeout);
-            }
-          });
+        const retry = () => {
+          if (retriesLeft > 0) {
+            this.timeouts.push(setTimeout(() => tryFetchMAFlow(retriesLeft - 1), 5000));
+          }
+        };
+        // Empty until the universe is known (cold start) — retry rather than give up.
+        const currentTickers = this.store.getSnapshot().tickers;
+        if (currentTickers.size === 0) {
+          retry();
+          return;
         }
+        this.cb.fetchMAFlow(currentTickers).then((didFetch) => {
+          if (!didFetch) retry();
+        });
       };
       const initialMAFlowTimeout = setTimeout(
         () => tryFetchMAFlow(6),
@@ -398,8 +482,8 @@ export class ExchangeController {
 
       this.intervals.push(
         setInterval(() => {
-          const currentTickers = this.dataManager?.getTickers();
-          if (currentTickers && currentTickers.size > 0) {
+          const currentTickers = this.store.getSnapshot().tickers;
+          if (currentTickers.size > 0) {
             this.cb.fetchMAFlow(currentTickers);
           }
         }, MA_FLOW.REFRESH_INTERVAL)
@@ -414,6 +498,7 @@ export class ExchangeController {
           if (this.inactive) return;
           this.store.setMarketCap(newMarketCap);
           setMarketCapCache(newMarketCap);
+          this.refreshUniverse(); // rank changes at the cut move instruments in/out
         } catch (error) {
           // Transient upstream failure — keep the last good market-cap data
           // rather than overwriting it with nothing (which would collapse the
@@ -424,21 +509,9 @@ export class ExchangeController {
     );
 
     // Refresh funding rates (OKX only — Hyperliquid extracts from tickers).
-    if (this.adapter.features.separateFundingFetch) {
-      const { fetchFundingRates } = await import('@/lib/api/okx-rest');
+    if (this.adapter.fetchFundingRates) {
       this.intervals.push(
-        setInterval(async () => {
-          try {
-            // Cap the funding fan-out to the active universe (~100 instead of ~250).
-            const newFundingRates = await fetchFundingRates(this.getUniverseInstIds());
-            if (this.inactive) return;
-            this.store.setFunding(newFundingRates);
-          } catch (error) {
-            // Transient upstream failure — keep the last good funding data
-            // rather than wiping the column until the next refresh.
-            console.error('[Funding] Refresh failed, keeping previous data:', error);
-          }
-        }, TIMING.FUNDING_RATES_REFRESH)
+        setInterval(() => void this.refreshFunding(), TIMING.FUNDING_RATES_REFRESH)
       );
     }
   }
@@ -454,6 +527,12 @@ export class ExchangeController {
     this.rsiAbort?.abort();
     this.rsiAbort = null;
     this.isFetchingRsi = false;
+    this.rsiRerunPending = false;
+    if (this.universeFetchTimeout) {
+      clearTimeout(this.universeFetchTimeout);
+      this.universeFetchTimeout = null;
+    }
+    this.fundingPending = false;
 
     this.intervals.forEach(clearInterval);
     this.intervals = [];
