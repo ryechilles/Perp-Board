@@ -7,6 +7,7 @@ import { TokenAvatar, TooltipList, TimeFrameSelector } from '@/components/ui';
 import { ProcessedTicker, RSIData, MarketCapData } from '@/lib/types';
 import { formatPrice } from '@/lib/utils';
 import { TimeFrame, TokenWithChange, formatChange, getChangeByTimeFrame } from '@/lib/widget-utils';
+import { UNIVERSE } from '@/lib/constants';
 
 interface AltcoinTopGainersProps {
   tickers: Map<string, ProcessedTicker>;
@@ -50,16 +51,16 @@ export function AltcoinTopGainers({ tickers, rsiData, marketCapData, onTokenClic
     return tokens.sort((a, b) => b.marketCap - a.marketCap);
   }, [tickers, rsiData, marketCapData]);
 
-  // Top 100 altcoins
-  const top100 = useMemo(() => altcoins.slice(0, 100), [altcoins]);
+  // Top N altcoins
+  const topN = useMemo(() => altcoins.slice(0, UNIVERSE.MAX_CRYPTO), [altcoins]);
 
   // Top gainers
   const topGainers = useMemo(() => {
-    return [...top100]
+    return [...topN]
       .filter(t => getChangeByTimeFrame(t, timeFrame) !== null)
       .sort((a, b) => (getChangeByTimeFrame(b, timeFrame) ?? 0) - (getChangeByTimeFrame(a, timeFrame) ?? 0))
       .slice(0, 5);
-  }, [top100, timeFrame]);
+  }, [topN, timeFrame]);
 
   const isLoading = altcoins.length === 0;
 
@@ -71,7 +72,7 @@ export function AltcoinTopGainers({ tickers, rsiData, marketCapData, onTokenClic
       loading={isLoading}
       tooltip={
         <TooltipList items={[
-          `Top 5 gainers from ${exchangeLabel} perp top 100`,
+          `Top 5 gainers from ${exchangeLabel} perp top ${UNIVERSE.MAX_CRYPTO}`,
           "Excludes BTC",
           "Click token to filter in table",
         ]} />

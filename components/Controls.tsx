@@ -5,6 +5,7 @@ import { Search, Settings, RotateCcw } from 'lucide-react';
 import { ColumnVisibility, ColumnKey, Filters, RsiSignalType, AssetCategory } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { getDefaultColumns } from '@/lib/defaults';
+import { UNIVERSE } from '@/lib/constants';
 import { RsiFilter } from './RsiFilter';
 import { PillButtonGroup, PillButtonOption, Button } from '@/components/ui';
 
@@ -273,7 +274,7 @@ export function Controls({
 
   // Asset category options (Crypto / Stock / All toggle)
   const assetCategoryOptions: PillButtonOption<string>[] = [
-    { value: 'crypto', label: 'Crypto', tooltip: 'Top 100 tokens by market cap only' },
+    { value: 'crypto', label: 'Crypto', tooltip: `Top ${UNIVERSE.MAX_CRYPTO} tokens by market cap only` },
     { value: 'stock', label: 'Stock' },
     { value: 'all', label: 'All' },
   ];
@@ -600,7 +601,6 @@ export function Controls({
                   options={[
                     { value: '1-20', label: 'Top 20' },
                     { value: '21-50', label: '21-50' },
-                    { value: '51-100', label: '51-100' },
                     { value: '>500', label: '>500' },
                   ]}
                   value={filters.rank || ''}

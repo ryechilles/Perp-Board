@@ -93,6 +93,8 @@ export function applyRsiFilter(
  * instruments the board processes and displays (table rows, RSI, funding).
  *
  * Rule (hard cap):
+ *  - UNIVERSE.EXCLUDED_SYMBOLS (e.g. USDC) are dropped first, so they never
+ *    take a top-N slot.
  *  - Stock perps (STOCK_SYMBOLS) are always kept — they never carry a CoinLore
  *    market-cap rank, so a rank cut would wrongly drop them.
  *  - Crypto perps are kept only if they have a market-cap rank, then trimmed to
@@ -115,13 +117,16 @@ export function selectUniverse(
   spot?: SpotUniverseContext | null,
   limit: number = UNIVERSE.MAX_CRYPTO
 ): ProcessedTicker[] {
-  if (marketCapData.size === 0) return data;
+  if (marketCapData.size === 0) {
+    return data.filter(t => !UNIVERSE.EXCLUDED_SYMBOLS.has(t.baseSymbol));
+  }
 
   const volUsd = (t: ProcessedTicker) => (parseFloat(t.volCcy24h) || 0) * t.priceNum;
 
   const stocks: ProcessedTicker[] = [];
   const rankedCrypto: ProcessedTicker[] = [];
   for (const t of data) {
+    if (UNIVERSE.EXCLUDED_SYMBOLS.has(t.baseSymbol)) continue;
     if (STOCK_SYMBOLS.has(t.baseSymbol)) {
       stocks.push(t);
     } else if (marketCapData.get(t.baseSymbol)?.rank !== undefined) {

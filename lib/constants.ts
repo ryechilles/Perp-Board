@@ -18,8 +18,11 @@ export const APP_VERSION = pkg.version;
 // market-cap rank are kept; stock perps (STOCK_SYMBOLS, which have no CoinLore
 // rank) are always kept. Crypto without a rank is dropped. Tune in one place.
 export const UNIVERSE = {
-  MAX_CRYPTO: 100,
-} as const;
+  MAX_CRYPTO: 50,
+  // Symbols removed from the universe entirely (before the rank cut, so they
+  // don't occupy a top-N slot).
+  EXCLUDED_SYMBOLS: new Set(['USDC']),
+};
 
 // ===========================================
 // API Endpoints
@@ -134,7 +137,6 @@ export const WIDGET = {
 
   // Top N selection for widgets
   TOP_TOKENS_COUNT: 50,      // RSI oversold/overbought widgets
-  TOP_100_COUNT: 100,        // Market momentum, funding market
 
   // Display limits
   DISPLAY_LIMIT: 5,          // Max items to show in small widgets
@@ -198,8 +200,8 @@ export const MA_FLOW = {
   // Delay before starting MA fetch (after RSI)
   INITIAL_FETCH_DELAY: 8000,           // 8 seconds
 
-  // Token pool size (Top N by market cap)
-  TOKEN_COUNT: 100,
+  // Token pool size (Top N by market cap) — follows the universe cap
+  TOKEN_COUNT: UNIVERSE.MAX_CRYPTO,
 
   // Display limits
   DISPLAY_LIMIT: 10,                   // Max items per widget

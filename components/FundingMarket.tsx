@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { SmallWidget } from '@/components/widgets/base';
 import { TooltipList } from '@/components/ui';
 import { ProcessedTicker, FundingRateData, MarketCapData } from '@/lib/types';
+import { UNIVERSE } from '@/lib/constants';
 
 interface FundingMarketProps {
   tickers: Map<string, ProcessedTicker>;
@@ -17,7 +18,7 @@ interface FundingMarketProps {
  * FundingMarket - Shows funding rate market sentiment
  *
  * Displays count of positive vs negative funding rates
- * from top 100 perp tokens by market cap
+ * from top N (UNIVERSE.MAX_CRYPTO) perp tokens by market cap
  */
 export function FundingMarket({
   tickers,
@@ -49,15 +50,15 @@ export function FundingMarket({
       }
     });
 
-    // Sort by market cap (descending) and take top 100 within OKX perp tokens
-    const top100 = tickersWithMcap
+    // Sort by market cap (descending) and take top N within OKX perp tokens
+    const topN = tickersWithMcap
       .sort((a, b) => b.marketCap - a.marketCap)
-      .slice(0, 100);
+      .slice(0, UNIVERSE.MAX_CRYPTO);
 
     const positive: string[] = [];
     const negative: string[] = [];
 
-    top100.forEach((t) => {
+    topN.forEach((t) => {
       if (t.fundingRate > 0) {
         positive.push(t.symbol);
       } else if (t.fundingRate < 0) {
@@ -68,7 +69,7 @@ export function FundingMarket({
     return {
       positiveSymbols: positive,
       negativeSymbols: negative,
-      total: top100.length,
+      total: topN.length,
     };
   }, [tickers, fundingRateData, marketCapData]);
 
@@ -85,12 +86,12 @@ export function FundingMarket({
     <SmallWidget
       title="Funding Market"
       icon={<span>📊</span>}
-      subtitle={`${exchangeLabel} Perp Top 100 by Market Cap`}
+      subtitle={`${exchangeLabel} Perp Top ${UNIVERSE.MAX_CRYPTO} by Market Cap`}
       loading={isLoading}
       className="group"
       tooltip={
         <TooltipList items={[
-          `${exchangeLabel} perp top 100 by market cap`,
+          `${exchangeLabel} perp top ${UNIVERSE.MAX_CRYPTO} by market cap`,
           <><span className="text-green-500">Positive</span>: rate &gt; 0 (longs pay shorts)</>,
           <><span className="text-red-500">Negative</span>: rate &lt; 0 (shorts pay longs)</>,
           "USDC/USDT pairs always have 0 funding rate",

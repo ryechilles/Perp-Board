@@ -226,7 +226,7 @@ export function MAFlowWidget({
             `Threshold: spread ≤ ${THRESHOLD}%`,
             'Spread % = (max MA - min MA) / avg(MAs) × 100',
             'Lower spread = tighter convergence = potential breakout',
-            `OKX Perp Top 100 by Market Cap (excl. USDC, listed ≥ ${MIN_LISTING_DAYS}d)`,
+            `OKX Perp Top ${MA_FLOW.TOKEN_COUNT} by Market Cap (excl. USDC, listed ≥ ${MIN_LISTING_DAYS}d)`,
             <>
               <span className="text-green-500">{'≤ 0.5%'}</span>{' extreme, '}
               <span className="text-emerald-500">{'≤ 1%'}</span>{' tight, '}

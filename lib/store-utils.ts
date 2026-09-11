@@ -5,7 +5,7 @@
  */
 
 import { ProcessedTicker, RSIData, MarketCapData, AssetCategory } from './types';
-import { STOCK_SYMBOLS } from './constants';
+import { STOCK_SYMBOLS, UNIVERSE } from './constants';
 
 // ===========================================
 // Generic Map Pruning
@@ -29,7 +29,7 @@ export function pruneMapByKeys<T>(map: Map<string, T>, validKeys: Set<string>): 
 }
 
 // ===========================================
-// RSI Averages (Top 100 by Market Cap)
+// RSI Averages (Top N by Market Cap)
 // ===========================================
 
 export interface RsiAverages {
@@ -40,7 +40,7 @@ export interface RsiAverages {
 }
 
 /**
- * Calculate RSI averages for Top 100 tokens by market cap
+ * Calculate RSI averages for Top N (UNIVERSE.MAX_CRYPTO) tokens by market cap
  */
 export function calculateRsiAverages(
   tickers: Map<string, ProcessedTicker>,
@@ -49,21 +49,21 @@ export function calculateRsiAverages(
 ): RsiAverages {
   const allTickers = Array.from(tickers.values());
 
-  const top100 = allTickers
+  const topN = allTickers
     .filter(t => marketCapData.get(t.baseSymbol)?.marketCap)
     .sort((a, b) => {
       const mcA = marketCapData.get(a.baseSymbol)?.marketCap ?? 0;
       const mcB = marketCapData.get(b.baseSymbol)?.marketCap ?? 0;
       return mcB - mcA;
     })
-    .slice(0, 100);
+    .slice(0, UNIVERSE.MAX_CRYPTO);
 
   let rsi7Sum = 0, rsi7Count = 0;
   let rsi14Sum = 0, rsi14Count = 0;
   let rsiW7Sum = 0, rsiW7Count = 0;
   let rsiW14Sum = 0, rsiW14Count = 0;
 
-  top100.forEach(t => {
+  topN.forEach(t => {
     const rsi = rsiData.get(t.instId);
     if (rsi?.rsi7 !== undefined && rsi.rsi7 !== null) {
       rsi7Sum += rsi.rsi7;
