@@ -72,9 +72,7 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
   const marketCap = useMarketCap(marketStore, baseSymbol);
 
   const displayRank = (currentPage - 1) * pageSize + index + 1;
-  const parts = instId.split('-');
-  const base = parts[0];
-  const quote = parts[1] || (exchange === 'hyperliquid' ? 'USDC' : 'USDT');
+  const base = instId.split('-')[0];
 
   // Row data not yet in the store (e.g. mid-update) — render nothing.
   if (!ticker) return null;
@@ -182,7 +180,6 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
             <div className="flex flex-col leading-tight">
               <div className="truncate" translate="no">
                 <span className="text-foreground">{base}</span>
-                <span className="text-muted-foreground font-normal">/{quote}</span>
               </div>
               {listingAgeInfo && (
                 <span

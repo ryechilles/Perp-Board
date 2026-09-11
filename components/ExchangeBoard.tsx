@@ -476,7 +476,6 @@ export function ExchangeBoard({
                           instId={ticker.instId}
                           baseSymbol={ticker.baseSymbol}
                           index={index}
-                          exchange={exchange}
                           isFavorite={favoriteSet.has(ticker.instId)}
                           onToggleFavorite={store.toggleFavorite}
                         />

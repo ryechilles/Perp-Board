@@ -24,7 +24,6 @@ interface TokenCardProps {
   instId: string;
   baseSymbol: string;
   index: number;
-  exchange?: 'okx' | 'hyperliquid';
   isFavorite: boolean;
   onToggleFavorite: (instId: string) => void;
 }
@@ -42,7 +41,6 @@ export const TokenCard = memo(function TokenCard({
   instId,
   baseSymbol,
   index,
-  exchange = 'okx',
   isFavorite,
   onToggleFavorite,
 }: TokenCardProps) {
@@ -51,9 +49,7 @@ export const TokenCard = memo(function TokenCard({
   const fundingRate = useFunding(marketStore, instId);
   const marketCap = useMarketCap(marketStore, baseSymbol);
 
-  const parts = instId.split('-');
-  const base = parts[0];
-  const quote = parts[1] || (exchange === 'hyperliquid' ? 'USDC' : 'USDT');
+  const base = instId.split('-')[0];
 
   if (!ticker) return null;
 
@@ -80,7 +76,6 @@ export const TokenCard = memo(function TokenCard({
           <TokenAvatar symbol={base} logo={marketCap?.logo} size="lg" />
           <span className="font-semibold text-[0.9375rem] truncate" translate="no">
             {base}
-            <span className="text-muted-foreground font-normal text-[0.75rem]">/{quote}</span>
           </span>
           <div className="ml-auto text-right">
             <div className="font-medium text-[0.9375rem] tabular-nums leading-tight">
