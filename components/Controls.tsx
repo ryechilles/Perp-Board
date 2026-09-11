@@ -44,17 +44,11 @@ export function Controls({
   onScrollToTop,
 }: ControlsProps) {
   const [showCustomizePanel, setShowCustomizePanel] = useState(false);
-  const [tempFilters, setTempFilters] = useState<Filters>(filters);
   const [customizeTab, setCustomizeTab] = useState<'columns' | 'filters'>('columns');
   const customizePanelRef = useRef<HTMLDivElement>(null);
   const customizeButtonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
-
-  // Sync tempFilters when external filters change (e.g. URL state, other components)
-  useEffect(() => {
-    setTempFilters(filters);
-  }, [filters]);
 
   // Close panel when clicking outside
   useEffect(() => {
@@ -140,30 +134,25 @@ export function Controls({
       case 'all':
         // 'All' clears everything including assetCategory — show both crypto + stock
         onFiltersChange({});
-        setTempFilters({});
         break;
       case 'top25': {
         const f = { rank: '1-25' as const, ...(currentCategory ? { assetCategory: currentCategory } : {}) };
         onFiltersChange(f);
-        setTempFilters(f);
         break;
       }
       case 'meme': {
         const f = { isMeme: 'yes' as const, ...(currentCategory ? { assetCategory: currentCategory } : {}) };
         onFiltersChange(f);
-        setTempFilters(f);
         break;
       }
       case 'overbought': {
         const f = { rsi7: '>75' as const, rsi14: '>75' as const, ...(currentCategory ? { assetCategory: currentCategory } : {}) };
         onFiltersChange(f);
-        setTempFilters(f);
         break;
       }
       case 'oversold': {
         const f = { rsi7: '<25' as const, rsi14: '<25' as const, ...(currentCategory ? { assetCategory: currentCategory } : {}) };
         onFiltersChange(f);
-        setTempFilters(f);
         break;
       }
     }
@@ -172,13 +161,6 @@ export function Controls({
   };
 
   const activeQuickFilter = getActiveQuickFilter();
-
-  // Fixed columns that are always shown and not counted
-  const excludedColumns = ['favorite', 'rank', 'logo', 'symbol'];
-  const visibleCount = Object.entries(columns)
-    .filter(([key]) => !excludedColumns.includes(key))
-    .filter(([, v]) => v).length;
-  const totalCount = Object.keys(columns).length - excludedColumns.length;
 
   // Only count filters that have actual values (not undefined or empty string or empty array)
   // Exclude assetCategory since it's always set via the toggle and isn't a "filter"
@@ -196,7 +178,6 @@ export function Controls({
 
   const handleClearFilters = () => {
     const base = exchange === 'okx' && filters.assetCategory ? { assetCategory: filters.assetCategory } : {};
-    setTempFilters(base);
     onFiltersChange(base);
   };
 
@@ -250,17 +231,14 @@ export function Controls({
     if (category === 'all') {
       // 'All' means no asset category filter — show both crypto and stock
       onFiltersChange({});
-      setTempFilters({});
     } else if (category === activeAssetCategory) {
       // Clicking the same category again — reset all quick filters
       const resetFilters = { assetCategory: category as AssetCategory };
       onFiltersChange(resetFilters);
-      setTempFilters(resetFilters);
     } else {
       // Switching to a different category — reset quick filters too for a clean slate
       const newFilters = { assetCategory: category as AssetCategory };
       onFiltersChange(newFilters);
-      setTempFilters(newFilters);
     }
     onScrollToTop?.();
   };

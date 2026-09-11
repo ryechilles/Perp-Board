@@ -30,7 +30,6 @@ const globalCache: { data: GlobalData | null; timestamp: number } = {
 
 // Cache for historical dominance data (store hourly points for 24h)
 const historyCache: HistoricalData[] = [];
-const MAX_HISTORY_POINTS = 24; // Store 24 hours of data
 
 const CACHE_DURATION = 60 * 1000; // 1 minute for current data
 

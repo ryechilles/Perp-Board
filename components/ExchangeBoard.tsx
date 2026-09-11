@@ -7,7 +7,7 @@ import { Footer } from '@/components/Footer';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { TableHeader, TableRow, TokenCard, TableRowSkeleton, TokenCardSkeleton } from '@/components/table';
 import { TabContainer, WidgetGrid } from '@/components/layout';
-import { ColumnKey, ProcessedTicker } from '@/lib/types';
+import { ColumnKey } from '@/lib/types';
 import { COLUMN_DEFINITIONS } from '@/lib/utils';
 import { useExchangeStore } from '@/hooks/useExchangeStore';
 import { useUrlState } from '@/hooks/useUrlState';

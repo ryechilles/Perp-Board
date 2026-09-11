@@ -9,12 +9,10 @@
  */
 
 import {
-  HyperliquidMeta,
   HyperliquidAsset,
   HyperliquidAssetCtx,
   HyperliquidRawTicker,
   ProcessedTicker,
-  FundingRateData,
 } from '../types';
 import { API } from '../constants';
 
@@ -75,84 +73,6 @@ export function processHyperliquidTicker(
     volCcy24h: volInBase.toString(),
     rawData,
   };
-}
-
-// ===== Fetch all tickers via metaAndAssetCtxs =====
-export async function fetchHyperliquidTickers(): Promise<ProcessedTicker[]> {
-  const result = await hlPost<[HyperliquidMeta, HyperliquidAssetCtx[]]>({
-    type: 'metaAndAssetCtxs',
-  });
-
-  if (!result || !Array.isArray(result) || result.length < 2) {
-    console.error('[Hyperliquid] Invalid metaAndAssetCtxs response');
-    return [];
-  }
-
-  const [meta, contexts] = result;
-  const universe = meta.universe;
-
-  if (!universe || !contexts || universe.length !== contexts.length) {
-    console.error('[Hyperliquid] Universe/context length mismatch');
-    return [];
-  }
-
-  const tickers: ProcessedTicker[] = [];
-
-  for (let i = 0; i < universe.length; i++) {
-    const asset = universe[i];
-    const ctx = contexts[i];
-
-    // Skip assets with zero or invalid price
-    const markPx = parseFloat(ctx.markPx);
-    if (!markPx || markPx <= 0) continue;
-
-    tickers.push(processHyperliquidTicker(asset, ctx));
-  }
-
-  return tickers;
-}
-
-// ===== Fetch meta (instrument info) =====
-export async function fetchHyperliquidMeta(): Promise<HyperliquidMeta | null> {
-  return hlPost<HyperliquidMeta>({ type: 'meta' });
-}
-
-// ===== Extract funding rates from metaAndAssetCtxs response =====
-export async function fetchHyperliquidFundingRates(): Promise<Map<string, FundingRateData>> {
-  const result = await hlPost<[HyperliquidMeta, HyperliquidAssetCtx[]]>({
-    type: 'metaAndAssetCtxs',
-  });
-
-  const fundingMap = new Map<string, FundingRateData>();
-
-  if (!result || !Array.isArray(result) || result.length < 2) {
-    return fundingMap;
-  }
-
-  const [meta, contexts] = result;
-  const universe = meta.universe;
-
-  for (let i = 0; i < universe.length; i++) {
-    const coin = universe[i].name;
-    const ctx = contexts[i];
-    const fundingRate = parseFloat(ctx.funding) || 0;
-
-    fundingMap.set(coin, {
-      fundingRate,
-      nextFundingRate: fundingRate, // Hyperliquid doesn't provide predicted next rate separately
-      fundingTime: Date.now(),
-      nextFundingTime: Date.now() + 3600 * 1000, // Funding settles every hour
-      settlementInterval: 1, // Hyperliquid funding is applied hourly
-      lastUpdated: Date.now(),
-    });
-  }
-
-  return fundingMap;
-}
-
-// ===== Fetch all mid-prices (lightweight) =====
-export async function fetchHyperliquidAllMids(): Promise<Record<string, string> | null> {
-  return hlPost<Record<string, string>>({ type: 'allMids' });
 }
 
 // ===== HLP (Hyperliquidity Provider) Vault Data =====

@@ -30,7 +30,6 @@ export const UNIVERSE = {
 export const API = {
   OKX_WS_PUBLIC: 'wss://ws.okx.com:8443/ws/v5/public',
   OKX_REST_BASE: 'https://www.okx.com/api/v5',
-  COINGECKO_BASE: 'https://api.coingecko.com/api/v3',
   HYPERLIQUID_REST: 'https://api.hyperliquid.xyz/info',
   HYPERLIQUID_WS: 'wss://api.hyperliquid.xyz/ws',
 } as const;
@@ -75,12 +74,10 @@ export const TIMING = {
   CACHE_MARKET_CAP: 30 * 60 * 1000,      // 30 minutes
   CACHE_SPOT_SYMBOLS: 24 * 60 * 60 * 1000, // 24 hours (spot listings change rarely; refetched every load)
   CACHE_LOGO: 7 * 24 * 60 * 60 * 1000,   // 7 days
-  CACHE_COINGECKO_PROXY: 5 * 60 * 1000,  // 5 minutes
 
   // Debounce
   RSI_CACHE_SAVE_DEBOUNCE: 2000,         // 2 seconds
   MA_FLOW_CACHE_SAVE_DEBOUNCE: 2000,     // 2 seconds
-  URL_UPDATE_DEBOUNCE: 300,              // 300ms
 } as const;
 
 // ===========================================
@@ -105,14 +102,6 @@ export const RSI = {
   STRONG: 70,
   VERY_STRONG: 80,
   OVERBOUGHT: 85,
-
-  // Candle limits for calculation
-  DAILY_CANDLE_LIMIT: 100,
-  WEEKLY_CANDLE_LIMIT: 100,
-  HOURLY_CANDLE_LIMIT: 24,
-
-  // Minimum candles for valid RSI
-  MIN_CANDLES_REQUIRED: 15,
 } as const;
 
 // ===========================================
@@ -147,20 +136,6 @@ export const WIDGET = {
 // ===========================================
 // AHR999 Indicator Zones
 // ===========================================
-export const AHR999 = {
-  BOTTOM_THRESHOLD: 0.45,
-  DCA_THRESHOLD: 1.2,
-  WAIT_THRESHOLD: 2.0,
-  TAKE_PROFIT_THRESHOLD: 4.0,
-
-  // Bitcoin genesis date for calculation
-  GENESIS_DATE: '2009-01-03',
-
-  // Power law model coefficients
-  COEFFICIENT_A: 5.84,
-  COEFFICIENT_B: 17.01,
-} as const;
-
 // Zone colors for the bar visualization
 export const AHR999_ZONE_COLORS = [
   { width: '9%', color: 'bg-green-500' },   // Bottom
@@ -183,9 +158,6 @@ export const AHR999_ZONE_LEGEND = [
 // MA Flow Configuration (Three-Line Convergence)
 // ===========================================
 export const MA_FLOW = {
-  // MA periods
-  PERIODS: [7, 30, 200] as const,
-
   // Fixed convergence threshold (percentage) — no user customization
   DEFAULT_THRESHOLD: 3,
 
@@ -210,8 +182,6 @@ export const MA_FLOW = {
 
   // Minimum candles for valid MA calculation
   MIN_CANDLES_MA7: 7,
-  MIN_CANDLES_MA30: 30,
-  MIN_CANDLES_MA200: 200,
 
   // Cache TTL
   CACHE_TTL: 15 * 60 * 1000,          // 15 minutes
@@ -224,24 +194,11 @@ export const UI = {
   // Pagination
   PAGE_SIZE: 25,
 
-  // Table tiers
-  TOP50_COUNT: 50,
-  TIER2_END: 100,
-
-  // Sparkline dimensions
-  SPARKLINE_WIDTH: 50,
-  SPARKLINE_HEIGHT: 20,
-  SPARKLINE_POINTS: 24,
-
   // Mobile breakpoint
   MOBILE_BREAKPOINT: 768,
 
   // WebSocket subscription batch size
   WS_SUBSCRIBE_BATCH_SIZE: 20,
-
-  // CoinGecko fetch pages
-  COINGECKO_PAGES: 2,
-  COINGECKO_PER_PAGE: 250,
 } as const;
 
 // ===========================================

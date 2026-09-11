@@ -45,16 +45,6 @@ export function cn(...inputs: ClassValue[]) {
 
 export const MEME_TOKENS = MEME_TOKENS_SET;
 
-export function isMemeToken(symbol: string): boolean {
-  const upperSymbol = symbol.toUpperCase();
-  if (MEME_TOKENS.has(upperSymbol)) return true;
-  const match = upperSymbol.match(/^(\d+)(.+)$/);
-  if (match) {
-    return MEME_TOKENS.has(match[2]) || MEME_TOKENS.has(upperSymbol);
-  }
-  return false;
-}
-
 // ===========================================
 // Device Detection
 // ===========================================
@@ -161,8 +151,6 @@ export function calculateRSI(closes: number[], period: number): number | null {
   const rs = avgGain / avgLoss;
   return 100 - (100 / (1 + rs));
 }
-
-export type RsiSignal = RsiSignalType;
 
 export interface RsiSignalInfo {
   signal: RsiSignalType;

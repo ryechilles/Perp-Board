@@ -15,11 +15,6 @@ interface CacheEntry<T> {
   timestamp: number;
 }
 
-interface CacheConfig {
-  key: string;
-  ttl: number; // Time to live in milliseconds
-}
-
 // Generic cache interface returned by factories
 interface CacheApi<T> {
   get(): T | null;
@@ -213,23 +208,10 @@ export const setMAFlowCache = (data: Map<string, MAFlowData>) => maFlowCache.set
 
 // Logo Cache
 export const getLogoCache = () => logoCache.get() ?? {};
-export const setLogoCache = (logos: Record<string, string>) => logoCache.set(logos);
 
 // ===========================================
 // Cache Management
 // ===========================================
-
-/**
- * Clear all cache entries
- */
-export function clearAllCache(): void {
-  if (!isBrowser()) return;
-
-  Object.values(CACHE_KEYS).forEach(key => {
-    removeCache(key);
-  });
-  console.log('[Cache] All cache cleared');
-}
 
 /**
  * Clear only data caches (keep user preferences)
@@ -249,28 +231,6 @@ export function clearDataCache(): void {
     removeCache(key);
   });
   console.log('[Cache] Data cache cleared');
-}
-
-/**
- * Get cache statistics
- */
-export function getCacheStats(): Record<string, { size: number; age: number | null }> {
-  if (!isBrowser()) return {};
-
-  const stats: Record<string, { size: number; age: number | null }> = {};
-
-  Object.entries(CACHE_KEYS).forEach(([name, key]) => {
-    const cached = localStorage.getItem(key);
-    if (cached) {
-      const entry = getCache<unknown>(key);
-      stats[name] = {
-        size: cached.length,
-        age: entry ? getCacheAge(entry) : null,
-      };
-    }
-  });
-
-  return stats;
 }
 
 // ===========================================
@@ -306,21 +266,6 @@ export function checkVersionAndClearCache(): boolean {
     console.warn('[Cache] Failed to check version:', e);
     return false;
   }
-}
-
-/**
- * Get current app version
- */
-export function getAppVersion(): string {
-  return APP_VERSION;
-}
-
-/**
- * Get stored app version
- */
-export function getStoredVersion(): string | null {
-  if (!isBrowser()) return null;
-  return localStorage.getItem(CACHE_KEYS.APP_VERSION);
 }
 
 // ===========================================

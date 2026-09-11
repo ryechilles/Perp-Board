@@ -33,7 +33,6 @@ export function useWidgetOrder(
   defaultOrder: string[]
 ): [string[], (newOrder: string[]) => void, () => void] {
   const [order, setOrderState] = useState<string[]>(defaultOrder);
-  const [isInitialized, setIsInitialized] = useState(false);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -53,7 +52,6 @@ export function useWidgetOrder(
     } catch (e) {
       console.warn('Failed to load widget order from localStorage:', e);
     }
-    setIsInitialized(true);
   }, [tabId, defaultOrder]);
 
   // Save to localStorage when order changes

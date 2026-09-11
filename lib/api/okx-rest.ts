@@ -3,32 +3,11 @@
  * Handles all REST API calls to OKX
  */
 
-import { OKXTicker, OKXInstrument, OKXFundingRate, FundingRateData, ListingData, ProcessedTicker } from '../types';
-import { processTicker } from '../utils';
+import { OKXTicker, OKXInstrument, OKXFundingRate, FundingRateData, ListingData } from '../types';
 import { API, TIMING, RATE_LIMIT } from '../constants';
 import { okxFetch } from './okx-gateway';
 
 const OKX_REST_BASE = API.OKX_REST_BASE;
-
-// Fetch all tickers via REST (fallback)
-export async function fetchTickersREST(): Promise<ProcessedTicker[]> {
-  try {
-    const response = await okxFetch(`${OKX_REST_BASE}/market/tickers?instType=SWAP`);
-    if (!response.ok) {
-      console.error(`Failed to fetch tickers: HTTP ${response.status}`);
-      return [];
-    }
-    const data = await response.json();
-
-    if (data.code === '0' && data.data) {
-      return data.data.map((t: OKXTicker) => processTicker(t));
-    }
-    return [];
-  } catch (error) {
-    console.error('Failed to fetch tickers:', error);
-    return [];
-  }
-}
 
 // Fetch spot symbols.
 // REJECTS on failure (never resolves with an empty set) so callers keep the

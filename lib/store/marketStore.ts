@@ -275,7 +275,3 @@ export class MarketStore {
     return pruned;
   }
 }
-
-export function createMarketStore(): MarketStore {
-  return new MarketStore();
-}

@@ -14,11 +14,6 @@ import { okxFetch } from './okx-gateway';
 const OKX_WS_PUBLIC = API.OKX_WS_PUBLIC;
 const OKX_REST_BASE = API.OKX_REST_BASE;
 
-/** @deprecated Use TickerUpdateCallback from '../types' */
-export type { TickerUpdateCallback };
-/** @deprecated Use StatusUpdateCallback from '../types' */
-export type StatusCallback = StatusUpdateCallback;
-
 export class OKXHybridDataManager extends BaseDataManager {
   private wsLastUpdateTime: Map<string, number> = new Map(); // Track WS update timestamps
 

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { ProcessedTicker, MAFlowData } from '@/lib/types';
-import { fetchMAFlowBatch } from '@/lib/api';
+import { fetchMAFlowBatch } from '@/lib/api/okx-ma-flow';
 import { TIMING } from '@/lib/constants';
 import { getMAFlowCache, setMAFlowCache } from '@/lib/cache';
 

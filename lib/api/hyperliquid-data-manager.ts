@@ -20,16 +20,7 @@ import { processHyperliquidTicker } from './hyperliquid-rest';
 import { API } from '../constants';
 import { BaseDataManager } from './base-data-manager';
 
-/** @deprecated Use TickerUpdateCallback from '../types' */
-export type { TickerUpdateCallback };
-/** @deprecated Use StatusUpdateCallback from '../types' */
-export type StatusCallback = StatusUpdateCallback;
-
 export class HyperliquidDataManager extends BaseDataManager {
-  // Store latest meta + contexts for WS price patching
-  private latestMeta: HyperliquidMeta | null = null;
-  private latestContexts: HyperliquidAssetCtx[] | null = null;
-
   constructor(onUpdate: TickerUpdateCallback, onStatus: StatusUpdateCallback) {
     super(onUpdate, onStatus);
   }
@@ -118,8 +109,6 @@ export class HyperliquidDataManager extends BaseDataManager {
 
       const meta = result[0] as HyperliquidMeta;
       const contexts = result[1] as HyperliquidAssetCtx[];
-      this.latestMeta = meta;
-      this.latestContexts = contexts;
 
       const universe = meta.universe;
       if (!universe || !contexts || universe.length !== contexts.length) {
@@ -167,8 +156,6 @@ export class HyperliquidDataManager extends BaseDataManager {
 
       const meta = result[0] as HyperliquidMeta;
       const contexts = result[1] as HyperliquidAssetCtx[];
-      this.latestMeta = meta;
-      this.latestContexts = contexts;
 
       const universe = meta.universe;
       if (!universe || universe.length !== contexts.length) return;

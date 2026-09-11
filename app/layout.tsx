@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
 import { Inter } from 'next/font/google';
-import { Analytics } from '@vercel/analytics/react';
 import { APP_CONFIG } from '@/lib/config';
 import { TooltipProvider } from '@/components/ui';
 import './globals.css';
@@ -74,7 +73,6 @@ export default function RootLayout({
         <TooltipProvider>
           {children}
         </TooltipProvider>
-        <Analytics />
       </body>
     </html>
   );

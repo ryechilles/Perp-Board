@@ -53,28 +53,6 @@ export interface HyperliquidRawTicker {
   maxLeverage: number;
 }
 
-// Hyperliquid spot metadata (from spotMeta endpoint)
-export interface HyperliquidSpotToken {
-  name: string;
-  szDecimals: number;
-  weiDecimals: number;
-  index: number;
-  tokenId: string;
-  isCanonical?: boolean;
-}
-
-export interface HyperliquidSpotPair {
-  name: string;           // e.g. "PURR/USDC"
-  tokens: number[];       // token indices
-  index: number;
-  isCanonical: boolean;
-}
-
-export interface HyperliquidSpotMeta {
-  tokens: HyperliquidSpotToken[];
-  universe: HyperliquidSpotPair[];
-}
-
 // Hyperliquid candle data
 export interface HyperliquidCandle {
   t: number;  // open time ms
@@ -223,16 +201,6 @@ export type ColumnKey =
 // Column visibility settings — auto-synced with ColumnKey
 export type ColumnVisibility = Record<ColumnKey, boolean>;
 
-// Column order configuration
-export interface ColumnConfig {
-  key: ColumnKey;
-  label: string;
-  width: string;
-  align: 'left' | 'right' | 'center';
-  fixed?: boolean; // Fixed columns cannot be reordered
-  sortable?: boolean;
-}
-
 // RSI Signal type (9 states)
 export type RsiSignalType =
   | 'extreme-oversold'
@@ -264,14 +232,6 @@ export interface Filters {
 export interface SortConfig {
   column: string;
   direction: 'asc' | 'desc';
-}
-
-// WebSocket message types
-export interface WSTickerUpdate {
-  instId: string;
-  last: string;
-  sodUtc8: string;
-  ts: string;
 }
 
 // ===========================================
@@ -315,26 +275,6 @@ export interface MAFlowData {
   convergenceWeekly: number | null;
   convergenceMonthly: number | null;
   lastUpdated: number;
-}
-
-// Store state
-export interface AppState {
-  tickers: Map<string, ProcessedTicker>;
-  rsiData: Map<string, RSIData>;
-  fundingRateData: Map<string, FundingRateData>;
-  listingData: Map<string, ListingData>;
-  marketCapData: Map<string, MarketCapData>;
-  spotSymbols: Set<string>;
-  favorites: string[];
-  columns: ColumnVisibility;
-  columnOrder: ColumnKey[];
-  filters: Filters;
-  sort: SortConfig;
-  view: 'market' | 'favorites';
-  status: 'connecting' | 'live' | 'error';
-  lastUpdate: Date | null;
-  rsiProgress: string;
-  maFlowData: Map<string, MAFlowData>;
 }
 
 // ===========================================

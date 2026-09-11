@@ -9,7 +9,7 @@
  */
 
 import { RSIData, TDState } from '../types';
-import { calculateRSI, calculate7DChange, calculateTDState, Mutex, RateLimiter } from '../utils';
+import { calculateRSI, calculate7DChange, calculateTDState, Mutex } from '../utils';
 import { TIMING } from '../constants';
 
 /**
