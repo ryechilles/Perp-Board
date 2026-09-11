@@ -63,13 +63,19 @@ export function TableHeader({
       {/* No opaque row background: translucent th cells (.thead-material) must see through to scrolling content */}
       <tr>
         {visibleColumns.map((key) => {
+          // "Token" header spans the logo + symbol cells so it lines up with the
+          // avatar (the left edge of the token column), not with the name text.
+          const mergeLogo = columns.logo && columns.symbol;
+          if (key === 'logo' && mergeLogo) return null;
+          const spansLogo = key === 'symbol' && mergeLogo;
+
           const def = COLUMN_DEFINITIONS[key];
           const sortable = def.sortable !== false;
           const isActive = sort.column === key;
           const isFixed = isFixedColumn(key);
           const isLastFixed = isLastFixedColumn(key);
-          const stickyLeft = getStickyLeftOffset(key);
-          const fixedWidth = fixedWidths[key];
+          const stickyLeft = getStickyLeftOffset(spansLogo ? 'logo' : key);
+          const fixedWidth = spansLogo ? fixedWidths.logo + fixedWidths.symbol : fixedWidths[key];
           const isDragging = draggedColumn === key;
           const isDragOver = dragOverColumn === key;
 
@@ -102,6 +108,7 @@ export function TableHeader({
           return (
             <th
               key={key}
+              colSpan={spansLogo ? 2 : undefined}
               draggable={!isFixed}
               aria-sort={
                 isActive
