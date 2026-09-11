@@ -85,7 +85,8 @@ export function TableHeader({
           const padClass =
             key === 'favorite' ? 'pl-3.5 pr-0'
             : key === 'rank' ? 'px-1'
-            : spansLogo ? 'pl-2 pr-3'
+            : spansLogo ? 'pl-2 pr-2'
+            : key === 'price' ? 'pl-2 pr-3'
             : 'px-3';
 
           const stickyStyle: React.CSSProperties | undefined = isFixed
@@ -174,6 +175,7 @@ export function TableHeader({
             </th>
           );
         })}
+        <th aria-hidden="true" className="thead-material hairline-b p-0" />
       </tr>
     </thead>
   );

@@ -42,13 +42,13 @@ function RsiValue({ value }: { value: number | null | undefined }) {
 function FundingAprValue({ rate, interval }: { rate: number | undefined | null; interval: number | undefined | null }) {
   if (rate == null) return <span className="text-faint">—</span>;
   const apr = rate * ((365 * 24) / (interval || FUNDING.DEFAULT_INTERVAL_HOURS)) * 100;
-  const w = Math.min(Math.abs(apr) / 15, 1) * 18;
+  const w = Math.min(Math.abs(apr) / 15, 1) * 14;
   return (
-    <span className="inline-flex items-center gap-2.5">
+    <span className="inline-flex items-center gap-2">
       <span className={cn('font-medium tabular-nums', getFundingAprClass(rate))}>
         {formatFundingApr(rate, interval)}
       </span>
-      <span className="relative w-9 h-3 flex-shrink-0 before:absolute before:left-1/2 before:inset-y-0 before:w-px before:bg-separator" aria-hidden="true">
+      <span className="relative w-7 h-3 flex-shrink-0 before:absolute before:left-1/2 before:inset-y-0 before:w-px before:bg-faint/40" aria-hidden="true">
         {w > 0 && (
           <span
             className={cn('absolute top-[3px] h-1.5 rounded-[2px]', apr >= 0 ? 'bg-up' : 'bg-down')}
@@ -181,7 +181,7 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
 
       case 'symbol':
         return (
-          <td key={key} className={cn(baseClass, 'pl-0 text-[0.84rem] font-semibold tracking-[-0.01em]')} style={getCellStyle(key)}>
+          <td key={key} className={cn(baseClass, 'pl-0 pr-2 text-[0.84rem] font-semibold tracking-[-0.01em]')} style={getCellStyle(key)}>
             <div className="truncate" translate="no">{base}</div>
           </td>
         );
@@ -195,7 +195,7 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
 
       case 'price':
         return (
-          <td key={key} className={cn(baseClass, 'text-[0.84rem] font-medium tabular-nums')}>
+          <td key={key} className={cn(baseClass, 'pl-2 text-[0.84rem] font-medium tabular-nums')}>
             {formatPrice(ticker.priceNum)}
           </td>
         );
@@ -327,6 +327,7 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
       className="data-row group"
     >
       {visibleColumns.map(renderCell)}
+      <td aria-hidden="true" className="hairline-b p-0" />
     </tr>
   );
 }));

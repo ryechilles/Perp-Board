@@ -5,7 +5,7 @@ import { SmallWidget, TokenList, TokenListRow, SectionLabel } from '@/components
 import { TooltipList } from '@/components/ui';
 import { ProcessedTicker, FundingRateData, MarketCapData, TokenWithApr } from '@/lib/types';
 import { formatPrice } from '@/lib/utils';
-import { calculateFundingApr } from '@/lib/widget-utils';
+import { calculateFundingApr, widgetUniverseNote } from '@/lib/widget-utils';
 import { FUNDING, WIDGET } from '@/lib/constants';
 
 interface FundingKillerProps {
@@ -29,9 +29,6 @@ export function FundingKiller({
     const tokensWithApr: TokenWithApr[] = [];
 
     tickers.forEach((ticker, instId) => {
-      // Exclude specific symbols
-      if ((WIDGET.EXCLUDE_SYMBOLS as readonly string[]).includes(ticker.baseSymbol)) return;
-
       const fr = fundingRateData.get(instId);
       if (!fr) return;
 
@@ -100,12 +97,12 @@ export function FundingKiller({
   return (
     <SmallWidget
       title="Funding Killer"
-      subtitle={`Annualized funding beyond ±${aprThreshold}% · excl. BTC`}
+      subtitle={`Annualized funding beyond ±${aprThreshold}%`}
       padded={false}
       loading={isLoading}
       tooltip={
         <TooltipList items={[
-          `All ${exchangeLabel} perp tokens (excludes BTC)`,
+          widgetUniverseNote(exchangeLabel),
           <><span className="text-up-ink">Long Killer</span>: APR &gt; {aprThreshold}% (expensive to hold longs)</>,
           <><span className="text-down-ink">Short Killer</span>: APR &lt; -{aprThreshold}% (expensive to hold shorts)</>,
           "APR = Funding Rate × (365 × 24 / interval)",

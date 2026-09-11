@@ -6,6 +6,7 @@ import { TooltipList } from '@/components/ui';
 import { ProcessedTicker, MAFlowData, MarketCapData, MAValues, ListingData } from '@/lib/types';
 import { formatPrice } from '@/lib/utils';
 import { MA_FLOW } from '@/lib/constants';
+import { widgetUniverseNote } from '@/lib/widget-utils';
 
 // Minimum listing age in days to be included in MA Flow
 const MIN_LISTING_DAYS = 180;
@@ -153,7 +154,8 @@ export function MAFlowWidget({
             `Threshold: spread ≤ ${THRESHOLD}%`,
             'Spread % = (max MA - min MA) / avg(MAs) × 100',
             'Lower spread = tighter convergence = potential breakout',
-            `OKX Perp Top ${MA_FLOW.TOKEN_COUNT} by Market Cap (excl. USDC, listed ≥ ${MIN_LISTING_DAYS}d)`,
+            widgetUniverseNote('OKX'),
+            `Listed ≥ ${MIN_LISTING_DAYS} days (MA200 needs the history)`,
             <>
               <span className="text-up-ink font-semibold">{'≤ 0.5%'}</span>{' extreme, '}
               <span className="text-up-ink">{'≤ 1%'}</span>{' tight, '}

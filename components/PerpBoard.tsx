@@ -22,7 +22,7 @@ const TAB_WIDGET_DEFS: Record<string, TabWidgetDef> = {
     createWidgets: ({ store, handleTokenClick, handleGroupClick }: WidgetContext) => ({
       maFlow: (
         <MAFlowWidget
-          tickers={store.universeTickers}
+          tickers={store.widgetTickers}
           maFlowData={store.maFlowData}
           marketCapData={store.marketCapData}
           listingData={store.listingData}

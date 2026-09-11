@@ -5,6 +5,7 @@ import { SmallWidget } from '@/components/widgets/base';
 import { TooltipList } from '@/components/ui';
 import { ProcessedTicker, FundingRateData, MarketCapData } from '@/lib/types';
 import { UNIVERSE } from '@/lib/constants';
+import { widgetUniverseNote } from '@/lib/widget-utils';
 
 interface FundingMarketProps {
   tickers: Map<string, ProcessedTicker>;
@@ -89,7 +90,7 @@ export function FundingMarket({
       loading={isLoading}
       tooltip={
         <TooltipList items={[
-          `${exchangeLabel} perp top ${UNIVERSE.MAX_CRYPTO} by market cap`,
+          widgetUniverseNote(exchangeLabel),
           <><span className="text-up-ink">Positive</span>: rate &gt; 0 (longs pay shorts)</>,
           <><span className="text-down-ink">Negative</span>: rate &lt; 0 (shorts pay longs)</>,
           "USDC/USDT pairs always have 0 funding rate",

@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { SmallWidget } from '@/components/widgets/base';
 import { TooltipList, TimeFrameSelector } from '@/components/ui';
 import { ProcessedTicker, RSIData, MarketCapData } from '@/lib/types';
-import { TimeFrame, TokenWithChange, formatChange } from '@/lib/widget-utils';
+import { TimeFrame, TokenWithChange, formatChange, widgetUniverseNote } from '@/lib/widget-utils';
 
 interface AltcoinVsBTCProps {
   tickers: Map<string, ProcessedTicker>;
@@ -115,8 +115,9 @@ export function AltcoinVsBTC({ tickers, rsiData, marketCapData, onTokenClick, on
       className="group"
       tooltip={
         <TooltipList items={[
+          widgetUniverseNote(exchangeLabel),
           "Compares altcoin avg change vs BTC",
-          `Tiers: ${exchangeLabel} perp top 10 / 20 / 50 by market cap`,
+          "Tiers: top 10 / 20 / 50 altcoins by market cap",
           "Ratio shows relative strength",
         ]} />
       }

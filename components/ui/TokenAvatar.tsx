@@ -82,7 +82,7 @@ export function TokenAvatar({ symbol, logo, size = 'md', className }: TokenAvata
         width={sizePx[size]}
         height={sizePx[size]}
         loading="lazy"
-        className={cn('rounded-full bg-muted', sizeClasses[size], className)}
+        className={cn('rounded-full bg-muted flex-shrink-0 max-w-none object-cover', sizeClasses[size], className)}
         onError={() => setIdx((i) => i + 1)}
       />
     );
@@ -91,7 +91,7 @@ export function TokenAvatar({ symbol, logo, size = 'md', className }: TokenAvata
   return (
     <div
       className={cn(
-        'rounded-full bg-muted flex items-center justify-center text-muted-foreground font-medium',
+        'rounded-full bg-muted flex-shrink-0 flex items-center justify-center text-muted-foreground font-medium',
         sizeClasses[size],
         className
       )}

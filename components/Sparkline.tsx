@@ -145,9 +145,9 @@ export function SparklineChange({ change, sparklineData }: SparklineChangeProps)
     return <span className="text-faint">—</span>;
   }
   return (
-    <span className="inline-flex items-center gap-2.5">
+    <span className="inline-flex items-center gap-2">
       <Sparkline data={sparklineData} change={change} />
-      <span className={`min-w-[52px] text-right text-[0.78rem] font-medium tabular-nums ${change >= 0 ? 'text-up-ink' : 'text-down-ink'}`}>
+      <span className={`min-w-[48px] text-right text-[0.78rem] font-medium tabular-nums ${change >= 0 ? 'text-up-ink' : 'text-down-ink'}`}>
         {formatSignedPercent(change)}
       </span>
     </span>

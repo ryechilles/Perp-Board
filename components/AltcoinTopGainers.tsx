@@ -5,7 +5,7 @@ import { SmallWidget, TokenList, TokenListRow } from '@/components/widgets/base'
 import { TooltipList, TimeFrameSelector, ChangePill, Skeleton } from '@/components/ui';
 import { ProcessedTicker, RSIData, MarketCapData } from '@/lib/types';
 import { formatPrice } from '@/lib/utils';
-import { TimeFrame, TokenWithChange, getChangeByTimeFrame } from '@/lib/widget-utils';
+import { TimeFrame, TokenWithChange, getChangeByTimeFrame, widgetUniverseNote } from '@/lib/widget-utils';
 import { UNIVERSE } from '@/lib/constants';
 
 interface AltcoinTopGainersProps {
@@ -83,8 +83,8 @@ export function AltcoinTopGainers({ tickers, rsiData, marketCapData, onTokenClic
       }
       tooltip={
         <TooltipList items={[
-          `Top 5 gainers from ${exchangeLabel} perp top ${UNIVERSE.MAX_CRYPTO}`,
-          "Excludes BTC",
+          widgetUniverseNote(exchangeLabel),
+          "Top 5 gainers, excluding BTC",
           "Click token to filter in table",
         ]} />
       }

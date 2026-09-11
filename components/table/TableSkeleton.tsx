@@ -45,12 +45,13 @@ export function TableRowSkeleton({ visibleColumns, getColStyle }: TableRowSkelet
       {visibleColumns.map((col) => (
         <td
           key={col}
-          className={`h-12 align-middle hairline-b ${col === 'favorite' ? 'pl-3.5 pr-0' : col === 'rank' ? 'px-1' : col === 'logo' ? 'pl-2 pr-2.5' : col === 'symbol' ? 'pl-0 pr-3' : 'px-3'}`}
+          className={`h-12 align-middle hairline-b ${col === 'favorite' ? 'pl-3.5 pr-0' : col === 'rank' ? 'px-1' : col === 'logo' ? 'pl-2 pr-2.5' : col === 'symbol' ? 'pl-0 pr-2' : col === 'price' ? 'pl-2 pr-3' : 'px-3'}`}
           style={getColStyle(col)}
         >
           <CellSkeleton col={col} />
         </td>
       ))}
+      <td aria-hidden="true" className="hairline-b p-0" />
     </tr>
   );
 }

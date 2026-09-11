@@ -19,8 +19,8 @@ const FIXED_COLUMNS: ColumnKey[] = ['favorite', 'rank', 'logo', 'symbol'];
 const FIXED_WIDTHS: Record<string, number> = {
   favorite: 36,
   rank: 34,
-  logo: 38,
-  symbol: 92,
+  logo: 42,   // 24px avatar + 8px/10px padding — narrower squeezes the logo
+  symbol: 70, // fits 6-char symbols; longer ones truncate
 };
 
 const ROW_HEIGHT = 48;
@@ -390,6 +390,9 @@ export function ExchangeBoard({
                     {visibleColumns.map((key) => (
                       <col key={key} style={getColStyle(key)} />
                     ))}
+                    {/* Spacer: soaks up spare width on wide screens so the data
+                        columns stay packed instead of spreading apart */}
+                    <col />
                   </colgroup>
 
                   <TableHeader
@@ -422,7 +425,7 @@ export function ExchangeBoard({
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={visibleColumns.length}>
+                          <td colSpan={visibleColumns.length + 1}>
                             <div className="flex flex-col items-center justify-center gap-1 py-20 text-center">
                               <span className="text-[0.9375rem] font-semibold">No matching tokens</span>
                               <span className="text-[0.8125rem] text-muted-foreground">Try another search or clear the filters.</span>
@@ -434,7 +437,7 @@ export function ExchangeBoard({
                       <>
                         {paddingTop > 0 && (
                           <tr aria-hidden>
-                            <td colSpan={visibleColumns.length} style={{ height: paddingTop, padding: 0, border: 0 }} />
+                            <td colSpan={visibleColumns.length + 1} style={{ height: paddingTop, padding: 0, border: 0 }} />
                           </tr>
                         )}
                         {virtualRows.map(({ index }) => {
@@ -462,7 +465,7 @@ export function ExchangeBoard({
                         })}
                         {paddingBottom > 0 && (
                           <tr aria-hidden>
-                            <td colSpan={visibleColumns.length} style={{ height: paddingBottom, padding: 0, border: 0 }} />
+                            <td colSpan={visibleColumns.length + 1} style={{ height: paddingBottom, padding: 0, border: 0 }} />
                           </tr>
                         )}
                       </>

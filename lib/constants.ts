@@ -20,8 +20,10 @@ export const APP_VERSION = pkg.version;
 export const UNIVERSE = {
   MAX_CRYPTO: 50,
   // Symbols removed from the universe entirely (before the rank cut, so they
-  // don't occupy a top-N slot).
-  EXCLUDED_SYMBOLS: new Set(['USDC']),
+  // don't occupy a top-N slot). Stablecoins have no price action to track —
+  // only USDC is an OKX perp today; the rest are here so a new listing can't
+  // slip in.
+  EXCLUDED_SYMBOLS: new Set(['USDC', 'USDT', 'DAI', 'FDUSD', 'USDE', 'PYUSD', 'TUSD', 'RLUSD', 'USD1', 'USDS']),
 };
 
 // ===========================================
@@ -123,11 +125,8 @@ export const FUNDING = {
 // Widget Configuration
 // ===========================================
 export const WIDGET = {
-  // Tokens to exclude from certain widgets
-  EXCLUDE_SYMBOLS: ['BTC'],
-
-  // Top N selection for widgets
-  TOP_TOKENS_COUNT: 50,      // RSI oversold/overbought widgets
+  // Top N selection for widgets — follows the universe cap
+  TOP_TOKENS_COUNT: UNIVERSE.MAX_CRYPTO,
 
   // Display limits
   DISPLAY_LIMIT: 5,          // Max items to show in small widgets

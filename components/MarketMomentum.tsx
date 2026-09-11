@@ -4,6 +4,7 @@ import { SmallWidget } from '@/components/widgets/base';
 import { TooltipList, Skeleton, ZoneGauge } from '@/components/ui';
 import { cn, getRsiAvg, getRsiSignal, getRsiTextClass } from '@/lib/utils';
 import { RSI, UNIVERSE } from '@/lib/constants';
+import { widgetUniverseNote } from '@/lib/widget-utils';
 
 interface MarketMomentumProps {
   avgRsi7: number | null;
@@ -44,7 +45,7 @@ export function MarketMomentum({ avgRsi7, avgRsi14, exchangeLabel = 'OKX' }: Mar
       }
       tooltip={
         <TooltipList items={[
-          `${exchangeLabel} perp top ${UNIVERSE.MAX_CRYPTO} by market cap`,
+          widgetUniverseNote(exchangeLabel),
           "Market RSI = (avg D-RSI7 + avg D-RSI14) / 2",
           "≤20 Extreme oversold · ≤25 Oversold · ≤30 Very weak · ≤40 Weak",
           "≤60 Neutral · ≤70 Strong · ≤80 Very strong · ≤85 Overbought · >85 Extreme overbought",

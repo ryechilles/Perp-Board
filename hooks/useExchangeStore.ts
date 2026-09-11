@@ -5,6 +5,7 @@ import { ProcessedTicker, ExchangeAdapter } from '@/lib/types';
 import { filterAndSort, selectUniverse, FilterContext } from '@/lib/filters';
 import { calculateRsiAverages, calculateTopMovers, calculateQuickFilterCounts } from '@/lib/store-utils';
 import { getCacheForExchange } from '@/lib/cache';
+import { STOCK_SYMBOLS, UNIVERSE } from '@/lib/constants';
 import { MarketStore } from '@/lib/store/marketStore';
 import { ExchangeController } from '@/lib/controller/ExchangeController';
 
@@ -63,7 +64,12 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
   const getMAFlowInstIds = useCallback((tickerMap: Map<string, ProcessedTicker>) => {
     if (!adapter.features.maFlow) return [];
     return Array.from(tickerMap.values())
-      .filter(t => t.instId.includes('-USDT-') && t.baseSymbol !== 'USDC' && marketCapData.has(t.baseSymbol))
+      .filter(t =>
+        t.instId.includes('-USDT-') &&
+        !UNIVERSE.EXCLUDED_SYMBOLS.has(t.baseSymbol) &&
+        !STOCK_SYMBOLS.has(t.baseSymbol) &&
+        marketCapData.has(t.baseSymbol)
+      )
       .sort((a, b) => {
         const rankA = marketCapData.get(a.baseSymbol)!.rank;
         const rankB = marketCapData.get(b.baseSymbol)!.rank;
@@ -118,6 +124,19 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
     const capped = selectUniverse(preFilter(Array.from(tickers.values())), marketCapData, spot);
     return new Map(capped.map(t => [t.instId, t]));
   }, [tickers, marketCapData, preFilter, spotSymbols, adapter]);
+
+  // Sidebar widget universe: the crypto part of the active universe — top-N by
+  // market cap, stablecoins removed, and (OKX) only tokens with a spot listing
+  // (all applied by selectUniverse). Stock perps stay in the table but are
+  // left out of every widget: they have no market-cap rank and would skew
+  // market-wide stats like Market RSI and funding sentiment.
+  const widgetTickers = useMemo(() => {
+    const crypto = new Map<string, ProcessedTicker>();
+    universeTickers.forEach((t, id) => {
+      if (!STOCK_SYMBOLS.has(t.baseSymbol)) crypto.set(id, t);
+    });
+    return crypto;
+  }, [universeTickers]);
 
   // P3 decouple: does the current sort/filter actually depend on RSI data?
   // If not (e.g. the default rank sort with no RSI filter), an RSI update does
@@ -184,8 +203,8 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
 
   // RSI averages (memoized) — capped universe only
   const rsiAverages = useMemo(() => {
-    return calculateRsiAverages(universeTickers, marketCapData, rsiData);
-  }, [universeTickers, marketCapData, rsiData]);
+    return calculateRsiAverages(widgetTickers, marketCapData, rsiData);
+  }, [widgetTickers, marketCapData, rsiData]);
 
   const getRsiAverages = useCallback(() => rsiAverages, [rsiAverages]);
 
@@ -220,6 +239,7 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
     // Data
     tickers,
     universeTickers,
+    widgetTickers,
     rsiData,
     fundingRateData,
     listingData,

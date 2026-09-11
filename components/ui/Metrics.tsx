@@ -26,7 +26,7 @@ export function RsiMeter({ value, className }: { value: number; className?: stri
 export function RsiReading({ value, title }: { value: number | null | undefined; title?: string }) {
   if (value == null) return <span className="text-faint">—</span>;
   return (
-    <span className="inline-flex items-center gap-2.5" title={title}>
+    <span className="inline-flex items-center gap-2" title={title}>
       <span className={cn('min-w-[22px] text-right text-[0.78rem] font-semibold tabular-nums', getRsiTextClass(value))}>
         {value.toFixed(0)}
       </span>

@@ -5,7 +5,7 @@ import { SmallWidget, TokenList, TokenListRow, EmptyState } from '@/components/w
 import { TooltipList, Skeleton, RsiReading } from '@/components/ui';
 import { ProcessedTicker, RSIData, MarketCapData } from '@/lib/types';
 import { cn, formatPrice } from '@/lib/utils';
-import { getTokensByRsiThreshold } from '@/lib/widget-utils';
+import { getTokensByRsiThreshold, widgetUniverseNote } from '@/lib/widget-utils';
 import { RSI, WIDGET } from '@/lib/constants';
 
 type RsiThresholdMode = 'oversold' | 'overbought';
@@ -84,7 +84,7 @@ export function RsiThresholdWidget({
       }
       tooltip={
         <TooltipList items={[
-          `Filters ${exchangeLabel} perp top ${WIDGET.TOP_TOKENS_COUNT} by market cap`,
+          widgetUniverseNote(exchangeLabel),
           "Avg RSI = (RSI7 + RSI14 + W-RSI7 + W-RSI14) / 4",
           `Shows tokens with Avg RSI ${config.comparator} ${config.threshold}`,
           config.tooltipHint,

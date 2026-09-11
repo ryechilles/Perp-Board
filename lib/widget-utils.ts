@@ -4,7 +4,7 @@
  */
 
 import { ProcessedTicker, RSIData, MarketCapData, TokenWithRsi } from './types';
-import { RSI, FUNDING, WIDGET } from './constants';
+import { RSI, FUNDING, WIDGET, UNIVERSE } from './constants';
 
 // ===========================================
 // TradingView Script Loader
@@ -120,6 +120,15 @@ export function calculateFundingApr(
  * @param topN - Number of top tokens by market cap to consider (default: WIDGET.TOP_TOKENS_COUNT)
  * @param displayLimit - Number of results to return (default: WIDGET.DISPLAY_LIMIT)
  */
+/**
+ * One-line description of the sidebar widget universe (see widgetTickers in
+ * useExchangeStore), for widget tooltips.
+ */
+export function widgetUniverseNote(exchangeLabel: string): string {
+  const spot = exchangeLabel === 'OKX' ? ', with a spot listing' : '';
+  return `Top ${UNIVERSE.MAX_CRYPTO} crypto by market cap on ${exchangeLabel}${spot} — excludes stablecoins and stock perps`;
+}
+
 export function getTokensByRsiThreshold(
   tickers: Map<string, ProcessedTicker>,
   rsiData: Map<string, RSIData>,
@@ -132,9 +141,6 @@ export function getTokensByRsiThreshold(
 
   // Collect all tokens with market cap and RSI data
   tickers.forEach((ticker) => {
-    // Exclude specific symbols (e.g., BTC)
-    if ((WIDGET.EXCLUDE_SYMBOLS as readonly string[]).includes(ticker.baseSymbol)) return;
-
     const mc = marketCapData.get(ticker.baseSymbol);
     const rsi = rsiData.get(ticker.instId);
 
