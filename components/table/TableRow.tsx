@@ -38,21 +38,27 @@ function RsiValue({ value }: { value: number | null | undefined }) {
   return <span className={cn('font-semibold tabular-nums', getRsiTextClass(value))}>{value.toFixed(1)}</span>;
 }
 
-/** Annualized funding with a tiny diverging bar (center = 0, full = ±15%). */
+/**
+ * Annualized funding over a diverging bar: center = 0, sqrt scale capped at
+ * ±60% so small rates stay visible and large ones stay distinguishable.
+ */
 function FundingAprValue({ rate, interval }: { rate: number | undefined | null; interval: number | undefined | null }) {
   if (rate == null) return <span className="text-faint">—</span>;
   const apr = rate * ((365 * 24) / (interval || FUNDING.DEFAULT_INTERVAL_HOURS)) * 100;
-  const w = Math.min(Math.abs(apr) / 15, 1) * 14;
+  const w = Math.sqrt(Math.min(Math.abs(apr), 60) / 60) * 28;
   return (
-    <span className="inline-flex items-center gap-2">
+    <span className="inline-grid justify-items-end gap-[5px] leading-[1.15]">
       <span className={cn('font-medium tabular-nums', getFundingAprClass(rate))}>
         {formatFundingApr(rate, interval)}
       </span>
-      <span className="relative w-7 h-3 flex-shrink-0 before:absolute before:left-1/2 before:inset-y-0 before:w-px before:bg-faint/40" aria-hidden="true">
+      <span
+        className="relative w-14 h-[3px] rounded-full bg-fill after:absolute after:left-1/2 after:-inset-y-0.5 after:w-px after:-translate-x-1/2 after:bg-foreground/30"
+        aria-hidden="true"
+      >
         {w > 0 && (
           <span
-            className={cn('absolute top-[3px] h-1.5 rounded-[2px]', apr >= 0 ? 'bg-up' : 'bg-down')}
-            style={apr >= 0 ? { left: '50%', width: w } : { right: '50%', width: w }}
+            className={cn('absolute inset-y-0', apr >= 0 ? 'left-1/2 rounded-r-full bg-up' : 'right-1/2 rounded-l-full bg-down')}
+            style={{ width: w }}
           />
         )}
       </span>

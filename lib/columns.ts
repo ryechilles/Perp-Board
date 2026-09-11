@@ -74,8 +74,8 @@ export function formatFundingApr(rate: number | undefined | null, intervalHours:
   const interval = intervalHours || FUNDING.DEFAULT_INTERVAL_HOURS;
   const periodsPerYear = (365 * 24) / interval;
   const apr = rate * periodsPerYear * 100;
-  const sign = apr >= 0 ? '+' : '';
-  return `${sign}${apr.toFixed(1)}%`;
+  const sign = apr >= 0 ? '+' : '−';
+  return `${sign}${Math.abs(apr).toFixed(1)}%`;
 }
 
 // Get funding APR color class
