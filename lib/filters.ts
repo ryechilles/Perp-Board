@@ -321,42 +321,6 @@ export function applyMarketCapFilter(
 }
 
 /**
- * Apply listing age filter
- * Ages: '<30d', '<60d', '<90d', '<180d'
- * Skipped if listingData is not provided
- */
-export function applyListAgeFilter(
-  data: ProcessedTicker[],
-  listAgeFilter: string | undefined,
-  listingData?: Map<string, ListingData>
-): ProcessedTicker[] {
-  if (!listAgeFilter || !listingData) return data;
-
-  const now = Date.now();
-  const oneDay = 24 * 60 * 60 * 1000;
-
-  return data.filter(t => {
-    const listTime = listingData.get(t.instId)?.listTime;
-    if (!listTime) return false;
-
-    const age = now - listTime;
-
-    switch (listAgeFilter) {
-      case '<30d':
-        return age <= 30 * oneDay;
-      case '<60d':
-        return age <= 60 * oneDay;
-      case '<90d':
-        return age <= 90 * oneDay;
-      case '<180d':
-        return age <= 180 * oneDay;
-      default:
-        return true;
-    }
-  });
-}
-
-/**
  * Apply meme token filter
  */
 export function applyMemeFilter(
@@ -585,7 +549,6 @@ export function filterAndSort(
   filtered = applyRsiFilters(filtered, filters, ctx.rsiData);
   filtered = applyFundingFilter(filtered, filters.fundingRate, ctx.fundingRateData);
   filtered = applyMarketCapFilter(filtered, filters.marketCapMin, ctx.marketCapData);
-  filtered = applyListAgeFilter(filtered, filters.listAge, ctx.listingData);
   filtered = applyMemeFilter(filtered, filters.isMeme, ctx.marketCapData);
   filtered = applyDRsiSignalFilter(filtered, filters.dRsiSignal, ctx.rsiData);
   filtered = applyWRsiSignalFilter(filtered, filters.wRsiSignal, ctx.rsiData);

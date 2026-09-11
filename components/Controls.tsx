@@ -10,7 +10,7 @@ import { RsiFilter } from './RsiFilter';
 import { PillButtonGroup, PillButtonOption, Button } from '@/components/ui';
 
 // Quick filter types
-type QuickFilter = 'all' | 'crypto' | 'stock' | 'top25' | 'meme' | 'newListed' | 'overbought' | 'oversold';
+type QuickFilter = 'all' | 'crypto' | 'stock' | 'top25' | 'meme' | 'overbought' | 'oversold';
 
 interface ControlsProps {
   columns: ColumnVisibility;
@@ -126,7 +126,6 @@ export function Controls({
   const getActiveQuickFilter = (): QuickFilter => {
     if (filters.rank === '1-25' && !filters.rsi7 && !filters.rsi14 && !filters.isMeme) return 'top25';
     if (filters.isMeme === 'yes' && !filters.rsi7 && !filters.rsi14) return 'meme';
-    if (filters.listAge === '<180d' && !filters.rsi7 && !filters.rsi14) return 'newListed';
     if (filters.rsi7 === '>75' && filters.rsi14 === '>75') return 'overbought';
     if (filters.rsi7 === '<25' && filters.rsi14 === '<25') return 'oversold';
     return 'all';
@@ -151,12 +150,6 @@ export function Controls({
       }
       case 'meme': {
         const f = { isMeme: 'yes' as const, ...(currentCategory ? { assetCategory: currentCategory } : {}) };
-        onFiltersChange(f);
-        setTempFilters(f);
-        break;
-      }
-      case 'newListed': {
-        const f = { listAge: '<180d' as const, ...(currentCategory ? { assetCategory: currentCategory } : {}) };
         onFiltersChange(f);
         setTempFilters(f);
         break;
@@ -305,14 +298,6 @@ export function Controls({
       activeColor: 'text-orange-500',
       tooltip: 'Meme Tokens Only'
     },
-    // Only show New Listed for exchanges that have listing date data
-    ...(exchange !== 'hyperliquid' ? [{
-      value: 'newListed' as QuickFilter,
-      label: '🆕 New Listed',
-      activeColor: 'text-blue-500',
-      hiddenOnMobile: true,
-      tooltip: 'Listed <180d'
-    }] : []),
   ], [exchangeLabel, exchange]);
 
   // RSI filter options - using PillButtonGroup template
@@ -700,25 +685,6 @@ export function Controls({
                   size="sm"
                 />
               </div>
-
-              {/* Listing Age - only for exchanges with listing date data */}
-              {exchange !== 'hyperliquid' && (
-                <div>
-                  <div className="text-[0.6875rem] text-muted-foreground font-medium mb-2">Listing Age</div>
-                  <PillButtonGroup
-                    options={[
-                      { value: '<30d', label: '<30d' },
-                      { value: '<60d', label: '<60d' },
-                      { value: '<90d', label: '<90d' },
-                      { value: '<180d', label: '<180d' },
-                    ]}
-                    value={filters.listAge || ''}
-                    onChange={(v) => onFiltersChange({ ...filters, listAge: v || undefined })}
-                    allowDeselect
-                    size="sm"
-                  />
-                </div>
-              )}
 
             </div>
           )}

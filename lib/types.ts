@@ -254,7 +254,6 @@ export interface Filters {
   rsiW7?: string;   // Weekly RSI7 filter
   rsiW14?: string;  // Weekly RSI14 filter
   fundingRate?: string;
-  listAge?: string;  // Listing age filter (e.g., '>1y', '<30d')
   isMeme?: string;   // Meme token filter
   dRsiSignal?: RsiSignalType[];  // D-RSI Avg Signal filter (multi-select)
   wRsiSignal?: RsiSignalType[];  // W-RSI Avg Signal filter (multi-select)

@@ -114,21 +114,6 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
     };
   };
 
-  // Calculate listing age label
-  const getListingAgeLabel = (): { label: string; isNew: boolean } | null => {
-    if (!listingData?.listTime) return null;
-    const now = Date.now();
-    const ageMs = now - listingData.listTime;
-    const ageDays = ageMs / (24 * 60 * 60 * 1000);
-    if (ageDays <= 30) return { label: 'Listed <30d', isNew: true };
-    if (ageDays <= 60) return { label: 'Listed <60d', isNew: false };
-    if (ageDays <= 90) return { label: 'Listed <90d', isNew: false };
-    if (ageDays <= 180) return { label: 'Listed <180d', isNew: false };
-    return null;
-  };
-
-  const listingAgeInfo = getListingAgeLabel();
-
   const renderCell = (key: ColumnKey) => {
     const def = COLUMN_DEFINITIONS[key];
     const isFixed = isFixedColumn(key);
@@ -177,17 +162,8 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
       case 'symbol':
         return (
           <td key={key} className={`${baseClass} font-semibold`} style={getCellStyle(key)}>
-            <div className="flex flex-col leading-tight">
-              <div className="truncate" translate="no">
-                <span className="text-foreground">{base}</span>
-              </div>
-              {listingAgeInfo && (
-                <span
-                  className={`text-[0.6875rem] font-normal ${listingAgeInfo.isNew ? 'text-blue-500' : 'text-muted-foreground'}`}
-                >
-                  {listingAgeInfo.label}
-                </span>
-              )}
+            <div className="truncate leading-tight" translate="no">
+              <span className="text-foreground">{base}</span>
             </div>
           </td>
         );

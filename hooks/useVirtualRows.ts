@@ -5,8 +5,8 @@
  *
  * Renders only the rows in (and near) the viewport, with top/bottom spacer
  * rows preserving total scroll height. Row heights are measured dynamically
- * via ResizeObserver — rows in this table vary in height (the symbol cell can
- * stack a "Listed <30d" sub-label), so a fixed size would clip.
+ * via ResizeObserver — rows in this table vary in height (the RSI signal cells
+ * expand on hover to show raw values), so a fixed size would clip.
  *
  * Kept intentionally minimal (no external lib) to avoid touching the lockfile.
  */

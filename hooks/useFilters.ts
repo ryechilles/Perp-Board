@@ -16,9 +16,13 @@ export function useFilters(exchange: 'okx' | 'hyperliquid' = 'okx', onFilterChan
 
   // Load filters from cache on mount
   useEffect(() => {
-    const savedFilters = cache.filters.get() as Filters | null;
+    const savedFilters = cache.filters.get() as (Filters & { listAge?: string }) | null;
     if (savedFilters) {
-      setFiltersState(savedFilters);
+      // Drop the removed listing-age filter from older saved state — it no
+      // longer applies, but would still mark the Filters tab as active.
+      const { listAge: _removed, ...rest } = savedFilters;
+      void _removed;
+      setFiltersState(rest);
     }
   }, [cache]);
 
