@@ -1,12 +1,11 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { TrendingUp } from 'lucide-react';
-import { SmallWidget } from '@/components/widgets/base';
-import { TokenAvatar, TooltipList, TimeFrameSelector } from '@/components/ui';
+import { SmallWidget, TokenList, TokenListRow } from '@/components/widgets/base';
+import { TooltipList, TimeFrameSelector, ChangePill, Skeleton } from '@/components/ui';
 import { ProcessedTicker, RSIData, MarketCapData } from '@/lib/types';
 import { formatPrice } from '@/lib/utils';
-import { TimeFrame, TokenWithChange, formatChange, getChangeByTimeFrame } from '@/lib/widget-utils';
+import { TimeFrame, TokenWithChange, getChangeByTimeFrame } from '@/lib/widget-utils';
 import { UNIVERSE } from '@/lib/constants';
 
 interface AltcoinTopGainersProps {
@@ -67,9 +66,21 @@ export function AltcoinTopGainers({ tickers, rsiData, marketCapData, onTokenClic
   return (
     <SmallWidget
       title="Top Gainers"
-      icon={<TrendingUp className="w-4 h-4" />}
+      subtitle="Excluding BTC"
       headerActions={<TimeFrameSelector value={timeFrame} onChange={setTimeFrame} />}
+      padded={false}
       loading={isLoading}
+      skeleton={
+        <div className="space-y-3 py-1">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="flex items-center gap-2.5">
+              <Skeleton className="w-[22px] h-[22px] rounded-full" />
+              <Skeleton className="w-12 h-3" />
+              <Skeleton className="w-16 h-6 rounded-md ml-auto" />
+            </div>
+          ))}
+        </div>
+      }
       tooltip={
         <TooltipList items={[
           `Top 5 gainers from ${exchangeLabel} perp top ${UNIVERSE.MAX_CRYPTO}`,
@@ -78,48 +89,18 @@ export function AltcoinTopGainers({ tickers, rsiData, marketCapData, onTokenClic
         ]} />
       }
     >
-      <div className="space-y-1">
-        {isLoading ? (
-          [1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="flex items-center justify-between py-1.5">
-              <div className="flex items-center gap-2">
-                <span className="text-[0.6875rem] text-muted-foreground w-4">{i}</span>
-                <div className="w-5 h-5 rounded-full bg-muted animate-pulse" />
-                <div className="w-10 h-3 bg-muted rounded animate-pulse" />
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-3 bg-muted rounded animate-pulse" />
-                <div className="w-10 h-3 bg-muted rounded animate-pulse" />
-              </div>
-            </div>
-          ))
-        ) : (
-          topGainers.map((token, i) => {
-            const change = getChangeByTimeFrame(token, timeFrame);
-            return (
-              <button
-                type="button"
-                key={token.instId}
-                className="w-full text-left flex items-center justify-between py-1.5 cursor-pointer hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded -mx-2 px-2"
-                onClick={() => onTokenClick?.(token.symbol)}
-                aria-label={token.symbol}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-[0.6875rem] text-muted-foreground w-4">{i + 1}</span>
-                  <TokenAvatar symbol={token.symbol} logo={token.logo} />
-                  <span className="text-[0.75rem] font-medium text-foreground">{token.symbol}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-[0.6875rem] text-muted-foreground tabular-nums">{formatPrice(token.price ?? 0)}</span>
-                  <span className={`text-[0.75rem] font-semibold tabular-nums ${formatChange(change).color}`}>
-                    {formatChange(change).text}
-                  </span>
-                </div>
-              </button>
-            );
-          })
-        )}
-      </div>
+      <TokenList>
+        {topGainers.map((token) => (
+          <TokenListRow
+            key={token.instId}
+            symbol={token.symbol}
+            logo={token.logo}
+            detail={formatPrice(token.price ?? 0)}
+            value={<ChangePill change={getChangeByTimeFrame(token, timeFrame)} />}
+            onClick={() => onTokenClick?.(token.symbol)}
+          />
+        ))}
+      </TokenList>
     </SmallWidget>
   );
 }

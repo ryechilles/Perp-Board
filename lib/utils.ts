@@ -161,22 +161,41 @@ export interface RsiSignalInfo {
 
 export function getRsiSignal(rsi7: number | null, rsi14: number | null): RsiSignalInfo {
   if (rsi7 === null && rsi14 === null) {
-    return { signal: 'neutral', label: '--', pillStyle: 'bg-muted text-muted-foreground', level: 5 };
+    return { signal: 'neutral', label: '--', pillStyle: 'bg-fill text-faint', level: 5 };
   }
 
   const avg = rsi7 !== null && rsi14 !== null
     ? (rsi7 + rsi14) / 2
     : rsi7 ?? rsi14 ?? 50;
 
-  if (avg <= RSI.EXTREME_OVERSOLD) return { signal: 'extreme-oversold', label: 'Extreme Oversold', pillStyle: 'bg-green-500 text-white', level: 1 };
-  if (avg <= RSI.OVERSOLD) return { signal: 'oversold', label: 'Oversold', pillStyle: 'bg-green-400 text-white', level: 2 };
-  if (avg <= RSI.VERY_WEAK) return { signal: 'very-weak', label: 'Very Weak', pillStyle: 'bg-green-300 text-green-800', level: 3 };
-  if (avg <= RSI.WEAK) return { signal: 'weak', label: 'Weak', pillStyle: 'bg-emerald-100 text-emerald-700', level: 4 };
-  if (avg <= RSI.NEUTRAL_HIGH) return { signal: 'neutral', label: 'Neutral', pillStyle: 'bg-muted text-muted-foreground', level: 5 };
-  if (avg <= RSI.STRONG) return { signal: 'strong', label: 'Strong', pillStyle: 'bg-orange-100 text-orange-700', level: 6 };
-  if (avg <= RSI.VERY_STRONG) return { signal: 'very-strong', label: 'Very Strong', pillStyle: 'bg-red-300 text-red-800', level: 7 };
-  if (avg <= RSI.OVERBOUGHT) return { signal: 'overbought', label: 'Overbought', pillStyle: 'bg-red-400 text-white', level: 8 };
-  return { signal: 'extreme-overbought', label: 'Extreme Overbought', pillStyle: 'bg-red-500 text-white', level: 9 };
+  if (avg <= RSI.EXTREME_OVERSOLD) return { signal: 'extreme-oversold', label: 'Extreme Oversold', pillStyle: 'bg-cold text-white', level: 1 };
+  if (avg <= RSI.OVERSOLD) return { signal: 'oversold', label: 'Oversold', pillStyle: 'bg-cold/20 text-cold-ink', level: 2 };
+  if (avg <= RSI.VERY_WEAK) return { signal: 'very-weak', label: 'Very Weak', pillStyle: 'bg-cold/10 text-cold-ink', level: 3 };
+  if (avg <= RSI.WEAK) return { signal: 'weak', label: 'Weak', pillStyle: 'bg-fill text-cold-ink', level: 4 };
+  if (avg <= RSI.NEUTRAL_HIGH) return { signal: 'neutral', label: 'Neutral', pillStyle: 'bg-fill text-muted-foreground', level: 5 };
+  if (avg <= RSI.STRONG) return { signal: 'strong', label: 'Strong', pillStyle: 'bg-fill text-hot-ink', level: 6 };
+  if (avg <= RSI.VERY_STRONG) return { signal: 'very-strong', label: 'Very Strong', pillStyle: 'bg-hot/10 text-hot-ink', level: 7 };
+  if (avg <= RSI.OVERBOUGHT) return { signal: 'overbought', label: 'Overbought', pillStyle: 'bg-hot/20 text-hot-ink', level: 8 };
+  return { signal: 'extreme-overbought', label: 'Extreme Overbought', pillStyle: 'bg-hot text-white', level: 9 };
+}
+
+/** Average of the RSI7/RSI14 pair (either may be missing). */
+export function getRsiAvg(rsi7: number | null | undefined, rsi14: number | null | undefined): number | null {
+  if (rsi7 != null && rsi14 != null) return (rsi7 + rsi14) / 2;
+  return rsi7 ?? rsi14 ?? null;
+}
+
+/**
+ * Text color for an RSI reading on the cold→hot zone scale
+ * (matches the .rsi-track gradient and the RSI.* thresholds).
+ */
+export function getRsiTextClass(rsi: number | null | undefined): string {
+  if (rsi == null) return 'text-faint';
+  if (rsi <= RSI.OVERSOLD) return 'text-cold-ink';
+  if (rsi <= RSI.WEAK) return 'text-cold-ink/80';
+  if (rsi <= RSI.NEUTRAL_HIGH) return 'text-muted-foreground';
+  if (rsi <= RSI.VERY_STRONG) return 'text-hot-ink/85';
+  return 'text-hot-ink';
 }
 
 export function calculate7DChange(candles: number[][]): number | null {
@@ -279,9 +298,9 @@ export function calculateTDState(candles: number[][]): TDState | null {
 export const TD_SETUP_DISPLAY_MIN = 4;
 
 /** Complete class set for a highlighted signal pill */
-const TD_PILL_BASE = 'inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold tabular-nums whitespace-nowrap';
+const TD_PILL_BASE = 'inline-flex items-center justify-center min-w-[36px] h-[22px] px-1.5 rounded-md font-mono text-[11px] font-semibold tabular-nums whitespace-nowrap';
 /** In-progress counts: no container — bare faded text so only 9/13 signals carry visual weight */
-const TD_TEXT_MUTED = 'inline-block text-[11px] font-normal tabular-nums whitespace-nowrap text-muted-foreground opacity-75';
+const TD_TEXT_MUTED = 'inline-block font-mono text-[11px] font-medium tabular-nums whitespace-nowrap text-faint';
 
 /**
  * Display label + complete className for the TD column (shared by table row and mobile card).
@@ -294,8 +313,8 @@ export function getTdDisplay(td: TDState | null | undefined): { label: string; c
     const label = `${s.type === 'buy' ? 'B' : 'S'} ${s.count}`;
     const title = `${s.type === 'buy' ? 'Buy' : 'Sell'} ${s.count === 13 ? 'Countdown 13' : 'Setup 9'} completed`;
     const color = s.type === 'buy'
-      ? (s.count === 13 ? 'bg-green-500 text-white' : 'bg-green-500/15 text-green-500')
-      : (s.count === 13 ? 'bg-red-500 text-white' : 'bg-red-500/15 text-red-500');
+      ? (s.count === 13 ? 'bg-up text-white' : 'bg-up/15 text-up-ink')
+      : (s.count === 13 ? 'bg-down text-white' : 'bg-down/[0.12] text-down-ink');
     return { label, title, className: `${TD_PILL_BASE} ${color}` };
   }
   const setup = td?.setup && td.setup.count >= TD_SETUP_DISPLAY_MIN ? td.setup : null;
@@ -315,7 +334,7 @@ export function getTdDisplay(td: TDState | null | undefined): { label: string; c
       className: TD_TEXT_MUTED,
     };
   }
-  return { label: '--', className: 'inline-block text-[11px] text-muted-foreground' };
+  return { label: '—', className: 'inline-block text-[11px] text-faint' };
 }
 
 // ===========================================
@@ -323,15 +342,14 @@ export function getTdDisplay(td: TDState | null | undefined): { label: string; c
 // ===========================================
 
 export function getRsiPillStyle(rsi: number | null | undefined): string {
-  if (rsi === null || rsi === undefined) return 'bg-muted text-muted-foreground';
-  if (rsi <= 20) return 'bg-green-500 text-white';
-  if (rsi <= 25) return 'bg-green-400 text-white';
-  if (rsi <= 30) return 'bg-green-300 text-green-800';
-  if (rsi <= 40) return 'bg-emerald-100 text-emerald-700';
-  if (rsi <= 60) return 'bg-muted text-muted-foreground';
-  if (rsi <= 70) return 'bg-orange-100 text-orange-700';
-  if (rsi <= 80) return 'bg-red-300 text-red-800';
-  if (rsi <= 85) return 'bg-red-400 text-white';
-  return 'bg-red-500 text-white';
+  if (rsi === null || rsi === undefined) return 'bg-fill text-faint';
+  if (rsi <= 20) return 'bg-cold text-white';
+  if (rsi <= 25) return 'bg-cold/20 text-cold-ink';
+  if (rsi <= 30) return 'bg-cold/10 text-cold-ink';
+  if (rsi <= 40) return 'bg-fill text-cold-ink';
+  if (rsi <= 60) return 'bg-fill text-muted-foreground';
+  if (rsi <= 70) return 'bg-fill text-hot-ink';
+  if (rsi <= 80) return 'bg-hot/10 text-hot-ink';
+  if (rsi <= 85) return 'bg-hot/20 text-hot-ink';
+  return 'bg-hot text-white';
 }
-

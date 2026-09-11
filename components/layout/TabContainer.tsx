@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, createContext, useContext, useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { ReactNode, createContext, useContext, useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { PillButtonGroup, PillButtonOption } from '@/components/ui';
 
@@ -43,7 +43,7 @@ export interface TabContainerProps {
   children?: ReactNode;
   /** Additional CSS classes for the container */
   className?: string;
-  /** Tab bar variant: 'horizontal' (default) or 'sidebar' (uses PillButtonGroup template) */
+  /** Tab bar variant: 'horizontal' (default) or 'sidebar' (full-width segmented control) */
   variant?: 'horizontal' | 'sidebar';
 }
 
@@ -52,7 +52,7 @@ export interface TabContainerProps {
  *
  * Supports two variants:
  * - 'horizontal': Traditional horizontal tab bar with underline indicator
- * - 'sidebar': Uses PillButtonGroup with Apple-style drag-to-scroll + fade hints
+ * - 'sidebar': Full-width Apple segmented control
  */
 export function TabContainer({
   tabs,
@@ -88,135 +88,17 @@ export function TabContainer({
     }));
   }, [tabs]);
 
-  // ── Apple-style scroll state ──
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-
-  // Drag-to-scroll state
-  const isDragging = useRef(false);
-  const startX = useRef(0);
-  const scrollStart = useRef(0);
-  const hasDragged = useRef(false);
-
-  const checkOverflow = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 1);
-    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
-  }, []);
-
-  useEffect(() => {
-    checkOverflow();
-    const el = scrollRef.current;
-    if (!el) return;
-
-    el.addEventListener('scroll', checkOverflow);
-    const ro = new ResizeObserver(checkOverflow);
-    ro.observe(el);
-
-    // Wheel → horizontal scroll
-    const handleWheel = (e: WheelEvent) => {
-      if (el.scrollWidth <= el.clientWidth) return; // no overflow, skip
-      e.preventDefault();
-      el.scrollLeft += e.deltaY || e.deltaX;
-    };
-    el.addEventListener('wheel', handleWheel, { passive: false });
-
-    return () => {
-      el.removeEventListener('scroll', checkOverflow);
-      el.removeEventListener('wheel', handleWheel);
-      ro.disconnect();
-    };
-  }, [checkOverflow]);
-
-  // Drag-to-scroll handlers (mouse)
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    const el = scrollRef.current;
-    if (!el) return;
-    isDragging.current = true;
-    hasDragged.current = false;
-    startX.current = e.clientX;
-    scrollStart.current = el.scrollLeft;
-    el.style.cursor = 'grabbing';
-    el.style.userSelect = 'none';
-  }, []);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDragging.current) return;
-    const el = scrollRef.current;
-    if (!el) return;
-    const dx = e.clientX - startX.current;
-    if (Math.abs(dx) > 3) hasDragged.current = true;
-    el.scrollLeft = scrollStart.current - dx;
-  }, []);
-
-  const handleMouseUp = useCallback(() => {
-    isDragging.current = false;
-    const el = scrollRef.current;
-    if (el) {
-      el.style.cursor = '';
-      el.style.userSelect = '';
-    }
-  }, []);
-
-  // Clean up on mouse leave
-  const handleMouseLeave = useCallback(() => {
-    if (isDragging.current) handleMouseUp();
-  }, [handleMouseUp]);
-
-  // Auto-scroll active tab into view
-  useEffect(() => {
-    const container = scrollRef.current;
-    if (!container) return;
-    // Find the active button inside the scroll container
-    const activeBtn = container.querySelector('[data-active="true"]') as HTMLElement | null;
-    if (!activeBtn) return;
-    // Scroll so the button is fully visible with a small margin
-    const margin = 8;
-    const btnLeft = activeBtn.offsetLeft - margin;
-    const btnRight = activeBtn.offsetLeft + activeBtn.offsetWidth + margin;
-    if (btnLeft < container.scrollLeft) {
-      container.scrollTo({ left: btnLeft, behavior: 'smooth' });
-    } else if (btnRight > container.scrollLeft + container.clientWidth) {
-      container.scrollTo({ left: btnRight - container.clientWidth, behavior: 'smooth' });
-    }
-  }, [activeTab]);
-
-  // Sidebar variant - Apple-style scrollable tabs
+  // Sidebar variant - full-width segmented control
   if (variant === 'sidebar') {
     return (
       <TabContext.Provider value={{ activeTab, setActiveTab: handleTabChange }}>
         <div className={cn('flex flex-col', className)}>
-          {/* Scroll container with fade edges */}
-          <div className="relative">
-            {/* Scrollable area */}
-            <div
-              ref={scrollRef}
-              className="overflow-x-auto min-w-0"
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseLeave}
-            >
-              <PillButtonGroup
-                options={pillOptions}
-                value={activeTab}
-                onChange={handleTabChange}
-                scrollable
-              />
-            </div>
-
-            {/* Left fade */}
-            {canScrollLeft && (
-              <div className="absolute left-0 top-0 bottom-0 w-6 pointer-events-none bg-gradient-to-r from-muted to-transparent rounded-l-lg" />
-            )}
-
-            {/* Right fade */}
-            {canScrollRight && (
-              <div className="absolute right-0 top-0 bottom-0 w-6 pointer-events-none bg-gradient-to-l from-muted to-transparent rounded-r-lg" />
-            )}
-          </div>
+          <PillButtonGroup
+            options={pillOptions}
+            value={activeTab}
+            onChange={handleTabChange}
+            fullWidth
+          />
 
           {/* Tab Panels (only render if children exist) */}
           {children && <div className="flex-1 mt-4">{children}</div>}

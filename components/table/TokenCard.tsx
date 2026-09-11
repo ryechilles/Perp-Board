@@ -8,15 +8,17 @@ import {
   useFunding,
   useMarketCap,
 } from '@/hooks/useMarketSelectors';
-import { TokenAvatar } from '@/components/ui';
+import { Star } from 'lucide-react';
+import { TokenAvatar, ChangePill } from '@/components/ui';
 import {
+  cn,
   formatPrice,
   formatFundingApr,
   getFundingAprClass,
-  getRsiSignal,
+  getRsiAvg,
+  getRsiTextClass,
   getTdDisplay,
 } from '@/lib/utils';
-import { ChangeWithSparkline } from '@/components/Sparkline';
 
 interface TokenCardProps {
   /** External store instance — each card subscribes to its own instrument slice. */
@@ -29,12 +31,13 @@ interface TokenCardProps {
 }
 
 /**
- * Mobile token card — the per-instrument unit shown below the `lg` breakpoint
- * in place of the (too-wide) desktop table row. Curated fixed fields: rank,
- * logo, symbol, price + 24h change, funding APR, and the daily/weekly RSI
- * signal pills. Subscribes to the same per-instrument store slices as TableRow
- * so a price tick re-renders only this card. The virtualizer measures a wrapper
- * around this card (see ExchangeBoard), so this component carries no ref.
+ * Mobile token row — the per-instrument unit shown below the `lg` breakpoint
+ * in place of the (too-wide) desktop table row, laid out like a Stocks list:
+ * logo + symbol with a secondary line (daily/weekly RSI, funding APR, TD signal)
+ * on the left, price + 24h change pill on the right. Rows sit in one grouped
+ * card with inset separators. Subscribes to the same per-instrument store
+ * slices as TableRow so a price tick re-renders only this row. The virtualizer
+ * measures a wrapper around this row (see ExchangeBoard), so it carries no ref.
  */
 export const TokenCard = memo(function TokenCard({
   marketStore,
@@ -53,61 +56,54 @@ export const TokenCard = memo(function TokenCard({
 
   if (!ticker) return null;
 
-  const dSignal = getRsiSignal(rsi?.rsi7 ?? null, rsi?.rsi14 ?? null);
-  const wSignal = getRsiSignal(rsi?.rsiW7 ?? null, rsi?.rsiW14 ?? null);
-  // Mobile card: only show TD pill on a completed 9/13 signal (space is tight)
+  const dRsi = getRsiAvg(rsi?.rsi7, rsi?.rsi14);
+  const wRsi = getRsiAvg(rsi?.rsiW7, rsi?.rsiW14);
+  // Mobile: only show TD on a completed 9/13 signal (space is tight)
   const tdSignal = rsi?.td?.signal;
   const td = getTdDisplay(tdSignal ? rsi!.td : null);
 
   return (
-    <div className="bg-card rounded-xl border border-gray-950/[0.08] dark:border-white/[0.08] px-3 py-2.5">
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => onToggleFavorite(instId)}
-            className={`text-base leading-none rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${isFavorite ? 'text-yellow-400' : 'text-muted-foreground/50'}`}
-            aria-label={isFavorite ? `Remove ${base} from favorites` : `Add ${base} to favorites`}
-            aria-pressed={isFavorite}
-          >
-            {isFavorite ? '★' : '☆'}
-          </button>
-          <span className="text-[0.6875rem] text-muted-foreground w-4 text-right tabular-nums">
-            {index + 1}
-          </span>
-          <TokenAvatar symbol={base} logo={marketCap?.logo} size="lg" />
-          <span className="font-semibold text-[0.9375rem] truncate" translate="no">
-            {base}
-          </span>
-          <div className="ml-auto text-right">
-            <div className="font-medium text-[0.9375rem] tabular-nums leading-tight">
-              {formatPrice(ticker.priceNum)}
-            </div>
-            <div className="text-[0.75rem] leading-tight">
-              <ChangeWithSparkline change={ticker.changeNum} showSparkline={false} />
-            </div>
-          </div>
-        </div>
+    <div className="relative flex items-center gap-3 min-h-[64px] pl-2 pr-4 py-2.5 after:content-[''] after:absolute after:bottom-0 after:left-[80px] after:right-0 after:h-px after:bg-separator after:scale-y-50">
+      <button
+        type="button"
+        onClick={() => onToggleFavorite(instId)}
+        className={cn(
+          'w-7 h-7 -mr-1.5 rounded-md grid place-items-center flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
+          isFavorite ? 'text-star' : 'text-faint/60'
+        )}
+        aria-label={isFavorite ? `Remove ${base} from favorites` : `Add ${base} to favorites`}
+        aria-pressed={isFavorite}
+      >
+        <Star className="w-3.5 h-3.5" fill={isFavorite ? 'currentColor' : 'none'} strokeWidth={1.6} aria-hidden="true" />
+      </button>
+      <TokenAvatar symbol={base} logo={marketCap?.logo} size="lg" className="w-8 h-8" />
 
-        <div className="flex items-center justify-between gap-2 mt-2.5">
-          <span className="text-[0.75rem] text-muted-foreground whitespace-nowrap">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-baseline gap-1.5">
+          <span className="font-semibold text-[0.9375rem] tracking-[-0.01em] truncate" translate="no">{base}</span>
+          <span className="text-[0.6875rem] text-faint tabular-nums">#{index + 1}</span>
+        </div>
+        <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground whitespace-nowrap tabular-nums">
+          <span>
+            RSI{' '}
+            <span className={cn('font-semibold', getRsiTextClass(dRsi))}>{dRsi != null ? dRsi.toFixed(0) : '—'}</span>
+            <span className="text-faint"> / </span>
+            <span className={cn('font-semibold', getRsiTextClass(wRsi))}>{wRsi != null ? wRsi.toFixed(0) : '—'}</span>
+          </span>
+          <span className="truncate">
             APR{' '}
-            <span className={`font-medium tabular-nums ${getFundingAprClass(fundingRate?.fundingRate)}`}>
+            <span className={cn('font-medium', getFundingAprClass(fundingRate?.fundingRate))}>
               {formatFundingApr(fundingRate?.fundingRate, fundingRate?.settlementInterval)}
             </span>
           </span>
-          <span className="flex gap-1.5 flex-wrap justify-end">
-            {tdSignal && (
-              <span className={td.className}>
-                TD {td.label}
-              </span>
-            )}
-            <span className={`inline-block px-2 py-0.5 rounded-md text-[0.6875rem] font-semibold whitespace-nowrap ${dSignal.pillStyle}`}>
-              D {dSignal.label}
-            </span>
-            <span className={`inline-block px-2 py-0.5 rounded-md text-[0.6875rem] font-semibold whitespace-nowrap ${wSignal.pillStyle}`}>
-              W {wSignal.label}
-            </span>
-          </span>
+          {tdSignal && <span className={td.className}>{td.label}</span>}
         </div>
       </div>
+
+      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+        <span className="font-medium text-[0.9375rem] tabular-nums leading-tight">{formatPrice(ticker.priceNum)}</span>
+        <ChangePill change={ticker.changeNum} className="h-[22px] min-w-[64px] text-xs" />
+      </div>
+    </div>
   );
 });

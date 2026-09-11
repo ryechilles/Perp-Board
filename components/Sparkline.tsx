@@ -1,6 +1,8 @@
 'use client';
 
 import { useId } from 'react';
+import { cn } from '@/lib/utils';
+import { formatSignedPercent } from '@/components/ui/Metrics';
 
 interface SparklineProps {
   data?: number[];       // Real price data array
@@ -14,13 +16,12 @@ interface SparklineProps {
  * Mini sparkline chart showing price trend
  * Uses real price data when available, otherwise generates simulated data
  */
-export function Sparkline({ data, change, width = 50, height = 20, className = '' }: SparklineProps) {
+export function Sparkline({ data, change, width = 64, height = 24, className = '' }: SparklineProps) {
   const isPositive = change >= 0;
-  const color = isPositive ? '#22c55e' : '#ef4444'; // green-500 / red-500
   const gradientId = `sparkline-gradient-${useId()}`;
 
   // Generate points from real data or simulated data
-  const generatePoints = (): { line: string; area: string } => {
+  const generatePoints = (): { line: string; area: string; end: [number, number] } => {
     let prices: number[];
 
     if (data && data.length >= 2) {
@@ -49,12 +50,13 @@ export function Sparkline({ data, change, width = 50, height = 20, className = '
     const maxPrice = Math.max(...prices);
     const priceRange = maxPrice - minPrice || 1;
 
-    const padding = 2;
+    const padding = 3;
     const chartHeight = height - padding * 2;
-    const chartWidth = width;
+    const inset = 2.5; // room for the endpoint dot
+    const chartWidth = width - inset * 2;
 
     const points: [number, number][] = prices.map((price, i) => {
-      const x = (i / (prices.length - 1)) * chartWidth;
+      const x = inset + (i / (prices.length - 1)) * chartWidth;
       const y = padding + chartHeight - ((price - minPrice) / priceRange) * chartHeight;
       return [x, y];
     });
@@ -65,10 +67,11 @@ export function Sparkline({ data, change, width = 50, height = 20, className = '
     ).join(' ');
 
     // Create area path (for gradient fill)
+    const last = points[points.length - 1];
     const areaPath = linePath +
-      ` L ${width},${height} L 0,${height} Z`;
+      ` L ${last[0].toFixed(1)},${height} L ${points[0][0].toFixed(1)},${height} Z`;
 
-    return { line: linePath, area: areaPath };
+    return { line: linePath, area: areaPath, end: last };
   };
 
   // Generate simulated price data based on change percentage
@@ -101,69 +104,52 @@ export function Sparkline({ data, change, width = 50, height = 20, className = '
     return points;
   };
 
-  const { line, area } = generatePoints();
+  const { line, area, end } = generatePoints();
 
   return (
     <svg
       width={width}
       height={height}
-      className={className}
+      className={cn(isPositive ? 'text-up-ink' : 'text-down-ink', className)}
       viewBox={`0 0 ${width} ${height}`}
       aria-hidden="true"
     >
-      {/* Gradient definition for shadow/fill effect */}
       <defs>
         <linearGradient id={gradientId} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
         </linearGradient>
       </defs>
-
-      {/* Area fill with gradient */}
-      <path
-        d={area}
-        fill={`url(#${gradientId})`}
-      />
-
-      {/* Line stroke */}
+      <path d={area} fill={`url(#${gradientId})`} />
       <path
         d={line}
         fill="none"
-        stroke={color}
-        strokeWidth="1.5"
+        stroke="currentColor"
+        strokeWidth="1.4"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+      <circle cx={end[0]} cy={end[1]} r="2.2" fill="currentColor" />
     </svg>
   );
 }
 
-interface ChangeWithSparklineProps {
+interface SparklineChangeProps {
   change: number | null | undefined;
   sparklineData?: number[];
-  showSparkline?: boolean;
 }
 
-/**
- * Change percentage display with optional sparkline
- */
-export function ChangeWithSparkline({ change, sparklineData, showSparkline = true }: ChangeWithSparklineProps) {
+/** Sparkline followed by the signed percentage (right-aligned table cell). */
+export function SparklineChange({ change, sparklineData }: SparklineChangeProps) {
   if (change === null || change === undefined) {
-    return <span className="text-muted-foreground">-</span>;
+    return <span className="text-faint">—</span>;
   }
-
-  const isPositive = change >= 0;
-  const colorClass = isPositive ? 'text-green-500' : 'text-red-500';
-  const arrow = isPositive ? '▲' : '▼';
-
   return (
-    <div className="flex flex-col items-center gap-0.5">
-      {showSparkline && (
-        <Sparkline data={sparklineData} change={change} width={45} height={16} />
-      )}
-      <span className={`${colorClass} font-medium tabular-nums text-[0.75rem]`}>
-        {arrow} {Math.abs(change).toFixed(2)}%
+    <span className="inline-flex items-center gap-2.5">
+      <Sparkline data={sparklineData} change={change} />
+      <span className={`min-w-[52px] text-right text-[0.78rem] font-medium tabular-nums ${change >= 0 ? 'text-up-ink' : 'text-down-ink'}`}>
+        {formatSignedPercent(change)}
       </span>
-    </div>
+    </span>
   );
 }

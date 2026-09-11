@@ -3,27 +3,58 @@
 @tailwind utilities;
 
 @layer base {
+  /* ── Palette ────────────────────────────────────────────
+   * Apple system palette. Ground is a cool grouped-background grey,
+   * surfaces are white; semantic colors come in two strengths:
+   *   --up / --down        vivid fill (bars, dots, tints)
+   *   --up-ink / --down-ink readable text on the surface
+   * RSI zones use cold (oversold) / hot (overbought) so they never
+   * collide with price green/red.
+   * ──────────────────────────────────────────────────────── */
   :root {
-    --background: 0 0% 98%;
-    --foreground: 0 0% 10%;
+    --background: 240 7% 95%;       /* #F2F2F4 ground */
+    --foreground: 240 3% 12%;       /* #1D1D1F */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
+    --card-foreground: 240 3% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
-    --primary: 0 0% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 10%;
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
-    --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 10%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 0 0% 10%;
-    --radius: 0.5rem;
+    --popover-foreground: 240 3% 12%;
+    --primary: 240 3% 12%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 6% 95%;
+    --secondary-foreground: 240 3% 12%;
+    --muted: 240 6% 94%;
+    --muted-foreground: 240 2% 44%; /* #6E6E73 */
+    --accent: 240 6% 94%;
+    --accent-foreground: 240 3% 12%;
+    --destructive: 3 100% 59%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 210 100% 45%;           /* #0071E3 */
+    --radius: 0.625rem;
+
+    --tint: 210 100% 45%;           /* accent blue */
+    --segment: 0 0% 100%;           /* selected segment */
+    --fill: 240 4% 49% / 0.12;      /* translucent control fill */
+    --fill-strong: 240 4% 49% / 0.2;
+    --separator: 240 5% 25% / 0.13;
+    --faint: 240 2% 64%;            /* tertiary label */
+
+    --up: 135 59% 49%;              /* #34C759 */
+    --up-ink: 137 68% 32%;
+    --down: 3 100% 59%;             /* #FF3B30 */
+    --down-ink: 354 100% 42%;
+    --cold: 199 78% 55%;            /* #32ADE6 */
+    --cold-soft: 199 72% 81%;
+    --cold-ink: 198 89% 36%;
+    --hot: 32 100% 50%;             /* #FF8A00 */
+    --hot-soft: 33 100% 80%;
+    --hot-ink: 28 100% 37%;
+    --zone-neutral: 240 5% 86%;
+    --star: 43 100% 50%;
+
+    --shadow-card: 0 0 0 0.5px rgb(0 0 0 / 0.04), 0 1px 2px rgb(0 0 0 / 0.04);
+    --shadow-segment: 0 3px 8px rgb(0 0 0 / 0.1), 0 1px 1px rgb(0 0 0 / 0.04);
 
     /* ── Spacing & Sizing Tokens ─────────────────────────────
      * Based on 4px grid. All interactive element heights and
@@ -68,25 +99,48 @@
   }
 
   .dark {
-    --background: 0 0% 4%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 4%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 4%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 10%;
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 64%;
-    --accent: 0 0% 15%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 15%;
-    --input: 0 0% 15%;
-    --ring: 0 0% 84%;
+    --background: 0 0% 0%;
+    --foreground: 240 11% 96%;      /* #F5F5F7 */
+    --card: 240 3% 11%;             /* #1C1C1E */
+    --card-foreground: 240 11% 96%;
+    --popover: 240 2% 18%;          /* #2C2C2E elevated */
+    --popover-foreground: 240 11% 96%;
+    --primary: 240 11% 96%;
+    --primary-foreground: 240 3% 11%;
+    --secondary: 240 2% 16%;
+    --secondary-foreground: 240 11% 96%;
+    --muted: 240 2% 17%;
+    --muted-foreground: 240 2% 61%; /* #98989D */
+    --accent: 240 2% 17%;
+    --accent-foreground: 240 11% 96%;
+    --destructive: 3 100% 61%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 2% 20%;
+    --input: 240 2% 20%;
+    --ring: 210 100% 52%;
+
+    --tint: 210 100% 52%;           /* #0A84FF */
+    --segment: 240 1% 39%;          /* #636366 */
+    --fill: 240 4% 49% / 0.24;
+    --fill-strong: 240 4% 49% / 0.34;
+    --separator: 240 2% 34% / 0.6;
+    --faint: 240 1% 39%;
+
+    --up: 135 64% 50%;              /* #30D158 */
+    --up-ink: 135 64% 50%;
+    --down: 3 100% 61%;             /* #FF453A */
+    --down-ink: 3 100% 69%;
+    --cold: 197 100% 70%;           /* #64D2FF */
+    --cold-soft: 199 52% 25%;
+    --cold-ink: 197 100% 70%;
+    --hot: 36 100% 52%;             /* #FF9F0A */
+    --hot-soft: 34 77% 21%;
+    --hot-ink: 36 100% 63%;
+    --zone-neutral: 240 2% 23%;
+    --star: 50 100% 52%;
+
+    --shadow-card: 0 0 0 0.5px rgb(255 255 255 / 0.06);
+    --shadow-segment: 0 3px 8px rgb(0 0 0 / 0.3);
   }
 }
 
@@ -102,8 +156,11 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-    font-weight: 450;
+    /* SF Pro on Apple platforms; Inter (self-hosted) is the closest match elsewhere */
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', var(--font-inter), 'Segoe UI', 'Roboto', sans-serif;
+    font-size: 0.8125rem;
+    line-height: 1.38;
+    letter-spacing: -0.006em;
     font-optical-sizing: auto;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -148,9 +205,9 @@
   animation: spin 0.8s linear infinite;
 }
 
-/* Custom checkbox accent - uses shadcn foreground color */
+/* Native controls pick up the accent blue */
 input[type="checkbox"] {
-  accent-color: hsl(var(--foreground));
+  accent-color: hsl(var(--tint));
 }
 
 /* Hide number input spinners and cursor */
@@ -175,47 +232,96 @@ input[type="number"]::-moz-selection {
   background: transparent;
 }
 
-/* Translucent sticky table header (apple-design §12: content scrolls under a material layer).
- * Fixed (left-sticky) columns stay opaque for legibility of dense numbers. */
+@layer components {
+/* Translucent material: content scrolls under the toolbar and the sticky
+ * table header. Fixed (left-sticky) columns stay opaque for legibility. */
+.material-bar {
+  background-color: hsl(var(--background) / 0.72);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+}
 .thead-material {
-  background-color: hsl(var(--secondary) / 0.82);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  background-color: hsl(var(--card) / 0.86);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
 }
 /* Fallbacks: solid surface when blur is unsupported or the user prefers less transparency */
 @supports not ((backdrop-filter: blur(8px)) or (-webkit-backdrop-filter: blur(8px))) {
-  .thead-material {
-    background-color: hsl(var(--secondary));
-  }
+  .material-bar { background-color: hsl(var(--background)); }
+  .thead-material { background-color: hsl(var(--card)); }
 }
 @media (prefers-reduced-transparency: reduce) {
+  .material-bar,
   .thead-material {
-    background-color: hsl(var(--secondary));
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
+  .material-bar { background-color: hsl(var(--background)); }
+  .thead-material { background-color: hsl(var(--card)); }
 }
 
-/* Sticky column shadow */
-.sticky-shadow {
-  box-shadow: 4px 0 8px -4px rgba(0, 0, 0, 0.1);
+/* Surfaces: grouped-list cards — no outline, a hairline shadow only */
+.surface-card {
+  background-color: hsl(var(--card));
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
 }
 
-/* Table row hover transition */
-tr {
-  transition: background-color 0.15s ease;
+/* Segmented control selected segment */
+.segment-on {
+  background-color: hsl(var(--segment));
+  box-shadow: var(--shadow-segment);
 }
 
-/* Fixed column border/shadow - last sticky column */
-.sticky-border::after {
+/* Hairline separators (0.5px on retina) */
+.hairline-b { box-shadow: inset 0 -0.5px 0 hsl(var(--separator)); }
+.hairline-t { box-shadow: inset 0 0.5px 0 hsl(var(--separator)); }
+}
+
+/* Inset-grouped list: separators start past the leading avatar */
+.inset-list > li { position: relative; }
+.inset-list > li + li::before {
   content: '';
   position: absolute;
   top: 0;
+  left: 50px;
   right: 0;
-  bottom: 0;
-  width: 1px;
-  background: hsl(var(--border));
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+  border-top: 0.5px solid hsl(var(--separator));
+}
+
+/* Table rows: opaque sticky cells, subtle hover wash */
+.sticky-cell {
+  background-color: hsl(var(--card));
+}
+.data-row > td {
+  transition: background-color 0.12s ease;
+}
+.data-row:hover > td {
+  background-color: hsl(var(--foreground) / 0.028);
+}
+.data-row:hover > td.sticky-cell {
+  background-color: color-mix(in srgb, hsl(var(--card)) 97%, hsl(var(--foreground)));
+}
+
+/* RSI zone track: cold (≤25) · cool (≤40) · neutral (<60) · warm (<80) · hot */
+.rsi-track {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--cold)) 0 25%,
+    hsl(var(--cold-soft)) 25% 40%,
+    hsl(var(--zone-neutral)) 40% 60%,
+    hsl(var(--hot-soft)) 60% 80%,
+    hsl(var(--hot)) 80% 100%
+  );
+}
+
+/* Live indicator pulse */
+@keyframes live-pulse {
+  0% { box-shadow: 0 0 0 0 hsl(var(--up) / 0.55); }
+  70%, 100% { box-shadow: 0 0 0 6px hsl(var(--up) / 0); }
+}
+.live-dot {
+  animation: live-pulse 2.4s ease-out infinite;
 }
 
 /* Drag and drop styles */
@@ -227,25 +333,15 @@ tr {
   cursor: grabbing;
 }
 
-/* Fixed columns background */
-td[style*="position: sticky"],
-th[style*="position: sticky"] {
-  background-color: inherit;
-}
-
-/* Inter Variable: tighter tracking for large text */
+/* Display sizes: SF Pro Display tracking */
 h1, h2, h3, .text-lg, .text-xl, .text-2xl, .text-3xl {
   letter-spacing: -0.02em;
-  font-weight: 550;
 }
-
-/* Inter Variable: medium weight for semibold overrides */
-.font-semibold {
-  font-weight: 550;
-}
-
-.font-medium {
-  font-weight: 500;
+.large-title {
+  font-size: 1.75rem;
+  line-height: 2.125rem;
+  font-weight: 700;
+  letter-spacing: -0.022em;
 }
 
 /* ch-based max-width utility for readable text columns */

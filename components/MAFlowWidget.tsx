@@ -1,9 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Activity } from 'lucide-react';
-import { SmallWidget } from '@/components/widgets/base';
-import { TooltipList, TokenAvatar } from '@/components/ui';
+import { SmallWidget, TokenList, TokenListRow, SectionLabel } from '@/components/widgets/base';
+import { TooltipList } from '@/components/ui';
 import { ProcessedTicker, MAFlowData, MarketCapData, MAValues, ListingData } from '@/lib/types';
 import { formatPrice } from '@/lib/utils';
 import { MA_FLOW } from '@/lib/constants';
@@ -30,9 +29,9 @@ const TIMEFRAME_SECTIONS: {
 
 // Section dot colors
 const DOT_COLORS: Record<string, string> = {
-  blue: 'bg-blue-500',
-  purple: 'bg-purple-500',
-  orange: 'bg-orange-500',
+  blue: 'bg-tint',
+  purple: 'bg-[#AF52DE]',
+  orange: 'bg-hot',
 };
 
 interface ConvergingToken {
@@ -56,56 +55,10 @@ interface MAFlowWidgetProps {
  * Get convergence pill style based on spread %
  */
 function getConvergencePillStyle(spread: number): string {
-  if (spread <= 0.5) return 'bg-green-500/15 text-green-600';
-  if (spread <= 1) return 'bg-emerald-500/15 text-emerald-600';
-  if (spread <= 2) return 'bg-teal-500/15 text-teal-600';
-  if (spread <= 3) return 'bg-yellow-500/15 text-yellow-700';
-  return 'bg-orange-500/15 text-orange-600';
-}
-
-/**
- * Section header matching FundingKiller's KillerSectionHeader pattern
- */
-function SectionHeader({
-  title,
-  count,
-  color,
-  isLoading,
-  onClick,
-}: {
-  title: string;
-  count: number;
-  color: string;
-  isLoading: boolean;
-  onClick?: () => void;
-}) {
-  const canClick = count > 0 && onClick;
-  const baseClass =
-    'flex items-center justify-between mb-3 pb-2 border-b border-gray-950/[0.10] dark:border-white/[0.10]';
-  const inner = (
-    <div className="flex items-center gap-2">
-      <span className={`w-2 h-2 rounded-full ${DOT_COLORS[color]}`} aria-hidden="true" />
-      <span className="text-[0.75rem] font-medium text-foreground">{title}</span>
-      <span className="text-[0.6875rem] text-muted-foreground tabular-nums">
-        {isLoading ? '--' : count}
-      </span>
-    </div>
-  );
-
-  if (canClick) {
-    return (
-      <button
-        type="button"
-        className={`${baseClass} w-full text-left cursor-pointer hover:opacity-80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm`}
-        onClick={() => onClick()}
-        aria-label={`${title} (${count})`}
-      >
-        {inner}
-      </button>
-    );
-  }
-
-  return <div className={baseClass}>{inner}</div>;
+  if (spread <= 0.5) return 'bg-up/[0.18] text-up-ink';
+  if (spread <= 1) return 'bg-up/[0.1] text-up-ink';
+  if (spread <= 2) return 'bg-fill text-foreground';
+  return 'bg-fill text-muted-foreground';
 }
 
 // Type-safe accessor for MA values by timeframe key
@@ -186,37 +139,11 @@ export function MAFlowWidget({
 
   const isLoading = tickers.size === 0 || maFlowData.size === 0;
 
-  const renderTokenRow = (token: ConvergingToken, index: number) => (
-    <button
-      type="button"
-      key={token.instId}
-      className="w-full text-left flex items-center justify-between py-1.5 cursor-pointer hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded -mx-2 px-2"
-      onClick={() => onTokenClick?.(token.symbol)}
-      aria-label={token.symbol}
-    >
-      <div className="flex items-center gap-2">
-        <span className="text-[0.6875rem] text-muted-foreground w-4">{index + 1}</span>
-        <TokenAvatar symbol={token.symbol} logo={token.logo} />
-        <span className="text-[0.75rem] font-medium text-foreground">{token.symbol}</span>
-      </div>
-      <div className="flex items-center">
-        <span className="text-[0.6875rem] text-muted-foreground tabular-nums w-16 text-center">
-          {formatPrice(token.price)}
-        </span>
-        <span
-          className={`text-[0.6875rem] font-semibold tabular-nums w-14 text-center py-0.5 rounded-md ${getConvergencePillStyle(token.convergence)}`}
-        >
-          {token.convergence.toFixed(1)}%
-        </span>
-      </div>
-    </button>
-  );
-
   return (
     <SmallWidget
       title="MA Flow"
-      icon={<Activity className="w-4 h-4" />}
       subtitle={`MA7/30/200 convergence ≤ ${THRESHOLD}%`}
+      padded={false}
       loading={isLoading}
       tooltip={
         <TooltipList
@@ -228,38 +155,46 @@ export function MAFlowWidget({
             'Lower spread = tighter convergence = potential breakout',
             `OKX Perp Top ${MA_FLOW.TOKEN_COUNT} by Market Cap (excl. USDC, listed ≥ ${MIN_LISTING_DAYS}d)`,
             <>
-              <span className="text-green-500">{'≤ 0.5%'}</span>{' extreme, '}
-              <span className="text-emerald-500">{'≤ 1%'}</span>{' tight, '}
-              <span className="text-yellow-600">{'≤ 3%'}</span>{' converging'}
+              <span className="text-up-ink font-semibold">{'≤ 0.5%'}</span>{' extreme, '}
+              <span className="text-up-ink">{'≤ 1%'}</span>{' tight, '}
+              <span className="text-foreground">{'≤ 3%'}</span>{' converging'}
             </>,
           ]}
         />
       }
     >
-      <div className="space-y-4">
-        {sections.map((section) => (
-          <div key={section.key}>
-            <SectionHeader
-              title={section.label}
-              count={section.totalCount}
-              color={section.color}
-              isLoading={isLoading}
-              onClick={() => onGroupClick?.(section.allSymbols)}
-            />
-            <div className="space-y-1">
-              {section.tokens.length > 0 ? (
-                section.tokens.map((t, i) => renderTokenRow(t, i))
-              ) : (
-                <div className="text-center py-3 text-[0.6875rem] text-muted-foreground">
-                  {maFlowData.size > 0
-                    ? `No tokens with spread ≤ ${THRESHOLD}%`
-                    : 'Loading…'}
-                </div>
-              )}
+      {sections.map((section) => (
+        <div key={section.key}>
+          <SectionLabel
+            label={section.label}
+            dot={DOT_COLORS[section.color]}
+            count={isLoading ? '--' : section.totalCount}
+            onClick={section.totalCount > 0 && onGroupClick ? () => onGroupClick(section.allSymbols) : undefined}
+          />
+          {section.tokens.length > 0 ? (
+            <TokenList>
+              {section.tokens.map((token) => (
+                <TokenListRow
+                  key={token.instId}
+                  symbol={token.symbol}
+                  logo={token.logo}
+                  detail={formatPrice(token.price)}
+                  value={
+                    <span className={`inline-flex items-center justify-center min-w-[48px] h-[22px] px-1.5 rounded-md text-xs font-semibold ${getConvergencePillStyle(token.convergence)}`}>
+                      {token.convergence.toFixed(1)}%
+                    </span>
+                  }
+                  onClick={() => onTokenClick?.(token.symbol)}
+                />
+              ))}
+            </TokenList>
+          ) : (
+            <div className="px-4 pt-1 pb-3 text-xs text-faint">
+              {maFlowData.size > 0 ? `No tokens with spread ≤ ${THRESHOLD}%` : 'Loading…'}
             </div>
-          </div>
-        ))}
-      </div>
+          )}
+        </div>
+      ))}
     </SmallWidget>
   );
 }

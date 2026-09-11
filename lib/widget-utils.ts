@@ -64,7 +64,7 @@ export function formatChange(value: number | null | undefined): { text: string; 
     return { text: '--', color: 'text-muted-foreground' };
   }
   const sign = value > 0 ? '+' : '';
-  const color = value > 0 ? 'text-green-500' : value < 0 ? 'text-red-500' : 'text-muted-foreground';
+  const color = value > 0 ? 'text-up-ink' : value < 0 ? 'text-down-ink' : 'text-muted-foreground';
   return { text: `${sign}${value.toFixed(2)}%`, color };
 }
 

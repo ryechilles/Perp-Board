@@ -7,18 +7,6 @@ module.exports = {
     './app/**/*.{js,ts,jsx,tsx,mdx}',
     './lib/**/*.{js,ts,jsx,tsx}',
   ],
-  // Safelist for dynamic class names used in constants
-  safelist: [
-    // AHR999 zone colors
-    'bg-green-500', 'bg-emerald-400', 'bg-orange-400', 'bg-red-400', 'bg-red-600',
-    'text-green-600', 'text-emerald-500', 'text-orange-500', 'text-red-500', 'text-red-600',
-    // AHR999 dark mode variants
-    'dark:text-green-400', 'dark:text-emerald-400', 'dark:text-orange-400', 'dark:text-red-400',
-    'dark:bg-green-950/40', 'dark:bg-emerald-950/40', 'dark:bg-orange-950/40', 'dark:bg-red-950/40',
-    // RSI pill styles
-    'bg-green-300', 'bg-green-400', 'text-green-800',
-    'bg-red-500', 'text-white',
-  ],
   theme: {
     extend: {
       colors: {
@@ -55,8 +43,38 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Apple system semantics (see globals.css → Palette)
+        tint: "hsl(var(--tint) / <alpha-value>)",
+        segment: "hsl(var(--segment))",
+        fill: {
+          DEFAULT: "hsl(var(--fill))",
+          strong: "hsl(var(--fill-strong))",
+        },
+        separator: "hsl(var(--separator))",
+        faint: "hsl(var(--faint) / <alpha-value>)",
+        star: "hsl(var(--star) / <alpha-value>)",
+        up: {
+          DEFAULT: "hsl(var(--up) / <alpha-value>)",
+          ink: "hsl(var(--up-ink) / <alpha-value>)",
+        },
+        down: {
+          DEFAULT: "hsl(var(--down) / <alpha-value>)",
+          ink: "hsl(var(--down-ink) / <alpha-value>)",
+        },
+        cold: {
+          DEFAULT: "hsl(var(--cold) / <alpha-value>)",
+          soft: "hsl(var(--cold-soft) / <alpha-value>)",
+          ink: "hsl(var(--cold-ink) / <alpha-value>)",
+        },
+        hot: {
+          DEFAULT: "hsl(var(--hot) / <alpha-value>)",
+          soft: "hsl(var(--hot-soft) / <alpha-value>)",
+          ink: "hsl(var(--hot-ink) / <alpha-value>)",
+        },
+        "zone-neutral": "hsl(var(--zone-neutral) / <alpha-value>)",
       },
       borderRadius: {
+        card: "14px",
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",

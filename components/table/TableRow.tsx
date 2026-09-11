@@ -10,23 +10,55 @@ import {
   useListing,
   useMarketCap,
 } from '@/hooks/useMarketSelectors';
-import { Button, TokenAvatar } from '@/components/ui';
+import { Star } from 'lucide-react';
+import { TokenAvatar, RsiReading, ChangePill } from '@/components/ui';
 import {
+  cn,
   COLUMN_DEFINITIONS,
   formatPrice,
   formatMarketCap,
   formatVolume,
-  getRsiPillStyle,
   formatFundingRate,
   getFundingRateClass,
   formatFundingApr,
   getFundingAprClass,
   formatListDate,
   formatSettlementInterval,
+  getRsiAvg,
   getRsiSignal,
+  getRsiTextClass,
   getTdDisplay,
 } from '@/lib/utils';
-import { ChangeWithSparkline } from '@/components/Sparkline';
+import { FUNDING } from '@/lib/constants';
+import { SparklineChange } from '@/components/Sparkline';
+
+/** Zone-colored single RSI value (for the raw RSI7/RSI14 columns). */
+function RsiValue({ value }: { value: number | null | undefined }) {
+  if (value == null) return <span className="text-faint">—</span>;
+  return <span className={cn('font-semibold tabular-nums', getRsiTextClass(value))}>{value.toFixed(1)}</span>;
+}
+
+/** Annualized funding with a tiny diverging bar (center = 0, full = ±15%). */
+function FundingAprValue({ rate, interval }: { rate: number | undefined | null; interval: number | undefined | null }) {
+  if (rate == null) return <span className="text-faint">—</span>;
+  const apr = rate * ((365 * 24) / (interval || FUNDING.DEFAULT_INTERVAL_HOURS)) * 100;
+  const w = Math.min(Math.abs(apr) / 15, 1) * 18;
+  return (
+    <span className="inline-flex items-center gap-2.5">
+      <span className={cn('font-medium tabular-nums', getFundingAprClass(rate))}>
+        {formatFundingApr(rate, interval)}
+      </span>
+      <span className="relative w-9 h-3 flex-shrink-0 before:absolute before:left-1/2 before:inset-y-0 before:w-px before:bg-separator" aria-hidden="true">
+        {w > 0 && (
+          <span
+            className={cn('absolute top-[3px] h-1.5 rounded-[2px]', apr >= 0 ? 'bg-up' : 'bg-down')}
+            style={apr >= 0 ? { left: '50%', width: w } : { right: '50%', width: w }}
+          />
+        )}
+      </span>
+    </span>
+  );
+}
 
 interface TableRowProps {
   /** External store instance — each row subscribes to its own instrument slice. */
@@ -104,190 +136,150 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
       position: 'sticky',
       left: getStickyLeftOffset(key),
       zIndex: 10,
-      backgroundColor: 'hsl(var(--card))',
       width: fixedWidth,
       minWidth: fixedWidth,
       maxWidth: fixedWidth,
       boxSizing: 'border-box',
       boxShadow:
-        isLastFixed && isScrolled ? '4px 0 6px -2px rgba(0,0,0,0.1)' : undefined,
+        isLastFixed && isScrolled
+          ? 'inset 0 -0.5px 0 hsl(var(--separator)), 1px 0 0 hsl(var(--separator)), 6px 0 10px -6px rgb(0 0 0 / 0.12)'
+          : undefined,
     };
   };
 
   const renderCell = (key: ColumnKey) => {
     const def = COLUMN_DEFINITIONS[key];
     const isFixed = isFixedColumn(key);
-    let alignClass = 'text-left';
-    if (def.align === 'right') alignClass = 'text-right';
-    if (def.align === 'center') alignClass = 'text-center';
-
-    const baseClass = `px-1 py-2.5 text-[0.8125rem] whitespace-nowrap ${alignClass} ${isFixed ? 'bg-card group-hover:bg-muted/50' : ''}`;
+    const alignClass = def.align === 'right' ? 'text-right' : def.align === 'center' ? 'text-center' : 'text-left';
+    const baseClass = cn('h-12 px-3 text-[0.8125rem] whitespace-nowrap hairline-b', alignClass, isFixed && 'sticky-cell');
 
     switch (key) {
       case 'favorite':
         return (
-          <td
-            key={key}
-            className={`py-2.5 text-center ${isFixed ? 'bg-card group-hover:bg-muted/50' : ''}`}
-            style={getCellStyle(key)}
-          >
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`h-6 w-6 text-sm ${
-                isFavorite
-                  ? 'text-yellow-400'
-                  : 'text-muted hover:text-yellow-400'
-              }`}
+          <td key={key} className={cn(baseClass, 'pl-3.5 pr-0')} style={getCellStyle(key)}>
+            <button
+              type="button"
+              className={cn(
+                'w-[22px] h-[22px] rounded-md grid place-items-center transition-[opacity,color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
+                isFavorite ? 'text-star' : 'text-faint opacity-40 group-hover:opacity-100 hover:text-star focus-visible:opacity-100'
+              )}
               onClick={() => onToggleFavorite(instId)}
               aria-label={isFavorite ? `Remove ${base} from favorites` : `Add ${base} to favorites`}
               aria-pressed={isFavorite}
             >
-              {isFavorite ? '★' : '☆'}
-            </Button>
+              <Star className="w-3.5 h-3.5" fill={isFavorite ? 'currentColor' : 'none'} strokeWidth={1.6} aria-hidden="true" />
+            </button>
           </td>
         );
 
       case 'rank':
         return (
-          <td
-            key={key}
-            className={`${baseClass} text-[0.75rem] text-muted-foreground`}
-            style={getCellStyle(key)}
-          >
+          <td key={key} className={cn(baseClass, 'px-1 text-xs text-faint tabular-nums')} style={getCellStyle(key)}>
             {displayRank}
           </td>
         );
 
       case 'symbol':
         return (
-          <td key={key} className={`${baseClass} font-semibold`} style={getCellStyle(key)}>
-            <div className="truncate leading-tight" translate="no">
-              <span className="text-foreground">{base}</span>
-            </div>
+          <td key={key} className={cn(baseClass, 'pl-0 text-[0.84rem] font-semibold tracking-[-0.01em]')} style={getCellStyle(key)}>
+            <div className="truncate" translate="no">{base}</div>
           </td>
         );
 
       case 'logo':
         return (
-          <td key={key} className={baseClass} style={getCellStyle(key)}>
-            <TokenAvatar symbol={base} logo={marketCap?.logo} size="md" />
+          <td key={key} className={cn(baseClass, 'pl-2 pr-2.5')} style={getCellStyle(key)}>
+            <TokenAvatar symbol={base} logo={marketCap?.logo} size="lg" />
           </td>
         );
 
       case 'price':
         return (
-          <td key={key} className={`${baseClass} font-medium tabular-nums`}>
+          <td key={key} className={cn(baseClass, 'text-[0.84rem] font-medium tabular-nums')}>
             {formatPrice(ticker.priceNum)}
           </td>
         );
 
       case 'fundingRate':
         return (
-          <td
-            key={key}
-            className={`${baseClass} font-medium tabular-nums ${getFundingRateClass(fundingRate?.fundingRate)}`}
-          >
+          <td key={key} className={cn(baseClass, 'font-medium tabular-nums', getFundingRateClass(fundingRate?.fundingRate))}>
             {formatFundingRate(fundingRate?.fundingRate)}
           </td>
         );
 
       case 'fundingApr':
         return (
-          <td
-            key={key}
-            className={`${baseClass} font-medium tabular-nums ${getFundingAprClass(fundingRate?.fundingRate)}`}
-          >
-            {formatFundingApr(
-              fundingRate?.fundingRate,
-              fundingRate?.settlementInterval
-            )}
+          <td key={key} className={baseClass}>
+            <FundingAprValue rate={fundingRate?.fundingRate} interval={fundingRate?.settlementInterval} />
           </td>
         );
 
       case 'fundingInterval':
         return (
-          <td key={key} className={`${baseClass} text-[0.75rem] text-muted-foreground`}>
+          <td key={key} className={cn(baseClass, 'text-muted-foreground tabular-nums')}>
             {formatSettlementInterval(fundingRate?.settlementInterval)}
           </td>
         );
 
       case 'change4h':
-        const change4h = rsi?.change4h;
         return (
           <td key={key} className={baseClass}>
-            <ChangeWithSparkline change={change4h} showSparkline={false} />
+            <ChangePill change={rsi?.change4h} />
           </td>
         );
 
       case 'change':
-        const sparkline24h = rsi?.sparkline24h || marketCap?.sparkline?.slice(-24);
         return (
           <td key={key} className={baseClass}>
-            <ChangeWithSparkline
-              change={ticker.changeNum}
-              sparklineData={sparkline24h}
-            />
+            <ChangePill change={ticker.changeNum} />
           </td>
         );
 
-      case 'change7d':
-        const change7d = rsi?.change7d;
+      case 'change7d': {
         const sparkline7d = rsi?.sparkline7d || marketCap?.sparkline;
         return (
           <td key={key} className={baseClass}>
-            <ChangeWithSparkline change={change7d} sparklineData={sparkline7d} />
+            <SparklineChange change={rsi?.change7d} sparklineData={sparkline7d} />
           </td>
         );
+      }
 
       case 'marketCap':
         return (
-          <td key={key} className={`${baseClass} text-muted-foreground tabular-nums`}>
-            {marketCap?.marketCap ? (
-              formatMarketCap(marketCap.marketCap)
-            ) : (
-              <span className="text-muted-foreground">--</span>
-            )}
+          <td key={key} className={cn(baseClass, 'text-muted-foreground tabular-nums')}>
+            {marketCap?.marketCap ? formatMarketCap(marketCap.marketCap) : <span className="text-faint">—</span>}
           </td>
         );
 
       case 'volume24h':
         return (
-          <td key={key} className={`${baseClass} text-muted-foreground tabular-nums`}>
+          <td key={key} className={cn(baseClass, 'text-muted-foreground tabular-nums')}>
             {formatVolume(ticker.volCcy24h, ticker.priceNum)}
           </td>
         );
 
       case 'dRsiSignal': {
-        const dSignal = getRsiSignal(rsi?.rsi7 ?? null, rsi?.rsi14 ?? null);
-        const hasRsiData = (rsi?.rsi7 != null || rsi?.rsi14 != null) && dSignal.label !== '--';
+        const avg = getRsiAvg(rsi?.rsi7, rsi?.rsi14);
+        const signal = getRsiSignal(rsi?.rsi7 ?? null, rsi?.rsi14 ?? null);
         return (
-          <td key={key} className={`${baseClass} align-middle group/dsignal`}>
-            <div className="inline-flex flex-col items-center justify-center">
-              <span className={`inline-block px-2 py-0.5 rounded-md text-[0.8125rem] font-semibold whitespace-nowrap ${dSignal.pillStyle}`}>
-                {dSignal.label}
-              </span>
-              <span className={`text-[0.625rem] text-muted-foreground tabular-nums leading-none mt-0.5 whitespace-nowrap h-0 overflow-hidden group-hover/dsignal:h-auto ${hasRsiData ? '' : 'invisible'}`}>
-                {rsi?.rsi7 != null ? rsi.rsi7.toFixed(1) : '--'}/{rsi?.rsi14 != null ? rsi.rsi14.toFixed(1) : '--'}
-              </span>
-            </div>
+          <td key={key} className={baseClass}>
+            <RsiReading
+              value={avg}
+              title={`${signal.label} · RSI7 ${rsi?.rsi7?.toFixed(1) ?? '—'} · RSI14 ${rsi?.rsi14?.toFixed(1) ?? '—'}`}
+            />
           </td>
         );
       }
 
       case 'wRsiSignal': {
-        const wSignal = getRsiSignal(rsi?.rsiW7 ?? null, rsi?.rsiW14 ?? null);
-        const hasRsiData = (rsi?.rsiW7 != null || rsi?.rsiW14 != null) && wSignal.label !== '--';
+        const avg = getRsiAvg(rsi?.rsiW7, rsi?.rsiW14);
+        const signal = getRsiSignal(rsi?.rsiW7 ?? null, rsi?.rsiW14 ?? null);
         return (
-          <td key={key} className={`${baseClass} align-middle group/wsignal`}>
-            <div className="inline-flex flex-col items-center justify-center">
-              <span className={`inline-block px-2 py-0.5 rounded-md text-[0.8125rem] font-semibold whitespace-nowrap ${wSignal.pillStyle}`}>
-                {wSignal.label}
-              </span>
-              <span className={`text-[0.625rem] text-muted-foreground tabular-nums leading-none mt-0.5 whitespace-nowrap h-0 overflow-hidden group-hover/wsignal:h-auto ${hasRsiData ? '' : 'invisible'}`}>
-                {rsi?.rsiW7 != null ? rsi.rsiW7.toFixed(1) : '--'}/{rsi?.rsiW14 != null ? rsi.rsiW14.toFixed(1) : '--'}
-              </span>
-            </div>
+          <td key={key} className={baseClass}>
+            <RsiReading
+              value={avg}
+              title={`${signal.label} · RSI7 ${rsi?.rsiW7?.toFixed(1) ?? '—'} · RSI14 ${rsi?.rsiW14?.toFixed(1) ?? '—'}`}
+            />
           </td>
         );
       }
@@ -296,7 +288,7 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
         const td = getTdDisplay(rsi?.td);
         return (
           <td key={key} className={baseClass}>
-            <span title={td.title} className={`min-w-[42px] text-center ${td.className}`}>
+            <span title={td.title} className={td.className}>
               {td.label}
             </span>
           </td>
@@ -304,44 +296,17 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
       }
 
       case 'rsi7':
-        return (
-          <td key={key} className={baseClass}>
-            <span className={`inline-block px-2 py-0.5 rounded-md text-[0.6875rem] font-semibold tabular-nums min-w-[42px] text-center ${getRsiPillStyle(rsi?.rsi7)}`}>
-              {rsi?.rsi7 != null ? rsi.rsi7.toFixed(1) : '--'}
-            </span>
-          </td>
-        );
-
+        return <td key={key} className={baseClass}><RsiValue value={rsi?.rsi7} /></td>;
       case 'rsi14':
-        return (
-          <td key={key} className={baseClass}>
-            <span className={`inline-block px-2 py-0.5 rounded-md text-[0.6875rem] font-semibold tabular-nums min-w-[42px] text-center ${getRsiPillStyle(rsi?.rsi14)}`}>
-              {rsi?.rsi14 != null ? rsi.rsi14.toFixed(1) : '--'}
-            </span>
-          </td>
-        );
-
+        return <td key={key} className={baseClass}><RsiValue value={rsi?.rsi14} /></td>;
       case 'rsiW7':
-        return (
-          <td key={key} className={baseClass}>
-            <span className={`inline-block px-2 py-0.5 rounded-md text-[0.6875rem] font-semibold tabular-nums min-w-[42px] text-center ${getRsiPillStyle(rsi?.rsiW7)}`}>
-              {rsi?.rsiW7 != null ? rsi.rsiW7.toFixed(1) : '--'}
-            </span>
-          </td>
-        );
-
+        return <td key={key} className={baseClass}><RsiValue value={rsi?.rsiW7} /></td>;
       case 'rsiW14':
-        return (
-          <td key={key} className={baseClass}>
-            <span className={`inline-block px-2 py-0.5 rounded-md text-[0.6875rem] font-semibold tabular-nums min-w-[42px] text-center ${getRsiPillStyle(rsi?.rsiW14)}`}>
-              {rsi?.rsiW14 != null ? rsi.rsiW14.toFixed(1) : '--'}
-            </span>
-          </td>
-        );
+        return <td key={key} className={baseClass}><RsiValue value={rsi?.rsiW14} /></td>;
 
       case 'listDate':
         return (
-          <td key={key} className={`${baseClass} text-[0.75rem] text-muted-foreground`}>
+          <td key={key} className={cn(baseClass, 'text-muted-foreground')}>
             {formatListDate(listingData?.listTime)}
           </td>
         );
@@ -349,7 +314,7 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
       default:
         return (
           <td key={key} className={baseClass}>
-            --
+            <span className="text-faint">—</span>
           </td>
         );
     }
@@ -359,7 +324,7 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
     <tr
       ref={ref}
       data-index={index}
-      className="hover:bg-muted/50 border-b border-gray-950/[0.10] dark:border-white/[0.10] group"
+      className="data-row group"
     >
       {visibleColumns.map(renderCell)}
     </tr>

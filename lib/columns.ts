@@ -9,7 +9,7 @@ import { FUNDING } from './constants';
 // Column tooltip content
 export const COLUMN_TOOLTIPS: Partial<Record<ColumnKey, string[]>> = {
   dRsiSignal: [
-    'Avg = (D-RSI7 + D-RSI14) / 2',
+    'Daily RSI = (D-RSI7 + D-RSI14) / 2',
     '≤20: Extreme Oversold',
     '≤25: Oversold',
     '≤30: Very Weak',
@@ -21,7 +21,7 @@ export const COLUMN_TOOLTIPS: Partial<Record<ColumnKey, string[]>> = {
     '>85: Extreme Overbought',
   ],
   wRsiSignal: [
-    'Avg = (W-RSI7 + W-RSI14) / 2',
+    'Weekly RSI = (W-RSI7 + W-RSI14) / 2',
     '≤20: Extreme Oversold',
     '≤25: Oversold',
     '≤30: Very Weak',
@@ -42,29 +42,30 @@ export const COLUMN_TOOLTIPS: Partial<Record<ColumnKey, string[]>> = {
   ],
 };
 
-// Column definitions - all columns centered except symbol (left-aligned)
+// Column definitions — numbers right-aligned (tabular), token left-aligned,
+// short signal badges centered.
 export const COLUMN_DEFINITIONS: Record<ColumnKey, { label: string; width: number; align: 'left' | 'right' | 'center'; fixed?: boolean; sortable?: boolean }> = {
-  favorite: { label: '', width: 40, align: 'center', fixed: true, sortable: false },
-  rank: { label: '#', width: 48, align: 'center', fixed: true, sortable: true },
-  logo: { label: '', width: 32, align: 'center', fixed: true, sortable: false },
-  symbol: { label: 'Token', width: 95, align: 'left', fixed: true, sortable: true },
-  price: { label: 'Price', width: 90, align: 'center', sortable: true },
-  fundingRate: { label: 'Funding Rate', width: 95, align: 'center', sortable: true },
-  fundingApr: { label: 'Funding APR', width: 95, align: 'center', sortable: true },
-  fundingInterval: { label: 'Funding Interval', width: 110, align: 'center', sortable: true },
-  change4h: { label: '4h', width: 68, align: 'center', sortable: true },
-  change: { label: '24h', width: 68, align: 'center', sortable: true },
-  change7d: { label: '7d', width: 68, align: 'center', sortable: true },
-  volume24h: { label: 'Vol 24h', width: 85, align: 'center', sortable: true },
-  marketCap: { label: 'Market Cap', width: 90, align: 'center', sortable: true },
-  dRsiSignal: { label: 'D-RSI Avg Signal', width: 125, align: 'center', sortable: true },
-  tdSeq: { label: 'D-TD Signal', width: 90, align: 'center', sortable: true },
-  wRsiSignal: { label: 'W-RSI Avg Signal', width: 125, align: 'center', sortable: true },
-  rsi7: { label: 'D-RSI7', width: 58, align: 'center', sortable: true },
-  rsi14: { label: 'D-RSI14', width: 62, align: 'center', sortable: true },
-  rsiW7: { label: 'W-RSI7', width: 58, align: 'center', sortable: true },
-  rsiW14: { label: 'W-RSI14', width: 62, align: 'center', sortable: true },
-  listDate: { label: 'Listed', width: 75, align: 'center', sortable: true }
+  favorite: { label: '', width: 36, align: 'center', fixed: true, sortable: false },
+  rank: { label: '#', width: 38, align: 'center', fixed: true, sortable: true },
+  logo: { label: '', width: 36, align: 'center', fixed: true, sortable: false },
+  symbol: { label: 'Token', width: 92, align: 'left', fixed: true, sortable: true },
+  price: { label: 'Price', width: 112, align: 'right', sortable: true },
+  fundingRate: { label: 'Funding rate', width: 104, align: 'right', sortable: true },
+  fundingApr: { label: 'Funding APR', width: 124, align: 'right', sortable: true },
+  fundingInterval: { label: 'Interval', width: 76, align: 'right', sortable: true },
+  change4h: { label: '4h', width: 90, align: 'right', sortable: true },
+  change: { label: '24h', width: 90, align: 'right', sortable: true },
+  change7d: { label: '7 days', width: 148, align: 'right', sortable: true },
+  volume24h: { label: 'Volume 24h', width: 100, align: 'right', sortable: true },
+  marketCap: { label: 'Market cap', width: 104, align: 'right', sortable: true },
+  dRsiSignal: { label: 'Daily RSI', width: 116, align: 'right', sortable: true },
+  tdSeq: { label: 'TD', width: 72, align: 'center', sortable: true },
+  wRsiSignal: { label: 'Weekly RSI', width: 116, align: 'right', sortable: true },
+  rsi7: { label: 'D-RSI7', width: 72, align: 'right', sortable: true },
+  rsi14: { label: 'D-RSI14', width: 76, align: 'right', sortable: true },
+  rsiW7: { label: 'W-RSI7', width: 72, align: 'right', sortable: true },
+  rsiW14: { label: 'W-RSI14', width: 76, align: 'right', sortable: true },
+  listDate: { label: 'Listed', width: 88, align: 'right', sortable: true }
 };
 
 // Format funding APR (annualized)
@@ -79,9 +80,9 @@ export function formatFundingApr(rate: number | undefined | null, intervalHours:
 
 // Get funding APR color class
 export function getFundingAprClass(rate: number | undefined | null): string {
-  if (rate === undefined || rate === null) return 'text-muted-foreground';
-  if (rate > 0) return 'text-green-500';
-  if (rate < 0) return 'text-red-500';
+  if (rate === undefined || rate === null) return 'text-faint';
+  if (rate > 0) return 'text-up-ink';
+  if (rate < 0) return 'text-down-ink';
   return 'text-muted-foreground';
 }
 
@@ -101,9 +102,9 @@ export function formatSettlementInterval(hours: number | undefined | null): stri
 
 // Get funding rate color class
 export function getFundingRateClass(rate: number | undefined | null): string {
-  if (rate === undefined || rate === null) return 'text-muted-foreground';
-  if (rate > FUNDING.POSITIVE_THRESHOLD) return 'text-green-500';
-  if (rate < FUNDING.NEGATIVE_THRESHOLD) return 'text-red-500';
+  if (rate === undefined || rate === null) return 'text-faint';
+  if (rate > FUNDING.POSITIVE_THRESHOLD) return 'text-up-ink';
+  if (rate < FUNDING.NEGATIVE_THRESHOLD) return 'text-down-ink';
   return 'text-muted-foreground';
 }
 

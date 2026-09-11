@@ -3,7 +3,6 @@
 import { ReactNode, useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
-import { Badge } from './badge';
 
 // Single button option
 export interface PillButtonOption<T extends string = string> {
@@ -19,8 +18,8 @@ export interface PillButtonOption<T extends string = string> {
   disabled?: boolean;
   /** Hidden on mobile (show only on md+) */
   hiddenOnMobile?: boolean;
-  /** Custom active color class (e.g., 'text-red-500', 'text-green-500') */
-  activeColor?: string;
+  /** Background class for a small leading color dot (e.g. 'bg-hot') */
+  dot?: string;
   /** Tooltip content (string or ReactNode) */
   tooltip?: ReactNode;
 }
@@ -33,6 +32,13 @@ interface PillButtonGroupBaseProps<T extends string = string> {
   className?: string;
   /** Size variant: 'sm' for compact, 'md' for default */
   size?: 'sm' | 'md';
+  /**
+   * 'segmented' — Apple segmented control (shared track, raised selection).
+   * 'chips' — free-standing toggle pills; selection inverts (filters, pickers).
+   */
+  variant?: 'segmented' | 'chips';
+  /** Stretch segments to fill the container width (segmented only) */
+  fullWidth?: boolean;
   /** Scroll horizontally instead of wrapping (ideal for tab bars) */
   scrollable?: boolean;
 }
@@ -75,7 +81,8 @@ function PillButton<T extends string = string>({
   active,
   isHovered,
   size,
-  sizeStyles,
+  variant,
+  fullWidth,
   onMouseEnter,
   onMouseLeave,
   onClick,
@@ -84,7 +91,8 @@ function PillButton<T extends string = string>({
   active: boolean;
   isHovered: boolean;
   size: 'sm' | 'md';
-  sizeStyles: Record<string, string>;
+  variant: 'segmented' | 'chips';
+  fullWidth: boolean;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
   onClick: () => void;
@@ -107,33 +115,44 @@ function PillButton<T extends string = string>({
   return (
     <div
       data-active={active || undefined}
-      className={cn('relative', option.hiddenOnMobile && 'hidden md:block')}
+      className={cn('relative', fullWidth && 'flex-1 min-w-0', option.hiddenOnMobile && 'hidden md:block')}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
       <button
         ref={buttonRef}
+        type="button"
         onClick={onClick}
         onFocus={onMouseEnter}
         onBlur={onMouseLeave}
         disabled={option.disabled}
+        aria-pressed={active}
         className={cn(
-          'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md font-medium',
-          'ring-offset-background transition-[color,background-color,box-shadow]',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-          sizeStyles[size],
-          active
-            ? cn('bg-background text-foreground shadow-sm', option.activeColor)
-            : 'text-muted-foreground cursor-pointer hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10',
+          'inline-flex items-center justify-center gap-1.5 whitespace-nowrap font-medium text-foreground',
+          'transition-[color,background-color,box-shadow] duration-200',
+          'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40',
+          fullWidth && 'w-full',
+          variant === 'segmented'
+            ? cn(
+                size === 'sm' ? 'h-6 px-2.5 text-xs rounded-md' : 'h-7 px-3.5 text-[0.8125rem] rounded-[7px]',
+                fullWidth && 'px-1.5',
+                active ? 'segment-on font-semibold' : 'hover:bg-fill'
+              )
+            : cn(
+                size === 'sm' ? 'h-7 px-2.5 text-xs' : 'h-7 px-3 text-[0.8125rem]',
+                'rounded-full',
+                active ? 'bg-foreground text-background' : 'bg-fill hover:bg-fill-strong'
+              ),
           option.disabled && 'pointer-events-none opacity-50'
         )}
       >
+        {option.dot && <span className={cn('w-[7px] h-[7px] rounded-full flex-shrink-0', option.dot)} aria-hidden="true" />}
         {option.icon}
         {option.label}
         {option.badge !== undefined && (
-          <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[0.625rem]">
+          <span className={cn('tabular-nums font-medium', active && variant === 'chips' ? 'text-background/60' : 'text-faint')}>
             {option.badge}
-          </Badge>
+          </span>
         )}
       </button>
 
@@ -141,14 +160,14 @@ function PillButton<T extends string = string>({
       {option.tooltip && isHovered && tooltipPos &&
         createPortal(
           <div
-            className="fixed z-[9999] rounded-md border border-gray-950/[0.10] dark:border-white/[0.10] bg-popover p-3 text-popover-foreground shadow-md whitespace-nowrap animate-in fade-in-0 zoom-in-95"
+            className="fixed z-[9999] rounded-xl border border-separator bg-popover px-3 py-2.5 text-popover-foreground shadow-lg whitespace-nowrap animate-in fade-in-0 zoom-in-95"
             style={{ top: tooltipPos.top, left: tooltipPos.left }}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
           >
             {typeof option.tooltip === 'string' ? (
               <>
-                <div className="text-[0.6875rem] font-medium text-muted-foreground mb-1">Filter Criteria</div>
+                <div className="text-[0.6875rem] font-medium text-muted-foreground mb-1">Filter criteria</div>
                 <div className="text-xs">{option.tooltip}</div>
               </>
             ) : (
@@ -163,9 +182,8 @@ function PillButton<T extends string = string>({
 }
 
 /**
- * PillButtonGroup - Segmented control built on shadcn/ui design system
+ * PillButtonGroup - Apple-style segmented control / toggle chips
  *
- * A group of toggle buttons with pill/rounded style.
  * Supports both single-select and multi-select modes.
  */
 export function PillButtonGroup<T extends string = string>(props: PillButtonGroupProps<T>) {
@@ -175,6 +193,8 @@ export function PillButtonGroup<T extends string = string>(props: PillButtonGrou
     onChange,
     className,
     size = 'md',
+    variant = 'segmented',
+    fullWidth = false,
     multiSelect = false,
     scrollable = false,
   } = props;
@@ -182,12 +202,6 @@ export function PillButtonGroup<T extends string = string>(props: PillButtonGrou
   const allowDeselect = !multiSelect && (props as PillButtonGroupSingleProps<T>).allowDeselect;
 
   const [hoveredValue, setHoveredValue] = useState<T | null>(null);
-
-  // Size-based styles using design token heights
-  const sizeStyles = {
-    sm: 'h-control-compact px-2.5 text-xs',
-    md: 'h-control-default px-3 text-sm',
-  };
 
   // Check if a value is active
   const isActive = (optionValue: T): boolean => {
@@ -216,11 +230,15 @@ export function PillButtonGroup<T extends string = string>(props: PillButtonGrou
 
   return (
     <div
+      role="group"
       className={cn(
-        'items-center rounded-lg bg-muted p-1 gap-0.5',
-        scrollable
-          ? 'inline-flex flex-nowrap flex-shrink-0'
-          : 'inline-flex flex-wrap',
+        'items-center',
+        variant === 'segmented' ? 'rounded-[9px] bg-fill p-0.5 gap-0.5' : 'gap-1',
+        fullWidth
+          ? 'flex w-full'
+          : scrollable
+            ? 'inline-flex flex-nowrap flex-shrink-0'
+            : 'inline-flex flex-wrap',
         className
       )}
     >
@@ -235,7 +253,8 @@ export function PillButtonGroup<T extends string = string>(props: PillButtonGrou
             active={active}
             isHovered={isHovered}
             size={size}
-            sizeStyles={sizeStyles}
+            variant={variant}
+            fullWidth={fullWidth}
             onMouseEnter={() => setHoveredValue(option.value)}
             onMouseLeave={() => setHoveredValue(null)}
             onClick={() => !option.disabled && handleClick(option.value)}

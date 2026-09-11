@@ -1,10 +1,9 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { APP_CONFIG } from '@/lib/config';
-import { ThemeToggle } from '@/components/ui';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ThemeToggle, PillButtonGroup } from '@/components/ui';
 
 // P Logo SVG Component - matches the new flat minimal logo design
 function PerpLogo({ className = "w-7 h-7" }: { className?: string }) {
@@ -90,7 +89,16 @@ const EXCHANGES = [
   },
 ] as const;
 
-export const Header = memo(function Header() {
+interface HeaderProps {
+  /** Right-side toolbar content (e.g. the search field), desktop only */
+  actions?: ReactNode;
+}
+
+/**
+ * App toolbar — translucent material bar: brand on the left, the exchange
+ * switch centered, search + appearance on the right.
+ */
+export const Header = memo(function Header({ actions }: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -98,39 +106,37 @@ export const Header = memo(function Header() {
 
   const handleExchangeChange = (value: string) => {
     const exchange = EXCHANGES.find(e => e.id === value);
-    if (exchange) {
+    if (exchange && exchange.id !== activeExchange) {
       router.push(exchange.href);
     }
   };
 
   return (
-    <header className="px-safe py-2 flex-shrink-0">
-      <div className="max-w-[1600px] mx-auto w-full flex items-center justify-between">
-        {/* Left: Logo + Title + Version */}
-        <div className="flex items-center gap-3">
-          <PerpLogo className="w-8 h-8 rounded-lg" />
-          <div className="flex items-baseline gap-2">
-            <h1 className="text-lg font-semibold text-foreground" translate="no">{APP_CONFIG.name}</h1>
-            <span className="text-xs text-muted-foreground font-medium">{APP_CONFIG.versionDisplay}</span>
-          </div>
+    <header className="px-safe h-[52px] flex-shrink-0 flex items-center">
+      <div className="max-w-[1600px] mx-auto w-full grid grid-cols-[auto_1fr_auto] md:grid-cols-[1fr_auto_1fr] items-center gap-2 md:gap-3">
+        {/* Brand */}
+        <div className="flex items-center gap-2.5 min-w-0" title={APP_CONFIG.versionDisplay}>
+          <PerpLogo className="w-[26px] h-[26px] rounded-[7px] flex-shrink-0 shadow-[0_0_0_0.5px_rgb(0_0_0/0.08)]" />
+          <span className="sr-only sm:not-sr-only text-[0.9375rem] font-semibold tracking-[-0.015em]" translate="no">{APP_CONFIG.name}</span>
         </div>
 
-        {/* Right: Theme Toggle + Exchange Tabs */}
-        <div className="flex items-center gap-2">
+        {/* Exchange switch */}
+        <nav aria-label="Exchange" className="justify-self-end md:justify-self-center">
+          <PillButtonGroup
+            options={EXCHANGES.map((exchange) => {
+              const Logo = exchange.logo;
+              return { value: exchange.id, label: exchange.label, icon: <Logo className="w-3.5 h-3.5" /> };
+            })}
+            value={activeExchange}
+            onChange={handleExchangeChange}
+            scrollable
+          />
+        </nav>
+
+        {/* Search + appearance */}
+        <div className="flex items-center justify-end gap-1.5">
+          {actions && <div className="hidden md:block">{actions}</div>}
           <ThemeToggle />
-          <Tabs value={activeExchange} onValueChange={handleExchangeChange}>
-            <TabsList>
-              {EXCHANGES.map((exchange) => {
-                const Logo = exchange.logo;
-                return (
-                  <TabsTrigger key={exchange.id} value={exchange.id} className="flex items-center gap-1.5">
-                    <Logo className="w-4 h-4" />
-                    {exchange.label}
-                  </TabsTrigger>
-                );
-              })}
-            </TabsList>
-          </Tabs>
         </div>
       </div>
     </header>

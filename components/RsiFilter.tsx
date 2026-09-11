@@ -26,13 +26,13 @@ export function RsiFilter({ label, value, onChange }: RsiFilterProps) {
   const clickHandler = (e: React.MouseEvent<HTMLInputElement>) => setTimeout(() => (e.target as HTMLInputElement).select(), 0);
 
   const buttonBase = "px-2 py-1 rounded-md text-xs font-medium transition-[color,background-color,box-shadow]";
-  const buttonActive = "bg-background text-foreground shadow-sm";
+  const buttonActive = "segment-on text-foreground";
   const buttonInactive = "text-muted-foreground hover:text-foreground";
 
   return (
     <div className="inline-flex items-center gap-2">
       {/* Label + Presets */}
-      <div className="inline-flex bg-muted rounded-lg p-0.5 gap-0.5 items-center">
+      <div className="inline-flex bg-fill rounded-lg p-0.5 gap-0.5 items-center">
         {/* Label */}
         <button
           onClick={() => onChange(undefined)}
@@ -54,7 +54,7 @@ export function RsiFilter({ label, value, onChange }: RsiFilterProps) {
       </div>
 
       {/* Custom < */}
-      <div className="inline-flex bg-muted rounded-lg p-0.5 items-center">
+      <div className="inline-flex bg-fill rounded-lg p-0.5 items-center">
         <div
           onClick={(e) => {
             if (!isCustomLess) onChange(undefined);
@@ -90,7 +90,7 @@ export function RsiFilter({ label, value, onChange }: RsiFilterProps) {
       </div>
 
       {/* Custom range ~ */}
-      <div className="inline-flex bg-muted rounded-lg p-0.5 items-center">
+      <div className="inline-flex bg-fill rounded-lg p-0.5 items-center">
         <div
           onClick={(e) => {
             if (!isCustomRange) onChange(undefined);
@@ -142,7 +142,7 @@ export function RsiFilter({ label, value, onChange }: RsiFilterProps) {
       </div>
 
       {/* Custom > */}
-      <div className="inline-flex bg-muted rounded-lg p-0.5 items-center">
+      <div className="inline-flex bg-fill rounded-lg p-0.5 items-center">
         <div
           onClick={(e) => {
             if (!isCustomGreater) onChange(undefined);

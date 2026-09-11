@@ -84,71 +84,58 @@ export function FundingMarket({
 
   return (
     <SmallWidget
-      title="Funding Market"
-      icon={<span>📊</span>}
-      subtitle={`${exchangeLabel} Perp Top ${UNIVERSE.MAX_CRYPTO} by Market Cap`}
+      title="Funding Sentiment"
+      subtitle={`Top ${UNIVERSE.MAX_CRYPTO} ${exchangeLabel} perps by market cap`}
       loading={isLoading}
-      className="group"
       tooltip={
         <TooltipList items={[
           `${exchangeLabel} perp top ${UNIVERSE.MAX_CRYPTO} by market cap`,
-          <><span className="text-green-500">Positive</span>: rate &gt; 0 (longs pay shorts)</>,
-          <><span className="text-red-500">Negative</span>: rate &lt; 0 (shorts pay longs)</>,
+          <><span className="text-up-ink">Positive</span>: rate &gt; 0 (longs pay shorts)</>,
+          <><span className="text-down-ink">Negative</span>: rate &lt; 0 (shorts pay longs)</>,
           "USDC/USDT pairs always have 0 funding rate",
+          "Tap a number to show that group in the table",
         ]} />
       }
     >
-      <div className="space-y-4">
-        {/* Main Stats */}
-        <div className="flex items-center justify-around">
-          {/* Positive */}
-          <button
-            type="button"
-            disabled={!(onGroupClick && positiveCount > 0)}
-            className="text-center enabled:cursor-pointer enabled:hover:opacity-70 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
-            onClick={() => positiveCount > 0 && onGroupClick?.(positiveSymbols)}
-            aria-label={`Positive funding: ${positiveCount}`}
-          >
-            <div className="text-[1.75rem] font-bold text-green-500">
-              {isLoading ? '--' : positiveCount}
-            </div>
-            <div className="text-[0.6875rem] text-muted-foreground">Positive</div>
-          </button>
+      {/* Split bar */}
+      <div className="flex gap-0.5 h-2 mb-3" aria-hidden="true">
+        {total > 0 ? (
+          <>
+            <span className="bg-up rounded-l-full rounded-r-[2px] transition-[flex-grow] duration-300" style={{ flexGrow: positivePercent }} />
+            <span className="bg-zone-neutral rounded-[2px] transition-[flex-grow] duration-300" style={{ flexGrow: Math.max(0, 100 - positivePercent - negativePercent) }} />
+            <span className="bg-down rounded-r-full rounded-l-[2px] transition-[flex-grow] duration-300" style={{ flexGrow: negativePercent }} />
+          </>
+        ) : (
+          <span className="flex-1 bg-fill rounded-full" />
+        )}
+      </div>
 
-          {/* Divider */}
-          <div className="h-12 w-px bg-muted" aria-hidden="true" />
+      <div className="flex items-end justify-between">
+        <button
+          type="button"
+          disabled={!(onGroupClick && positiveCount > 0)}
+          className="flex flex-col items-start rounded-lg enabled:hover:opacity-70 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40 transition-opacity"
+          onClick={() => positiveCount > 0 && onGroupClick?.(positiveSymbols)}
+          aria-label={`Show ${positiveCount} tokens with positive funding`}
+        >
+          <span className="text-[1.75rem] leading-tight font-semibold tracking-[-0.025em] tabular-nums text-up-ink">
+            {isLoading ? '--' : positiveCount}
+          </span>
+          <span className="text-xs text-muted-foreground">Positive · longs pay</span>
+        </button>
 
-          {/* Negative */}
-          <button
-            type="button"
-            disabled={!(onGroupClick && negativeCount > 0)}
-            className="text-center enabled:cursor-pointer enabled:hover:opacity-70 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
-            onClick={() => negativeCount > 0 && onGroupClick?.(negativeSymbols)}
-            aria-label={`Negative funding: ${negativeCount}`}
-          >
-            <div className="text-[1.75rem] font-bold text-red-500">
-              {isLoading ? '--' : negativeCount}
-            </div>
-            <div className="text-[0.6875rem] text-muted-foreground">Negative</div>
-          </button>
-        </div>
-
-        {/* Visual Bar */}
-        <div className="h-2 rounded-full bg-muted overflow-hidden flex">
-          {total > 0 && (
-            <>
-              <div
-                className="bg-green-500 transition-[width] duration-300"
-                style={{ width: `${positivePercent}%` }}
-              />
-              <div
-                className="bg-red-500 transition-[width] duration-300"
-                style={{ width: `${negativePercent}%` }}
-              />
-            </>
-          )}
-        </div>
-
+        <button
+          type="button"
+          disabled={!(onGroupClick && negativeCount > 0)}
+          className="flex flex-col items-end rounded-lg enabled:hover:opacity-70 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40 transition-opacity"
+          onClick={() => negativeCount > 0 && onGroupClick?.(negativeSymbols)}
+          aria-label={`Show ${negativeCount} tokens with negative funding`}
+        >
+          <span className="text-[1.75rem] leading-tight font-semibold tracking-[-0.025em] tabular-nums text-down-ink">
+            {isLoading ? '--' : negativeCount}
+          </span>
+          <span className="text-xs text-muted-foreground">Negative · shorts pay</span>
+        </button>
       </div>
     </SmallWidget>
   );

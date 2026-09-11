@@ -3,13 +3,11 @@
 import { ReactNode, useState } from 'react';
 import { Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button, Card, CardHeader, CardContent, Skeleton } from '@/components/ui';
+import { Skeleton } from '@/components/ui';
 
 export interface SmallWidgetProps {
   /** Widget title displayed in header */
   title: string;
-  /** Optional icon displayed before title */
-  icon?: ReactNode;
   /** Optional subtitle/description */
   subtitle?: string;
   /** Tooltip content - shows info icon, click to expand inline */
@@ -32,52 +30,17 @@ export interface SmallWidgetProps {
 }
 
 /**
- * SmallWidget - Base template for small dashboard widgets
+ * SmallWidget - Base template for sidebar widgets
  *
- * Standard dimensions: 280px - 360px width
- * Use for: Quick stats, mini charts, indicators
+ * An inset-grouped card (iOS Settings style): white surface, hairline shadow,
+ * 14px corners, a title + secondary subtitle header, no header rule.
  *
- * Features:
- * - Built on shadcn/ui Card component
- * - Subtle border and shadow for definition
- * - Consistent styling across all widgets
- * - Click info icon to show/hide explanation inline (smooth expand)
- *
- * Design Guidelines:
- * - Avoid bg-muted for small elements (badges, counters) - looks boxy
- * - Use border instead of bg-muted for toggle groups
- * - Keep functional colors (green/red) for data, shadcn vars for UI
- * - hover states: use hover:bg-muted/50 (subtle, not solid)
- *
- * Tooltip Guidelines:
- * - Use <TooltipList> component from @/components/ui
- * - Pass array of strings or JSX elements
- * - Bullet points are added automatically
- * - Use colored spans for keywords
- *
- * @example
- * ```tsx
- * import { TooltipList } from '@/components/ui';
- *
- * <SmallWidget
- *   title="RSI Overview"
- *   icon={<Activity className="w-4 h-4" />}
- *   subtitle="Daily RSI distribution"
- *   tooltip={
- *     <TooltipList items={[
- *       "Simple text explanation",
- *       "Another point here",
- *       <><span className="text-red-500">Keyword</span>: with explanation</>,
- *     ]} />
- *   }
- * >
- *   <div>Your content here</div>
- * </SmallWidget>
- * ```
+ * - `padded={false}` lets list content run edge to edge (see TokenListRow)
+ * - `tooltip` adds an ⓘ button that expands an explanation inline
+ * - Keep semantic colors (up/down, cold/hot) for data, neutrals for chrome
  */
 export function SmallWidget({
   title,
-  icon,
   subtitle,
   tooltip,
   children,
@@ -90,70 +53,54 @@ export function SmallWidget({
   const [showTooltip, setShowTooltip] = useState(false);
 
   return (
-    <Card
-      className={cn(
-        // Size constraints
-        'min-w-[280px] w-full',
-        // Flex behavior in grid
-        'flex flex-col',
-        className
-      )}
-    >
+    <section className={cn('surface-card w-full min-w-[280px] flex flex-col', className)}>
       {/* Header */}
-      <CardHeader className="flex flex-row items-center justify-between px-widget-header-px-sm py-widget-header-py border-b border-gray-950/[0.10] dark:border-white/[0.10] space-y-0">
-        <div className="flex items-center gap-2 min-w-0">
-          {icon && (
-            <span className="text-muted-foreground flex-shrink-0" aria-hidden="true">{icon}</span>
+      <div className="flex items-start justify-between gap-2 px-4 pt-3.5">
+        <div className="min-w-0">
+          <h2 className="text-[0.9375rem] leading-5 font-semibold tracking-[-0.015em] truncate">{title}</h2>
+          {subtitle && (
+            <p className="text-xs text-muted-foreground truncate mt-px">{subtitle}</p>
           )}
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <h2 className="font-medium text-sm truncate text-pretty">
-                {title}
-              </h2>
-              {tooltip && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowTooltip(!showTooltip)}
-                  className={cn(
-                    'h-5 w-5 rounded-full text-muted-foreground hover:text-foreground',
-                    showTooltip && 'text-primary'
-                  )}
-                  aria-label="Toggle information"
-                >
-                  <Info className="w-3.5 h-3.5" />
-                </Button>
-              )}
-            </div>
-            {subtitle && (
-              <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
-            )}
-          </div>
         </div>
-        {headerActions && (
-          <div className="flex items-center gap-1 flex-shrink-0 ml-2">
-            {headerActions}
-          </div>
-        )}
-      </CardHeader>
+        <div className="flex items-center gap-1 flex-shrink-0 -mr-1">
+          {headerActions}
+          {tooltip && (
+            <button
+              type="button"
+              onClick={() => setShowTooltip(!showTooltip)}
+              className={cn(
+                'w-6 h-6 rounded-full grid place-items-center text-faint transition-colors',
+                'hover:bg-fill hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40',
+                showTooltip && 'text-tint hover:text-tint'
+              )}
+              aria-label={`About ${title}`}
+              aria-expanded={showTooltip}
+            >
+              <Info className="w-3.5 h-3.5" aria-hidden="true" />
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Content */}
-      <CardContent className={cn('flex-1', padded ? 'p-4' : 'p-0')}>
+      <div className={cn('flex-1', padded ? 'px-4 pt-3 pb-4' : 'pt-1.5 pb-1.5')}>
         {loading ? (
-          skeleton ?? (
-            <div className="space-y-2.5 min-h-[80px]">
-              <Skeleton className="h-9 w-full rounded-xl" />
-              <Skeleton className="h-3 w-3/4" />
-              <Skeleton className="h-3 w-1/2" />
-            </div>
-          )
+          <div className={cn(!padded && 'px-4 pt-1.5 pb-2.5')}>
+            {skeleton ?? (
+              <div className="space-y-2.5 min-h-[80px]">
+                <Skeleton className="h-9 w-full rounded-xl" />
+                <Skeleton className="h-3 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
+              </div>
+            )}
+          </div>
         ) : (
           <>
             {children}
 
-            {/* Inline Tooltip - auto height */}
+            {/* Inline explanation */}
             {tooltip && showTooltip && (
-              <div className="mt-4 pt-3 border-t border-gray-950/[0.10] dark:border-white/[0.10]">
+              <div className={cn('mt-3 pt-3 hairline-t', !padded && 'mx-4 mb-2.5')}>
                 <div className="text-[0.6875rem] text-muted-foreground space-y-1">
                   {tooltip}
                 </div>
@@ -161,8 +108,8 @@ export function SmallWidget({
             )}
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }
 

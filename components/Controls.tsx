@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Search, Settings, RotateCcw } from 'lucide-react';
+import { SlidersHorizontal, RotateCcw, X } from 'lucide-react';
 import { ColumnVisibility, ColumnKey, Filters, RsiSignalType, AssetCategory } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { getDefaultColumns } from '@/lib/defaults';
 import { UNIVERSE } from '@/lib/constants';
 import { RsiFilter } from './RsiFilter';
-import { PillButtonGroup, PillButtonOption, Button } from '@/components/ui';
+import { PillButtonGroup, PillButtonOption, SearchField } from '@/components/ui';
 
 // Quick filter types
 type QuickFilter = 'all' | 'crypto' | 'stock' | 'top25' | 'meme' | 'overbought' | 'oversold';
@@ -47,8 +47,6 @@ export function Controls({
   const [customizeTab, setCustomizeTab] = useState<'columns' | 'filters'>('columns');
   const customizePanelRef = useRef<HTMLDivElement>(null);
   const customizeButtonRef = useRef<HTMLButtonElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
 
   // Close panel when clicking outside
   useEffect(() => {
@@ -130,6 +128,12 @@ export function Controls({
     onSearchChange('');
     // Preserve the current assetCategory when switching quick filters
     const currentCategory = filters.assetCategory;
+    // Chips toggle: tapping the active one clears it back to the category view
+    if (filter !== 'all' && filter === getActiveQuickFilter()) {
+      onFiltersChange(currentCategory ? { assetCategory: currentCategory } : {});
+      onScrollToTop?.();
+      return;
+    }
     switch (filter) {
       case 'all':
         // 'All' clears everything including assetCategory — show both crypto + stock
@@ -246,14 +250,14 @@ export function Controls({
   // Asset category options (Crypto / Stock / All toggle)
   const assetCategoryOptions: PillButtonOption<string>[] = [
     { value: 'crypto', label: 'Crypto', tooltip: `Top ${UNIVERSE.MAX_CRYPTO} tokens by market cap only` },
-    { value: 'stock', label: 'Stock' },
+    { value: 'stock', label: 'Stocks' },
     { value: 'all', label: 'All' },
   ];
 
   // Customize panel tab options
   const customizePanelOptions: PillButtonOption<string>[] = [
-    { value: 'columns', label: hasNonDefaultColumns ? 'Columns •' : 'Columns' },
-    { value: 'filters', label: hasFilters ? 'Filters •' : 'Filters' },
+    { value: 'columns', label: 'Columns', dot: hasNonDefaultColumns ? 'bg-tint' : undefined },
+    { value: 'filters', label: 'Filters', dot: hasFilters ? 'bg-tint' : undefined },
   ];
 
   // Main filter options - using PillButtonGroup template
@@ -272,9 +276,8 @@ export function Controls({
     },
     {
       value: 'meme',
-      label: '🐸 Meme',
-      activeColor: 'text-orange-500',
-      tooltip: 'Meme Tokens Only'
+      label: 'Meme',
+      tooltip: 'Meme tokens only'
     },
   ], [exchangeLabel, exchange]);
 
@@ -289,12 +292,12 @@ export function Controls({
   const rsiFilterOptions = useMemo((): PillButtonOption<QuickFilter>[] => [
     {
       value: 'overbought',
-      label: '🔥 Overbought',
+      label: 'Overbought',
+      dot: 'bg-hot',
       badge: overboughtCount > 0 ? overboughtCount : undefined,
-      activeColor: 'text-red-600',
       tooltip: (
         <>
-          <div className="text-[0.6875rem] font-medium text-muted-foreground mb-1">Daily Overbought</div>
+          <div className="text-[0.6875rem] font-medium text-muted-foreground mb-1">Daily overbought</div>
           <div className="text-[0.75rem] flex flex-col gap-0.5">
             <span className="text-foreground">{scopeLabel}</span>
             <span className="text-foreground">D-RSI7 &gt; 75</span>
@@ -305,12 +308,12 @@ export function Controls({
     },
     {
       value: 'oversold',
-      label: '🧊 Oversold',
+      label: 'Oversold',
+      dot: 'bg-cold',
       badge: oversoldCount > 0 ? oversoldCount : undefined,
-      activeColor: 'text-green-600',
       tooltip: (
         <>
-          <div className="text-[0.6875rem] font-medium text-muted-foreground mb-1">Daily Oversold</div>
+          <div className="text-[0.6875rem] font-medium text-muted-foreground mb-1">Daily oversold</div>
           <div className="text-[0.75rem] flex flex-col gap-0.5">
             <span className="text-foreground">{scopeLabel}</span>
             <span className="text-foreground">D-RSI7 &lt; 25</span>
@@ -324,30 +327,30 @@ export function Controls({
   // Column options grouped by category
   const columnGroups: { label: string; columns: { key: ColumnKey; label: string }[] }[] = [
     {
-      label: 'Price & Funding',
+      label: 'Price & funding',
       columns: [
         { key: 'price', label: 'Price' },
-        { key: 'fundingRate', label: 'Funding Rate' },
+        { key: 'fundingRate', label: 'Funding rate' },
         { key: 'fundingApr', label: 'Funding APR' },
-        { key: 'fundingInterval', label: 'Funding Interval' },
-        { key: 'volume24h', label: '24H Volume' },
-        { key: 'marketCap', label: 'Market Cap' },
+        { key: 'fundingInterval', label: 'Funding interval' },
+        { key: 'volume24h', label: '24h volume' },
+        { key: 'marketCap', label: 'Market cap' },
       ]
     },
     {
-      label: 'Price Change',
+      label: 'Price change',
       columns: [
-        { key: 'change4h', label: '4H Change' },
-        { key: 'change', label: '24H Change' },
-        { key: 'change7d', label: '7D Change' },
+        { key: 'change4h', label: '4h change' },
+        { key: 'change', label: '24h change' },
+        { key: 'change7d', label: '7d change' },
       ]
     },
     {
-      label: 'RSI Indicators',
+      label: 'RSI',
       columns: [
-        { key: 'dRsiSignal', label: 'D-RSI Avg Signal' },
-        { key: 'wRsiSignal', label: 'W-RSI Avg Signal' },
-        { key: 'tdSeq', label: 'D-TD Signal' },
+        { key: 'dRsiSignal', label: 'Daily RSI' },
+        { key: 'wRsiSignal', label: 'Weekly RSI' },
+        { key: 'tdSeq', label: 'TD Sequential' },
         { key: 'rsi7', label: 'D-RSI7' },
         { key: 'rsi14', label: 'D-RSI14' },
         { key: 'rsiW7', label: 'W-RSI7' },
@@ -358,127 +361,99 @@ export function Controls({
     ...(exchange !== 'hyperliquid' ? [{
       label: 'Other',
       columns: [
-        { key: 'listDate' as ColumnKey, label: 'List Date' },
+        { key: 'listDate' as ColumnKey, label: 'Listing date' },
       ]
     }] : []),
   ];
 
   return (
     <>
-      {/* Mobile Search Row - minimal style */}
-      <div className="md:hidden mb-3 w-full">
-        <label className="flex items-center gap-2 w-full border-b border-border pb-2 cursor-text focus-within:border-ring">
-          <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
-          <input
-            ref={mobileSearchInputRef}
-            type="text"
-            name="search"
-            inputMode="search"
-            enterKeyHint="search"
-            autoComplete="off"
-            spellCheck={false}
-            placeholder="Search…"
-            value={searchTerm}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="bg-transparent border-none outline-none text-[0.875rem] text-foreground placeholder:text-muted-foreground flex-1"
-            aria-label="Search tokens"
-          />
-        </label>
-      </div>
+      {/* Mobile search (desktop search lives in the toolbar) */}
+      <SearchField value={searchTerm} onChange={onSearchChange} className="md:hidden mb-3 w-full" />
 
-      {/* Quick Filters + Controls Row */}
+      {/* Scope + quick filters + customize */}
       <div className="flex items-center gap-3 relative z-[60]">
         {/* Scrollable filter area */}
         <div className="relative flex-1 min-w-0">
           <div
             ref={scrollContainerRef}
-            className="flex items-center gap-4 overflow-x-auto"
+            className="flex items-center gap-3 overflow-x-auto"
           >
-            {/* Crypto / Stock toggle */}
+            {/* Crypto / Stocks / All */}
             {exchange === 'okx' && (
-              <PillButtonGroup
-                options={assetCategoryOptions}
-                value={activeAssetCategory}
-                onChange={handleAssetCategoryChange}
-                scrollable
-              />
+              <>
+                <PillButtonGroup
+                  options={assetCategoryOptions}
+                  value={activeAssetCategory}
+                  onChange={handleAssetCategoryChange}
+                  scrollable
+                />
+                <span className="w-px h-5 bg-separator flex-shrink-0" aria-hidden="true" />
+              </>
             )}
 
-            {/* Main Quick Filters — visible in Crypto and All modes */}
-            {activeAssetCategory !== 'stock' && (
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {/* Main quick filters — visible in Crypto and All modes */}
+              {activeAssetCategory !== 'stock' && (
+                <PillButtonGroup
+                  variant="chips"
+                  options={mainFilterOptions}
+                  value={activeQuickFilter}
+                  onChange={handleQuickFilter}
+                  scrollable
+                />
+              )}
+
+              {/* RSI quick filters */}
               <PillButtonGroup
-                options={mainFilterOptions}
+                variant="chips"
+                options={rsiFilterOptions}
                 value={activeQuickFilter}
                 onChange={handleQuickFilter}
                 scrollable
+                className="hidden md:inline-flex"
               />
-            )}
-
-            {/* RSI Quick Filters — always visible */}
-            <PillButtonGroup
-              options={rsiFilterOptions}
-              value={activeQuickFilter}
-              onChange={handleQuickFilter}
-              scrollable
-              className="hidden md:inline-flex"
-            />
+            </div>
           </div>
 
           {/* Left fade */}
           <div
             className={cn(
-              'absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent pointer-events-none transition-opacity duration-200',
+              'absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background lg:from-card to-transparent pointer-events-none transition-opacity duration-200',
               showLeftFade ? 'opacity-100' : 'opacity-0'
             )}
           />
           {/* Right fade */}
           <div
             className={cn(
-              'absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none transition-opacity duration-200',
+              'absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background lg:from-card to-transparent pointer-events-none transition-opacity duration-200',
               showRightFade ? 'opacity-100' : 'opacity-0'
             )}
           />
         </div>
 
-        {/* Pinned controls: Settings + Search — hidden on small screens */}
-        <div className="hidden md:flex items-center gap-3 flex-shrink-0">
-          <Button
-            ref={customizeButtonRef}
-            variant="ghost"
-            size="icon"
-            className="h-control-default w-8"
-            onClick={() => setShowCustomizePanel(!showCustomizePanel)}
-            aria-label="Toggle settings panel"
-            aria-expanded={showCustomizePanel}
-          >
-            <Settings className="w-4 h-4 text-muted-foreground" />
-          </Button>
-
-          <label className="inline-flex items-center gap-1 cursor-text rounded-sm focus-within:ring-1 focus-within:ring-ring">
-            <Search className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-            <input
-              ref={searchInputRef}
-              type="text"
-              name="search"
-              inputMode="search"
-              enterKeyHint="search"
-              autoComplete="off"
-              spellCheck={false}
-              placeholder="Search…"
-              value={searchTerm}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="bg-transparent border-none outline-none text-[0.8125rem] text-foreground w-[60px]"
-              aria-label="Search tokens"
-            />
-          </label>
-        </div>
+        {/* Customize — desktop only */}
+        <button
+          ref={customizeButtonRef}
+          type="button"
+          className="hidden md:inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[0.8125rem] font-medium text-tint flex-shrink-0 transition-colors hover:bg-tint/10 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40"
+          onClick={() => setShowCustomizePanel(!showCustomizePanel)}
+          aria-label="Customize columns and filters"
+          aria-expanded={showCustomizePanel}
+        >
+          <SlidersHorizontal className="w-[15px] h-[15px]" aria-hidden="true" />
+          Customize
+          {(hasFilters || hasNonDefaultColumns) && (
+            <span className="w-1.5 h-1.5 rounded-full bg-tint" aria-hidden="true" />
+          )}
+        </button>
       </div>
 
       {/* Sidebar Overlay */}
       {showCustomizePanel && (
         <div
           aria-hidden="true"
-          className="fixed inset-0 bg-black/20 z-[100]"
+          className="fixed inset-0 bg-black/25 z-[100] animate-in fade-in-0"
           onClick={() => setShowCustomizePanel(false)}
         />
       )}
@@ -489,23 +464,23 @@ export function Controls({
         role="dialog"
         aria-modal="true"
         aria-label="Customize columns and filters"
-        className={`fixed top-0 right-0 h-full w-[500px] max-w-[100vw] bg-card shadow-xl z-[101] transform transition-transform duration-300 ease-in-out overflow-hidden ${
-          showCustomizePanel ? 'translate-x-0' : 'translate-x-full'
+        className={`fixed top-2 right-2 bottom-2 w-[440px] max-w-[calc(100vw-1rem)] bg-card rounded-2xl shadow-2xl z-[101] transform transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] overflow-hidden ${
+          showCustomizePanel ? 'translate-x-0' : 'translate-x-[calc(100%+1rem)]'
         }`}
       >
         <div className="h-full flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-950/[0.10] dark:border-white/[0.10]">
+          <div className="flex items-center gap-2 px-4 h-14 hairline-b">
             <PillButtonGroup
               options={customizePanelOptions}
               value={customizeTab}
               onChange={(v) => setCustomizeTab(v as 'columns' | 'filters')}
             />
-            {(hasFilters || hasNonDefaultColumns) && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-control-default w-8"
+            <span className="flex-1" />
+            {(customizeTab === 'columns' ? hasNonDefaultColumns : hasFilters) && (
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[0.8125rem] font-medium text-tint hover:bg-tint/10 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40"
                 onClick={() => {
                   if (customizeTab === 'columns') {
                     onColumnsPreset('default');
@@ -513,25 +488,33 @@ export function Controls({
                     handleClearFilters();
                   }
                 }}
-                title={customizeTab === 'columns' ? 'Reset columns' : 'Reset filters'}
               >
-                <RotateCcw className="w-4 h-4" />
-              </Button>
+                <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+                Reset
+              </button>
             )}
+            <button
+              type="button"
+              className="w-7 h-7 rounded-full bg-fill grid place-items-center text-muted-foreground hover:bg-fill-strong focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40"
+              onClick={() => setShowCustomizePanel(false)}
+              aria-label="Close"
+            >
+              <X className="w-3.5 h-3.5" strokeWidth={2.5} aria-hidden="true" />
+            </button>
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain p-4">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-4 py-5">
 
           {/* Columns tab content */}
           {customizeTab === 'columns' && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               {columnGroups.map(group => {
                 const groupKeys = group.columns.map(c => c.key);
                 const activeKeys = groupKeys.filter(k => columns[k]);
                 return (
                   <div key={group.label}>
-                    <div className="text-[0.6875rem] text-muted-foreground font-medium mb-2">{group.label}</div>
+                    <div className="text-xs text-muted-foreground font-medium mb-2">{group.label}</div>
                     <PillButtonGroup
                       options={group.columns.map(col => ({ value: col.key, label: col.label }))}
                       value={activeKeys}
@@ -546,6 +529,7 @@ export function Controls({
                         });
                       }}
                       multiSelect
+                      variant="chips"
                       size="sm"
                     />
                   </div>
@@ -556,10 +540,10 @@ export function Controls({
 
           {/* Filters tab content */}
           {customizeTab === 'filters' && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               {/* Market Cap Rank */}
               <div>
-                <div className="text-[0.6875rem] text-muted-foreground font-medium mb-2">Market Cap Rank</div>
+                <div className="text-xs text-muted-foreground font-medium mb-2">Market cap rank</div>
                 <PillButtonGroup
                   options={[
                     { value: '1-20', label: 'Top 20' },
@@ -569,13 +553,14 @@ export function Controls({
                   value={filters.rank || ''}
                   onChange={(v) => onFiltersChange({ ...filters, rank: v || undefined })}
                   allowDeselect
+                  variant="chips"
                   size="sm"
                 />
               </div>
 
               {/* Market Cap */}
               <div>
-                <div className="text-[0.6875rem] text-muted-foreground font-medium mb-2">Market Cap</div>
+                <div className="text-xs text-muted-foreground font-medium mb-2">Market cap</div>
                 <PillButtonGroup
                   options={[
                     { value: '20-100', label: '$20M-$100M' },
@@ -585,13 +570,14 @@ export function Controls({
                   value={filters.marketCapMin || ''}
                   onChange={(v) => onFiltersChange({ ...filters, marketCapMin: v || undefined })}
                   allowDeselect
+                  variant="chips"
                   size="sm"
                 />
               </div>
 
               {/* Funding Rate */}
               <div>
-                <div className="text-[0.6875rem] text-muted-foreground font-medium mb-2">Funding Rate</div>
+                <div className="text-xs text-muted-foreground font-medium mb-2">Funding rate</div>
                 <PillButtonGroup
                   options={[
                     { value: 'positive', label: 'Positive' },
@@ -600,13 +586,14 @@ export function Controls({
                   value={filters.fundingRate || ''}
                   onChange={(v) => onFiltersChange({ ...filters, fundingRate: v || undefined })}
                   allowDeselect
+                  variant="chips"
                   size="sm"
                 />
               </div>
 
               {/* RSI */}
               <div>
-                <div className="text-[0.6875rem] text-muted-foreground font-medium mb-2">RSI Indicators</div>
+                <div className="text-xs text-muted-foreground font-medium mb-2">RSI values</div>
                 <div className="flex flex-col gap-3">
                   {/* Daily RSI Row */}
                   <div className="flex flex-wrap gap-x-4 gap-y-3">
@@ -623,7 +610,7 @@ export function Controls({
 
               {/* RSI Signal Filters */}
               <div>
-                <div className="text-[0.6875rem] text-muted-foreground font-medium mb-2">D-RSI Avg Signal</div>
+                <div className="text-xs text-muted-foreground font-medium mb-2">Daily RSI signal</div>
                 <PillButtonGroup<RsiSignalType>
                   options={[
                     { value: 'extreme-oversold', label: 'Extreme Oversold' },
@@ -639,12 +626,13 @@ export function Controls({
                   value={filters.dRsiSignal || []}
                   onChange={(v) => onFiltersChange({ ...filters, dRsiSignal: v.length > 0 ? v : undefined })}
                   multiSelect
+                  variant="chips"
                   size="sm"
                 />
               </div>
 
               <div>
-                <div className="text-[0.6875rem] text-muted-foreground font-medium mb-2">W-RSI Avg Signal</div>
+                <div className="text-xs text-muted-foreground font-medium mb-2">Weekly RSI signal</div>
                 <PillButtonGroup<RsiSignalType>
                   options={[
                     { value: 'extreme-oversold', label: 'Extreme Oversold' },
@@ -660,6 +648,7 @@ export function Controls({
                   value={filters.wRsiSignal || []}
                   onChange={(v) => onFiltersChange({ ...filters, wRsiSignal: v.length > 0 ? v : undefined })}
                   multiSelect
+                  variant="chips"
                   size="sm"
                 />
               </div>

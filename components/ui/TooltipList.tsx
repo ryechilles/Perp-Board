@@ -20,7 +20,7 @@ interface TooltipContentProps {
  *     <TooltipContent items={[
  *       "Simple text explanation",
  *       "Another point here",
- *       <><span className="text-red-500">Keyword</span>: with explanation</>,
+ *       <><span className="text-down-ink">Keyword</span>: with explanation</>,
  *     ]} />
  *   }
  * >

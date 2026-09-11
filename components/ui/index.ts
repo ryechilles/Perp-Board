@@ -7,6 +7,9 @@ export { TooltipList } from './TooltipList';
 export { Spinner } from './spinner';
 export { Skeleton } from './skeleton';
 export { ThemeToggle } from './ThemeToggle';
+export { SearchField } from './SearchField';
+export { RsiMeter, RsiReading, ChangePill, ZoneGauge, formatSignedPercent } from './Metrics';
+export type { ZoneSegment } from './Metrics';
 
 // shadcn/ui components
 export { Button, buttonVariants } from './button';

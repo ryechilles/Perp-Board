@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { SmallWidget } from '@/components/widgets/base';
-import { TooltipList } from '@/components/ui';
+import { TooltipList, ZoneGauge, Skeleton } from '@/components/ui';
+import { cn } from '@/lib/utils';
 import { fetchAHR999Data, getAHR999ZoneInfo, AHR999Data } from '@/lib/ahr999';
 import { AHR999_ZONE_COLORS, AHR999_ZONE_LEGEND } from '@/lib/constants';
 
@@ -40,92 +41,68 @@ export function AHR999Indicator() {
 
   const zoneInfo = getAHR999ZoneInfo(data?.value ?? null);
 
-  // Calculate position percentage for the indicator (0-5 range mapped to 0-100%)
-  const getPositionPercent = (value: number) => {
-    return Math.min(Math.max((value / 5) * 100, 2), 98);
-  };
-
-  // BTC icon as header action
-  const btcIcon = (
-    <img
-      src="https://assets.coingecko.com/coins/images/1/small/bitcoin.png"
-      alt="BTC"
-      width={20}
-      height={20}
-      loading="lazy"
-      className="w-5 h-5 rounded-full"
-    />
-  );
+  // Map the 0–5 value range onto the gauge (same linear scale as the zone widths)
+  const position = data ? Math.min(Math.max((data.value / 5) * 100, 1), 99) : null;
 
   return (
     <SmallWidget
-      title="Ahr999 Index"
-      icon={btcIcon}
-      subtitle="BTC Accumulation Indicator"
+      title="AHR999"
+      subtitle="BTC accumulation indicator"
       loading={loading}
-      className="min-w-[280px] max-w-[320px] group"
+      className="group"
+      skeleton={
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-32 rounded-lg" />
+          <Skeleton className="h-2 w-full rounded-full" />
+        </div>
+      }
       tooltip={
         <TooltipList items={[
           "BTC accumulation timing indicator",
           "Combines 200-day MA & growth curve",
-          <><span className="text-green-500">&lt;0.45</span>: Strong buy zone</>,
-          <><span className="text-red-500">&gt;4</span>: Consider taking profits</>,
+          <><span className="text-up-ink">&lt;0.45</span>: Strong buy zone</>,
+          <><span className="text-down-ink">&gt;4</span>: Consider taking profits</>,
         ]} />
       }
     >
-      {/* Current Zone Display */}
-      <div className={`rounded-lg px-4 py-3 mb-4 ${zoneInfo.bgColor || 'bg-muted'}`}>
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-[0.6875rem] text-muted-foreground mb-0.5">Current Zone</div>
-            <div className={`text-lg font-bold ${zoneInfo.color}`}>
-              {zoneInfo.label}
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="text-[0.6875rem] text-muted-foreground mb-0.5">Value</div>
-            <div className="text-lg font-bold text-foreground tabular-nums">
-              {data?.value?.toFixed(2) ?? '--'}
-            </div>
-          </div>
-        </div>
+      <div className="flex items-baseline gap-2.5 mb-4">
+        <span className="text-[2.75rem] leading-none font-semibold tracking-[-0.03em] tabular-nums">
+          {data?.value?.toFixed(2) ?? '--'}
+        </span>
+        <span className={cn('inline-flex items-center h-[22px] px-2.5 rounded-full text-xs font-semibold', zoneInfo.bgColor)}>
+          {zoneInfo.label === '--' ? '--' : `${zoneInfo.label} zone`}
+        </span>
       </div>
 
-      {/* Zone Bar */}
-      <div>
-        <div className="flex h-2 rounded-full overflow-hidden">
-          {AHR999_ZONE_COLORS.map((zone, i) => (
-            <div key={i} className={zone.color} style={{ width: zone.width }} />
-          ))}
-        </div>
-        {/* Position indicator */}
-        {data && (
-          <div className="relative h-2 -mt-0.5">
-            <div
-              className="absolute w-0 h-0 border-l-[4px] border-r-[4px] border-b-[6px] border-l-transparent border-r-transparent border-b-foreground"
-              style={{
-                left: `${getPositionPercent(data.value)}%`,
-                transform: 'translateX(-50%)'
-              }}
-            />
-          </div>
-        )}
-      </div>
+      <ZoneGauge
+        segments={AHR999_ZONE_COLORS.map((z) => ({ flex: parseFloat(z.width), className: z.color }))}
+        position={position}
+        ticks={[
+          { at: 0, label: '0' },
+          { at: 9, label: '.45' },
+          { at: 24, label: '1.2' },
+          { at: 40, label: '2' },
+          { at: 80, label: '4' },
+          { at: 100, label: '5' },
+        ]}
+        label={data ? `AHR999 ${data.value.toFixed(2)}, ${zoneInfo.label} zone` : undefined}
+      />
 
-      {/* Zone Legend - Show on hover */}
-      <div className="space-y-1 mt-0 max-h-0 overflow-hidden opacity-0 group-hover:mt-3 group-hover:max-h-32 group-hover:opacity-100 group-focus-within:mt-3 group-focus-within:max-h-32 group-focus-within:opacity-100 [@media(hover:none)]:mt-3 [@media(hover:none)]:max-h-32 [@media(hover:none)]:opacity-100 transition-[max-height,opacity,margin] duration-200">
+      {/* Zone legend */}
+      <div className="mt-3 pt-3 hairline-t space-y-1">
         {AHR999_ZONE_LEGEND.map((zone) => (
           <div
             key={zone.label}
-            className={`flex items-center justify-between text-[0.6875rem] ${
-              zoneInfo.label === zone.label ? 'font-medium' : 'opacity-60'
-            }`}
+            className={cn(
+              'flex items-center justify-between text-xs',
+              zoneInfo.label === zone.label ? 'font-semibold text-foreground' : 'text-muted-foreground'
+            )}
           >
-            <span className="flex items-center gap-1.5">
-              <span className={zone.color}>{zone.dot}</span>
-              <span className="text-foreground">{zone.label}</span>
+            <span className="flex items-center gap-2">
+              <span className={cn('w-[7px] h-[7px] rounded-full', zone.color)} aria-hidden="true" />
+              {zone.label}
             </span>
-            <span className="text-muted-foreground tabular-nums">{zone.range}</span>
+            <span className="tabular-nums text-faint">{zone.range}</span>
           </div>
         ))}
       </div>

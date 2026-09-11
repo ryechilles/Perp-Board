@@ -40,7 +40,7 @@ export function getAHR999ZoneInfo(value: number | null): AHR999ZoneInfo {
       label: '--',
       labelCn: '--',
       color: 'text-muted-foreground',
-      bgColor: 'bg-muted',
+      bgColor: 'bg-fill text-muted-foreground',
       description: 'Loading...',
       dot: '●',
       range: '--'
@@ -52,8 +52,8 @@ export function getAHR999ZoneInfo(value: number | null): AHR999ZoneInfo {
       zone: 'bottom',
       label: 'Bottom',
       labelCn: '抄底区',
-      color: 'text-green-600 dark:text-green-400',
-      bgColor: 'bg-green-50 dark:bg-green-950/40',
+      color: 'text-up-ink',
+      bgColor: 'bg-up/[0.18] text-up-ink',
       description: 'Strong buy opportunity',
       dot: '●',
       range: '<0.45'
@@ -64,8 +64,8 @@ export function getAHR999ZoneInfo(value: number | null): AHR999ZoneInfo {
       zone: 'dca',
       label: 'DCA',
       labelCn: '定投区',
-      color: 'text-emerald-500 dark:text-emerald-400',
-      bgColor: 'bg-emerald-50 dark:bg-emerald-950/40',
+      color: 'text-up-ink',
+      bgColor: 'bg-up/[0.12] text-up-ink',
       description: 'Regular buying zone',
       dot: '●',
       range: '0.45-1.2'
@@ -76,8 +76,8 @@ export function getAHR999ZoneInfo(value: number | null): AHR999ZoneInfo {
       zone: 'wait',
       label: 'Wait',
       labelCn: '观望区',
-      color: 'text-orange-500 dark:text-orange-400',
-      bgColor: 'bg-orange-50 dark:bg-orange-950/40',
+      color: 'text-muted-foreground',
+      bgColor: 'bg-fill text-muted-foreground',
       description: 'Be cautious',
       dot: '●',
       range: '1.2-2.0'
@@ -88,8 +88,8 @@ export function getAHR999ZoneInfo(value: number | null): AHR999ZoneInfo {
       zone: 'takeProfit',
       label: 'Take Profit',
       labelCn: '止盈区',
-      color: 'text-red-500 dark:text-red-400',
-      bgColor: 'bg-red-50 dark:bg-red-950/40',
+      color: 'text-down-ink',
+      bgColor: 'bg-down/[0.12] text-down-ink',
       description: 'Consider taking profits',
       dot: '●',
       range: '2.0-4.0'
@@ -99,8 +99,8 @@ export function getAHR999ZoneInfo(value: number | null): AHR999ZoneInfo {
     zone: 'top',
     label: 'Top',
     labelCn: '逃顶区',
-    color: 'text-red-600 dark:text-red-400',
-    bgColor: 'bg-red-50 dark:bg-red-950/40',
+    color: 'text-down-ink',
+    bgColor: 'bg-down/[0.18] text-down-ink',
     description: 'Market top signals',
     dot: '●',
     range: '>4'

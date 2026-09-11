@@ -140,7 +140,7 @@ export function WidgetGrid({
 
   const gapClasses = {
     sm: 'gap-3',
-    md: 'gap-4',
+    md: 'gap-3.5',
     lg: 'gap-6',
   };
 

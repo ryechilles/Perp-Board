@@ -1,10 +1,9 @@
 'use client';
 
-import { Activity } from 'lucide-react';
 import { SmallWidget } from '@/components/widgets/base';
-import { TooltipList, Skeleton } from '@/components/ui';
-import { getRsiPillStyle, getRsiSignal } from '@/lib/utils';
-import { UNIVERSE } from '@/lib/constants';
+import { TooltipList, Skeleton, ZoneGauge } from '@/components/ui';
+import { cn, getRsiAvg, getRsiSignal, getRsiTextClass } from '@/lib/utils';
+import { RSI, UNIVERSE } from '@/lib/constants';
 
 interface MarketMomentumProps {
   avgRsi7: number | null;
@@ -12,59 +11,71 @@ interface MarketMomentumProps {
   exchangeLabel?: string;
 }
 
+// Zone segments on the 0–100 RSI scale (same breakpoints as the table meters)
+const RSI_SEGMENTS = [
+  { flex: RSI.OVERSOLD, className: 'bg-cold' },
+  { flex: RSI.WEAK - RSI.OVERSOLD, className: 'bg-cold-soft' },
+  { flex: RSI.NEUTRAL_HIGH - RSI.WEAK, className: 'bg-zone-neutral' },
+  { flex: RSI.VERY_STRONG - RSI.NEUTRAL_HIGH, className: 'bg-hot-soft' },
+  { flex: 100 - RSI.VERY_STRONG, className: 'bg-hot' },
+];
+
+const RSI_TICKS = [0, RSI.OVERSOLD, RSI.WEAK, RSI.NEUTRAL_HIGH, RSI.VERY_STRONG, 100].map((v) => ({
+  at: v,
+  label: String(v),
+}));
 
 export function MarketMomentum({ avgRsi7, avgRsi14, exchangeLabel = 'OKX' }: MarketMomentumProps) {
-  const dailySignal = getRsiSignal(avgRsi7, avgRsi14);
+  const signal = getRsiSignal(avgRsi7, avgRsi14);
+  const avg = getRsiAvg(avgRsi7, avgRsi14);
 
   const isLoading = avgRsi7 === null && avgRsi14 === null;
 
   return (
     <SmallWidget
-      title="Today Market Avg RSI"
-      icon={<Activity className="w-4 h-4" />}
-      subtitle={`Top ${UNIVERSE.MAX_CRYPTO} ${exchangeLabel} Perp Tokens`}
+      title="Market RSI"
+      subtitle={`Avg daily RSI · Top ${UNIVERSE.MAX_CRYPTO} ${exchangeLabel} perps`}
       loading={isLoading}
-      skeleton={<Skeleton className="h-[52px] w-full rounded-xl" />}
-      className="w-full"
+      skeleton={
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-32 rounded-lg" />
+          <Skeleton className="h-2 w-full rounded-full" />
+        </div>
+      }
       tooltip={
         <TooltipList items={[
           `${exchangeLabel} perp top ${UNIVERSE.MAX_CRYPTO} by market cap`,
-          "Avg = (D-RSI7 + D-RSI14) / 2",
-          "≤20: Extreme Oversold",
-          "≤25: Oversold",
-          "≤30: Very Weak",
-          "≤40: Weak",
-          "≤60: Neutral",
-          "≤70: Strong",
-          "≤80: Very Strong",
-          "≤85: Overbought",
-          ">85: Extreme Overbought",
+          "Market RSI = (avg D-RSI7 + avg D-RSI14) / 2",
+          "≤20 Extreme oversold · ≤25 Oversold · ≤30 Very weak · ≤40 Weak",
+          "≤60 Neutral · ≤70 Strong · ≤80 Very strong · ≤85 Overbought · >85 Extreme overbought",
         ]} />
       }
     >
-      <div className="group/momentum">
-        {/* Signal Pill - Centered, full width */}
-        <div className="flex justify-center">
-          <span className={`inline-block w-full text-center px-6 py-3 rounded-xl text-lg font-semibold whitespace-nowrap ${dailySignal.pillStyle}`}>
-            {dailySignal.label}
-          </span>
-        </div>
+      <div className="flex items-baseline gap-2.5 mb-4">
+        <span className="text-[2.75rem] leading-none font-semibold tracking-[-0.03em] tabular-nums">
+          {avg != null ? avg.toFixed(1) : '--'}
+        </span>
+        <span className={cn('inline-flex items-center h-[22px] px-2.5 rounded-full text-xs font-semibold', signal.pillStyle)}>
+          {signal.label}
+        </span>
+      </div>
 
-        {/* Daily RSI Values - Show on hover with smooth transition */}
-        <div className="flex items-center justify-between text-[0.6875rem] max-h-0 opacity-0 overflow-hidden transition-[max-height,opacity,margin] duration-200 ease-out group-hover/momentum:max-h-10 group-hover/momentum:opacity-100 group-hover/momentum:mt-3 group-focus-within/momentum:max-h-10 group-focus-within/momentum:opacity-100 group-focus-within/momentum:mt-3 [@media(hover:none)]:max-h-10 [@media(hover:none)]:opacity-100 [@media(hover:none)]:mt-3">
-          <div className="flex items-center gap-1.5">
-            <span className="text-muted-foreground">D-RSI7 Avg</span>
-            <span className={`px-2 py-0.5 rounded-md font-semibold tabular-nums min-w-[42px] text-center ${getRsiPillStyle(avgRsi7)}`}>
-              {avgRsi7 != null ? avgRsi7.toFixed(1) : '--'}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-muted-foreground">D-RSI14 Avg</span>
-            <span className={`px-2 py-0.5 rounded-md font-semibold tabular-nums min-w-[42px] text-center ${getRsiPillStyle(avgRsi14)}`}>
-              {avgRsi14 != null ? avgRsi14.toFixed(1) : '--'}
-            </span>
-          </div>
-        </div>
+      <ZoneGauge
+        segments={RSI_SEGMENTS}
+        position={avg}
+        ticks={RSI_TICKS}
+        label={avg != null ? `Market RSI ${avg.toFixed(1)}, ${signal.label}` : undefined}
+      />
+
+      <div className="flex items-center justify-between mt-3 pt-3 hairline-t text-xs text-muted-foreground tabular-nums">
+        <span>
+          Avg D-RSI7{' '}
+          <span className={cn('font-semibold', getRsiTextClass(avgRsi7))}>{avgRsi7 != null ? avgRsi7.toFixed(1) : '--'}</span>
+        </span>
+        <span>
+          Avg D-RSI14{' '}
+          <span className={cn('font-semibold', getRsiTextClass(avgRsi14))}>{avgRsi14 != null ? avgRsi14.toFixed(1) : '--'}</span>
+        </span>
       </div>
     </SmallWidget>
   );

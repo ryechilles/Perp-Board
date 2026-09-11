@@ -4,13 +4,13 @@ import { useMarketStore } from '@/hooks/useMarketStore';
 import { useBoardWidgets, TabWidgetDef, WidgetContext } from '@/hooks/useBoardWidgets';
 import { ExchangeBoard, TabConfig } from '@/components/ExchangeBoard';
 import { MAFlowWidget } from '@/components/MAFlowWidget';
-import { BtcLogo, getSharedTabWidgetDefs } from '@/components/shared-widgets';
+import { getSharedTabWidgetDefs } from '@/components/shared-widgets';
 
 const TABS: TabConfig[] = [
   { id: 'rsi', label: 'RSI' },
   { id: 'funding', label: 'Funding' },
   { id: 'altcoin', label: 'Altcoin' },
-  { id: 'btc', label: 'BTC', icon: <BtcLogo /> },
+  { id: 'btc', label: 'BTC' },
   { id: 'maflow', label: 'MA Flow' },
 ];
 

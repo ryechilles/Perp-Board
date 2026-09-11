@@ -1,11 +1,10 @@
 'use client';
 
 import { useMemo } from 'react';
-import { TrendingDown, TrendingUp } from 'lucide-react';
-import { SmallWidget } from '@/components/widgets/base';
-import { TooltipList, TokenAvatar, Skeleton } from '@/components/ui';
+import { SmallWidget, TokenList, TokenListRow, EmptyState } from '@/components/widgets/base';
+import { TooltipList, Skeleton, RsiReading } from '@/components/ui';
 import { ProcessedTicker, RSIData, MarketCapData } from '@/lib/types';
-import { formatPrice, getRsiPillStyle } from '@/lib/utils';
+import { cn, formatPrice } from '@/lib/utils';
 import { getTokensByRsiThreshold } from '@/lib/widget-utils';
 import { RSI, WIDGET } from '@/lib/constants';
 
@@ -22,20 +21,22 @@ interface RsiThresholdWidgetProps {
 
 const MODE_CONFIG = {
   oversold: {
-    title: 'RSI Oversold',
-    icon: <TrendingDown className="w-4 h-4" />,
+    title: 'Oversold',
+    dot: 'bg-cold',
     threshold: RSI.OVERSOLD,
     comparator: '≤',
     tooltipHint: 'Lower RSI = potentially oversold',
-    emptyText: 'No oversold tokens',
+    emptyTitle: 'Nothing oversold',
+    emptyDetail: (n: number, t: number) => `All top ${n} are above RSI ${t}.`,
   },
   overbought: {
-    title: 'RSI Overbought',
-    icon: <TrendingUp className="w-4 h-4" />,
+    title: 'Overbought',
+    dot: 'bg-hot',
     threshold: RSI.OVERBOUGHT,
     comparator: '≥',
     tooltipHint: 'Higher RSI = potentially overbought',
-    emptyText: 'No overbought tokens',
+    emptyTitle: 'Nothing overbought',
+    emptyDetail: (n: number, t: number) => `All top ${n} are below RSI ${t}.`,
   },
 } as const;
 
@@ -59,22 +60,24 @@ export function RsiThresholdWidget({
   return (
     <SmallWidget
       title={config.title}
-      icon={config.icon}
-      subtitle={`Avg RSI ${config.comparator} ${config.threshold} in ${exchangeLabel} Perp Top ${WIDGET.TOP_TOKENS_COUNT}`}
+      subtitle={`Avg RSI ${config.comparator} ${config.threshold} · Top ${WIDGET.TOP_TOKENS_COUNT} ${exchangeLabel} perps`}
+      padded={false}
       loading={isLoading}
+      headerActions={
+        !isLoading && (
+          <span className="inline-flex items-center gap-1.5 h-6 px-2 text-xs text-muted-foreground tabular-nums">
+            <span className={cn('w-[7px] h-[7px] rounded-full', config.dot)} aria-hidden="true" />
+            {tokens.length}
+          </span>
+        )
+      }
       skeleton={
-        <div className="space-y-1">
+        <div className="space-y-3 py-1">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="flex items-center justify-between py-1.5">
-              <div className="flex items-center gap-2">
-                <span className="text-[0.6875rem] text-muted-foreground w-4">{i}</span>
-                <Skeleton className="w-5 h-5 rounded-full" />
-                <Skeleton className="w-10 h-3" />
-              </div>
-              <div className="flex items-center gap-3">
-                <Skeleton className="w-12 h-3" />
-                <Skeleton className="w-12 h-5 rounded-md" />
-              </div>
+            <div key={i} className="flex items-center gap-2.5">
+              <Skeleton className="w-[22px] h-[22px] rounded-full" />
+              <Skeleton className="w-12 h-3" />
+              <Skeleton className="w-20 h-3 ml-auto" />
             </div>
           ))}
         </div>
@@ -88,35 +91,25 @@ export function RsiThresholdWidget({
         ]} />
       }
     >
-      <div className="space-y-1">
-        {tokens.length > 0 ? (
-          tokens.map((token, i) => (
-            <button
-              type="button"
+      {tokens.length > 0 ? (
+        <TokenList>
+          {tokens.map((token) => (
+            <TokenListRow
               key={token.instId}
-              className="w-full text-left flex items-center justify-between py-1.5 cursor-pointer hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded -mx-2 px-2"
+              symbol={token.symbol}
+              logo={token.logo}
+              detail={formatPrice(token.price)}
+              value={<RsiReading value={token.avgRsi} title={token.avgRsi.toFixed(1)} />}
               onClick={() => onTokenClick?.(token.symbol)}
-              aria-label={token.symbol}
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-[0.6875rem] text-muted-foreground w-4">{i + 1}</span>
-                <TokenAvatar symbol={token.symbol} logo={token.logo} />
-                <span className="text-[0.75rem] font-medium text-foreground">{token.symbol}</span>
-              </div>
-              <div className="flex items-center">
-                <span className="text-[0.6875rem] text-muted-foreground tabular-nums w-16 text-center">{formatPrice(token.price)}</span>
-                <span className={`text-[0.6875rem] font-semibold tabular-nums w-14 text-center py-0.5 rounded-md ${getRsiPillStyle(token.avgRsi)}`}>
-                  {token.avgRsi.toFixed(1)}
-                </span>
-              </div>
-            </button>
-          ))
-        ) : (
-          <div className="text-center py-4 text-[0.6875rem] text-muted-foreground">
-            {config.emptyText} in Top {WIDGET.TOP_TOKENS_COUNT}
-          </div>
-        )}
-      </div>
+            />
+          ))}
+        </TokenList>
+      ) : (
+        <EmptyState
+          title={config.emptyTitle}
+          detail={config.emptyDetail(WIDGET.TOP_TOKENS_COUNT, config.threshold)}
+        />
+      )}
     </SmallWidget>
   );
 }

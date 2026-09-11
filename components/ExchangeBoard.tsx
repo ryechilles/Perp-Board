@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback, useMemo, ReactNode } from 're
 import { Header } from '@/components/Header';
 import { Controls } from '@/components/Controls';
 import { Footer } from '@/components/Footer';
+import { SearchField } from '@/components/ui';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { TableHeader, TableRow, TokenCard, TableRowSkeleton, TokenCardSkeleton } from '@/components/table';
 import { TabContainer, WidgetGrid } from '@/components/layout';
@@ -16,11 +17,13 @@ import { useVirtualRows } from '@/hooks/useVirtualRows';
 // Fixed column configuration (shared across exchanges)
 const FIXED_COLUMNS: ColumnKey[] = ['favorite', 'rank', 'logo', 'symbol'];
 const FIXED_WIDTHS: Record<string, number> = {
-  favorite: 24,
-  rank: 40,
-  logo: 28,
-  symbol: 95,
+  favorite: 36,
+  rank: 34,
+  logo: 38,
+  symbol: 92,
 };
+
+const ROW_HEIGHT = 48;
 
 // ===========================================
 // Types
@@ -85,9 +88,9 @@ export function ExchangeBoard({
   useEffect(() => {
     const measure = () => {
       const tableH = tableContainerRef.current?.clientHeight ?? 0;
-      if (tableH > 0) setTableSkeletonRows(Math.max(8, Math.ceil(tableH / 44)));
+      if (tableH > 0) setTableSkeletonRows(Math.max(8, Math.ceil(tableH / ROW_HEIGHT)));
       const vh = typeof window !== 'undefined' ? window.innerHeight : 0;
-      if (vh > 0) setCardSkeletonRows(Math.max(6, Math.ceil(vh / 76)));
+      if (vh > 0) setCardSkeletonRows(Math.max(6, Math.ceil(vh / 64)));
     };
     measure();
     const el = tableContainerRef.current;
@@ -182,7 +185,7 @@ export function ExchangeBoard({
   const { virtualRows, paddingTop, paddingBottom, measureElement } = useVirtualRows({
     count: filteredData.length,
     getScrollElement,
-    estimateSize: 44,
+    estimateSize: ROW_HEIGHT,
     overscan: 12,
   });
 
@@ -204,7 +207,7 @@ export function ExchangeBoard({
     count: filteredData.length,
     getScrollElement: getCardScrollElement,
     getOffsetTop: getCardsOffsetTop,
-    estimateSize: 76,
+    estimateSize: 64,
     overscan: 8,
   });
 
@@ -272,61 +275,42 @@ export function ExchangeBoard({
     tableContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
+  const exchangeLabel = exchange === 'hyperliquid' ? 'Hyperliquid' : 'OKX';
+  const statusMeta = {
+    live: { dot: 'bg-up live-dot', label: 'Live' },
+    connecting: { dot: 'bg-faint', label: 'Connecting…' },
+    error: { dot: 'bg-down', label: 'Offline' },
+  }[store.status];
+
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-muted">
+    <div className="flex flex-col h-screen overflow-hidden bg-background">
       {/* Skip link — first focusable element, jumps keyboard users past the header */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[200] focus:rounded-md focus:bg-card focus:px-3 focus:py-2 focus:text-sm focus:shadow-md focus:ring-1 focus:ring-ring"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[200] focus:rounded-lg focus:bg-card focus:px-3 focus:py-2 focus:text-sm focus:shadow-md focus:ring-2 focus:ring-ring"
       >
         Skip to content
       </a>
 
-      {/* Header */}
-      <div className="bg-card border-b border-gray-950/[0.05] dark:border-white/[0.05] pt-safe">
-        <Header />
+      {/* Toolbar */}
+      <div className="material-bar hairline-b pt-safe relative z-[70]">
+        <Header actions={<SearchField value={store.searchTerm} onChange={store.setSearchTerm} shortcut className="w-[220px]" />} />
       </div>
 
-      {/* Main Content */}
-      <main id="main-content" className="flex-1 flex flex-col px-safe pt-4 pb-safe overflow-hidden">
-        <div className="max-w-[1600px] mx-auto w-full flex flex-col flex-1 overflow-hidden">
+      {/* Page scroller on mobile; fixed two-column app frame on desktop */}
+      <div ref={mainScrollRef} className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden">
+        <div className="max-w-[1600px] mx-auto w-full px-safe pt-5 pb-safe lg:pb-6 flex flex-col gap-6 lg:h-full lg:grid lg:grid-cols-[340px_minmax(0,1fr)]">
 
-          {/* Main grid: 4 sections with responsive order
-               Mobile (flex-col):  Tabs → Widgets → Controls → Table
-               Desktop (lg grid):  [Tabs     | Controls]
-                                   [Widgets  | Table   ]  */}
-          <div ref={mainScrollRef} className="flex flex-col lg:grid lg:grid-cols-[320px_1fr] lg:grid-rows-[auto_1fr] gap-4 flex-1 overflow-y-auto lg:overflow-hidden">
-            {/* Tabs — mobile: 1st, desktop: top-left */}
-            <div className="order-1 lg:order-none flex-shrink-0 lg:self-center">
-              <TabContainer
-                tabs={tabs}
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-                variant="sidebar"
-              />
-            </div>
-
-            {/* Controls — mobile: 3rd, desktop: top-right */}
-            <div className="order-3 lg:order-none flex-shrink-0 lg:self-center">
-              <Controls
-                exchange={exchange}
-                columns={store.columns}
-                columnOrder={store.columnOrder}
-                filters={store.filters}
-                searchTerm={store.searchTerm}
-                overboughtCount={quickFilterCounts.overbought}
-                oversoldCount={quickFilterCounts.oversold}
-                onColumnChange={store.updateColumn}
-                onColumnsPreset={store.setColumnsPreset}
-                onFiltersChange={store.setFilters}
-                onSearchChange={store.setSearchTerm}
-                onColumnOrderChange={store.updateColumnOrder}
-                onScrollToTop={handleScrollToTop}
-              />
-            </div>
-
-            {/* Widgets sidebar — mobile: 2nd, desktop: bottom-left */}
-            <div className="order-2 lg:order-none lg:overflow-y-auto lg:min-h-0 lg:pr-2 space-y-4">
+          {/* ── Insights ─────────────────────────── */}
+          <aside aria-labelledby="insights-title" className="flex flex-col gap-3.5 lg:min-h-0">
+            <h2 id="insights-title" className="large-title px-1">Insights</h2>
+            <TabContainer
+              tabs={tabs}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              variant="sidebar"
+            />
+            <div className="lg:flex-1 lg:min-h-0 lg:overflow-y-auto flex flex-col gap-3.5 lg:pb-2">
               <ErrorBoundary>
                 {tabs.map((tab) => {
                   if (activeTab !== tab.id) return null;
@@ -348,17 +332,58 @@ export function ExchangeBoard({
                   );
                 })}
               </ErrorBoundary>
+              <Footer exchange={exchange} className="hidden lg:flex mt-auto" />
+            </div>
+          </aside>
+
+          {/* ── Markets ──────────────────────────── */}
+          <section id="main-content" aria-labelledby="markets-title" className="flex flex-col gap-3.5 lg:min-h-0">
+            <div className="flex items-baseline justify-between gap-3 px-1">
+              <h1 id="markets-title" className="large-title">Markets</h1>
+              <p className="flex items-center gap-2 text-[0.8125rem] text-muted-foreground min-w-0" aria-live="polite">
+                <span className="inline-flex items-center gap-1.5 flex-shrink-0">
+                  <span className={`w-[7px] h-[7px] rounded-full ${statusMeta.dot}`} aria-hidden="true" />
+                  {statusMeta.label}
+                </span>
+                {store.tickers.size > 0 && (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <span className="truncate tabular-nums">
+                      {filteredData.length} {filteredData.length === 1 ? 'perpetual' : 'perpetuals'} on {exchangeLabel}
+                    </span>
+                  </>
+                )}
+              </p>
             </div>
 
-            {/* Data Table — desktop only (mobile uses the card list below) */}
-            <div className="order-4 lg:order-none bg-card rounded-xl border border-gray-950/[0.10] dark:border-white/[0.10] shadow-sm hidden lg:flex flex-col lg:min-h-0 overflow-hidden">
+            {/* Table card (desktop); on mobile the controls sit on the ground above the card list */}
+            <div className="flex flex-col lg:flex-1 lg:min-h-0 lg:surface-card lg:overflow-hidden">
+              <div className="lg:px-3.5 lg:py-3 lg:hairline-b flex-shrink-0">
+                <Controls
+                  exchange={exchange}
+                  columns={store.columns}
+                  columnOrder={store.columnOrder}
+                  filters={store.filters}
+                  searchTerm={store.searchTerm}
+                  overboughtCount={quickFilterCounts.overbought}
+                  oversoldCount={quickFilterCounts.oversold}
+                  onColumnChange={store.updateColumn}
+                  onColumnsPreset={store.setColumnsPreset}
+                  onFiltersChange={store.setFilters}
+                  onSearchChange={store.setSearchTerm}
+                  onColumnOrderChange={store.updateColumnOrder}
+                  onScrollToTop={handleScrollToTop}
+                />
+              </div>
+
+              {/* Data table — desktop only */}
               <div
                 ref={tableContainerRef}
-                className="flex-1 overflow-auto"
+                className="hidden lg:block flex-1 min-h-0 overflow-auto"
                 style={{ WebkitOverflowScrolling: 'touch' }}
               >
                 <table
-                  className="border-collapse"
+                  className="border-separate border-spacing-0"
                   style={{ width: 'max-content', minWidth: '100%' }}
                 >
                   <colgroup>
@@ -398,8 +423,9 @@ export function ExchangeBoard({
                       ) : (
                         <tr>
                           <td colSpan={visibleColumns.length}>
-                            <div className="flex items-center justify-center py-16 text-muted-foreground">
-                              No data found
+                            <div className="flex flex-col items-center justify-center gap-1 py-20 text-center">
+                              <span className="text-[0.9375rem] font-semibold">No matching tokens</span>
+                              <span className="text-[0.8125rem] text-muted-foreground">Try another search or clear the filters.</span>
                             </div>
                           </td>
                         </tr>
@@ -444,55 +470,51 @@ export function ExchangeBoard({
                   </tbody>
                 </table>
               </div>
-            </div>
 
-            {/* Mobile card list — shown below lg in place of the table.
-                Scrolls with the page (mainScrollRef); virtualized via a wrapper
-                whose padding reserves total list height. */}
-            <div className="order-4 lg:hidden">
-              {filteredData.length === 0 ? (
-                store.tickers.size === 0 ? (
-                  <div className="space-y-2">
-                    {Array.from({ length: cardSkeletonRows }).map((_, i) => (
-                      <TokenCardSkeleton key={i} />
-                    ))}
-                  </div>
+              {/* Mobile card list — shown below lg in place of the table.
+                  Scrolls with the page (mainScrollRef); virtualized via a wrapper
+                  whose padding reserves total list height. */}
+              <div className="lg:hidden mt-3">
+                {filteredData.length === 0 ? (
+                  store.tickers.size === 0 ? (
+                    <div className="surface-card overflow-hidden">
+                      {Array.from({ length: cardSkeletonRows }).map((_, i) => (
+                        <TokenCardSkeleton key={i} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center gap-1 py-16 text-center">
+                      <span className="text-[0.9375rem] font-semibold">No matching tokens</span>
+                      <span className="text-[0.8125rem] text-muted-foreground">Try another search or clear the filters.</span>
+                    </div>
+                  )
                 ) : (
-                  <div className="flex items-center justify-center py-16 text-muted-foreground">
-                    No data found
+                  <div
+                    ref={cardsWrapperRef}
+                    className="surface-card overflow-hidden"
+                    style={{ paddingTop: cardPaddingTop, paddingBottom: cardPaddingBottom }}
+                  >
+                    {cardVirtualRows.map(({ index }) => {
+                      const ticker = filteredData[index];
+                      return (
+                        <div key={ticker.instId} ref={measureCard} data-index={index}>
+                          <TokenCard
+                            marketStore={store.marketStore}
+                            instId={ticker.instId}
+                            baseSymbol={ticker.baseSymbol}
+                            index={index}
+                            isFavorite={favoriteSet.has(ticker.instId)}
+                            onToggleFavorite={store.toggleFavorite}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
-                )
-              ) : (
-                <div
-                  ref={cardsWrapperRef}
-                  style={{ paddingTop: cardPaddingTop, paddingBottom: cardPaddingBottom }}
-                >
-                  {cardVirtualRows.map(({ index }) => {
-                    const ticker = filteredData[index];
-                    return (
-                      <div key={ticker.instId} ref={measureCard} data-index={index} className="pb-2">
-                        <TokenCard
-                          marketStore={store.marketStore}
-                          instId={ticker.instId}
-                          baseSymbol={ticker.baseSymbol}
-                          index={index}
-                          isFavorite={favoriteSet.has(ticker.instId)}
-                          onToggleFavorite={store.toggleFavorite}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                )}
+                <Footer exchange={exchange} className="mt-4" />
+              </div>
             </div>
-          </div>
-        </div>
-      </main>
-
-      {/* Footer */}
-      <div className="px-6 flex-shrink-0">
-        <div className="max-w-[1600px] mx-auto w-full">
-          <Footer exchange={exchange} />
+          </section>
         </div>
       </div>
     </div>

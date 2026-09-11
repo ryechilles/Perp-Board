@@ -36,7 +36,7 @@ export default function RootLayout({
         {/* Apply saved theme before paint: prevents flash + keeps color-scheme/theme-color in sync */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme');var d=t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches);var el=document.documentElement;if(d)el.classList.add('dark');el.style.colorScheme=d?'dark':'light';var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',d?'#0a0a0a':'#fafafa');}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('theme');var d=t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches);var el=document.documentElement;if(d)el.classList.add('dark');el.style.colorScheme=d?'dark':'light';var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',d?'#000000':'#f2f2f4');}catch(e){}})();`,
           }}
         />
         {/* Google Analytics */}
@@ -67,7 +67,7 @@ export default function RootLayout({
         {/* Safari pinned tab */}
         <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#22B96A" />
         {/* Default matches light page background; init script + ThemeToggle keep it in sync with the active theme */}
-        <meta name="theme-color" content="#fafafa" />
+        <meta name="theme-color" content="#f2f2f4" />
       </head>
       <body>
         <TooltipProvider>

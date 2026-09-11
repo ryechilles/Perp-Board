@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { Moon, Sun } from 'lucide-react';
-import { Button } from './button';
 
 export function ThemeToggle() {
   const [isDark, setIsDark] = useState(false);
@@ -26,17 +25,20 @@ export function ThemeToggle() {
     localStorage.setItem('theme', next ? 'dark' : 'light');
     document
       .querySelector('meta[name="theme-color"]')
-      ?.setAttribute('content', next ? '#0a0a0a' : '#fafafa');
+      ?.setAttribute('content', next ? '#000000' : '#f2f2f4');
   };
+
+  const cls =
+    'w-8 h-8 rounded-[9px] grid place-items-center text-muted-foreground transition-colors hover:bg-fill hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40';
 
   if (!mounted) {
     // Render invisible placeholder to prevent layout shift
-    return <Button variant="secondary" size="sm" aria-label="Toggle dark mode" className="invisible"><Moon className="w-4 h-4" /></Button>;
+    return <span className={`${cls} invisible`} aria-hidden="true" />;
   }
 
   return (
-    <Button variant="secondary" size="sm" onClick={toggle} aria-label="Toggle dark mode">
-      {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-    </Button>
+    <button type="button" className={cls} onClick={toggle} aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
+      {isDark ? <Sun className="w-[17px] h-[17px]" /> : <Moon className="w-[17px] h-[17px]" />}
+    </button>
   );
 }
