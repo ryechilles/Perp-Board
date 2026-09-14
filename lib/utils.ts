@@ -301,16 +301,28 @@ export const TD_SETUP_DISPLAY_MIN = 4;
 const TD_PILL_BASE = 'inline-flex items-center justify-center min-w-[36px] h-[22px] px-1.5 rounded-md font-mono text-[11px] font-semibold tabular-nums whitespace-nowrap';
 /** In-progress counts: no container — bare faded text so only 9/13 signals carry visual weight */
 const TD_TEXT_MUTED = 'inline-block font-mono text-[11px] font-medium tabular-nums whitespace-nowrap text-faint';
+/**
+ * Figure space (U+2007) — exactly one digit wide in a tabular-nums font, so a
+ * single-digit count occupies the same slot as a two-digit one and the column
+ * lines up instead of zig-zagging around the centre.
+ */
+const TD_DIGIT_PAD = '\u2007';
+
+/** "B  4" / "S 12" — always the same width */
+function tdLabel(type: 'buy' | 'sell', count: number): string {
+  return `${type === 'buy' ? 'B' : 'S'} ${count < 10 ? TD_DIGIT_PAD : ''}${count}`;
+}
 
 /**
  * Display label + complete className for the TD column (shared by table row and mobile card).
- * Priority: completed 9/13 (colored pill) > active countdown ("·N", faded text) >
+ * Priority: completed 9/13 (colored pill) > active countdown (faded text) >
  * setup streak >= TD_SETUP_DISPLAY_MIN (faded text) > "--".
+ * Setup vs countdown is carried by the tooltip, not by the label.
  */
 export function getTdDisplay(td: TDState | null | undefined): { label: string; className: string; title?: string } {
   if (td?.signal) {
     const s = td.signal;
-    const label = `${s.type === 'buy' ? 'B' : 'S'} ${s.count}`;
+    const label = tdLabel(s.type, s.count);
     const title = `${s.type === 'buy' ? 'Buy' : 'Sell'} ${s.count === 13 ? 'Countdown 13' : 'Setup 9'} completed`;
     const color = s.type === 'buy'
       ? (s.count === 13 ? 'bg-up text-white' : 'bg-up/15 text-up-ink')
@@ -322,14 +334,14 @@ export function getTdDisplay(td: TDState | null | undefined): { label: string; c
   // When both are active, show the one closer to completion (setup/9 vs countdown/13)
   if (setup && (!countdown || setup.count / 9 >= countdown.count / 13)) {
     return {
-      label: `${setup.type === 'buy' ? 'B' : 'S'} ${setup.count}`,
+      label: tdLabel(setup.type, setup.count),
       title: `${setup.type === 'buy' ? 'Buy' : 'Sell'} Setup ${setup.count}/9`,
       className: TD_TEXT_MUTED,
     };
   }
   if (countdown) {
     return {
-      label: `${countdown.type === 'buy' ? 'B' : 'S'} ·${countdown.count}`,
+      label: tdLabel(countdown.type, countdown.count),
       title: `${countdown.type === 'buy' ? 'Buy' : 'Sell'} Countdown ${countdown.count}/13`,
       className: TD_TEXT_MUTED,
     };
