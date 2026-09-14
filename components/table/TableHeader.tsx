@@ -142,7 +142,7 @@ export function TableHeader({
               }}
             >
               <span className="inline-flex items-center gap-1">
-                {sortable && def.align === 'right' && <SortGlyph active={isActive} direction={sort.direction} />}
+                {sortable && def.align !== 'left' && <SortGlyph active={isActive} direction={sort.direction} />}
                 <span className="inline-flex items-center gap-1">
                   {def.label}
                 {key === 'symbol' && totalCount > 0 && (
@@ -170,7 +170,7 @@ export function TableHeader({
                   </button>
                 )}
                 </span>
-                {sortable && def.align !== 'right' && <SortGlyph active={isActive} direction={sort.direction} />}
+                {sortable && def.align === 'left' && <SortGlyph active={isActive} direction={sort.direction} />}
               </span>
             </th>
           );

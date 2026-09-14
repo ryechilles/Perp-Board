@@ -27,10 +27,10 @@ import {
   getRsiAvg,
   getRsiSignal,
   getRsiTextClass,
-  getTdDisplay,
 } from '@/lib/utils';
 import { FUNDING } from '@/lib/constants';
 import { SparklineChange } from '@/components/Sparkline';
+import { TdValue } from './TdValue';
 
 /** Zone-colored single RSI value (for the raw RSI7/RSI14 columns). */
 function RsiValue({ value }: { value: number | null | undefined }) {
@@ -290,16 +290,8 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
         );
       }
 
-      case 'tdSeq': {
-        const td = getTdDisplay(rsi?.td);
-        return (
-          <td key={key} className={baseClass}>
-            <span title={td.title} className={td.className}>
-              {td.label}
-            </span>
-          </td>
-        );
-      }
+      case 'tdSeq':
+        return <td key={key} className={baseClass}><TdValue td={rsi?.td} /></td>;
 
       case 'rsi7':
         return <td key={key} className={baseClass}><RsiValue value={rsi?.rsi7} /></td>;

@@ -10,6 +10,7 @@ import {
 } from '@/hooks/useMarketSelectors';
 import { Star } from 'lucide-react';
 import { TokenAvatar, ChangePill } from '@/components/ui';
+import { TdValue } from './TdValue';
 import {
   cn,
   formatPrice,
@@ -17,7 +18,6 @@ import {
   getFundingAprClass,
   getRsiAvg,
   getRsiTextClass,
-  getTdDisplay,
 } from '@/lib/utils';
 
 interface TokenCardProps {
@@ -60,7 +60,6 @@ export const TokenCard = memo(function TokenCard({
   const wRsi = getRsiAvg(rsi?.rsiW7, rsi?.rsiW14);
   // Mobile: only show TD on a completed 9/13 signal (space is tight)
   const tdSignal = rsi?.td?.signal;
-  const td = getTdDisplay(tdSignal ? rsi!.td : null);
 
   return (
     <div className="relative flex items-center gap-3 min-h-[64px] pl-2 pr-4 py-2.5 after:content-[''] after:absolute after:bottom-0 after:left-[80px] after:right-0 after:h-px after:bg-separator after:scale-y-50">
@@ -96,7 +95,7 @@ export const TokenCard = memo(function TokenCard({
               {formatFundingApr(fundingRate?.fundingRate, fundingRate?.settlementInterval)}
             </span>
           </span>
-          {tdSignal && <span className={td.className}>{td.label}</span>}
+          {tdSignal && <TdValue td={rsi!.td} />}
         </div>
       </div>
 
