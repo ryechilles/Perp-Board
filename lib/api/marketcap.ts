@@ -18,6 +18,7 @@
  */
 
 import { MarketCapData } from '../types';
+import { MARKET_CAP } from '../constants';
 import { getLogoCache } from '../cache';
 
 // CoinLore ticker shape (subset we use)
@@ -35,13 +36,18 @@ function coinLoreLogo(nameid?: string): string | undefined {
 
 // Fetch market cap data via the CoinLore proxy.
 //
-// Contract: resolves ONLY on a real, non-empty result. Any failure — network
-// error, non-OK proxy response, non-array payload, or a parsed-but-empty result
-// — REJECTS. A successful CoinLore response always has coins, so an empty result
-// is itself a failure signal; returning it (as an earlier version did) let
-// callers overwrite good ranks with nothing, which collapses the table's default
-// market-cap sort and uncaps the universe. Rejecting instead lets callers keep
-// the last good data on a transient upstream hiccup.
+// Contract: resolves ONLY on a real, PLAUSIBLE result. Any failure — network
+// error, non-OK proxy response, non-array payload, or a payload that fails the
+// MARKET_CAP sanity gates — REJECTS, so callers keep the last good data on a
+// transient upstream hiccup instead of overwriting good ranks with rubbish.
+//
+// "Empty" is deliberately NOT the only failure signal. CoinLore serves a thin,
+// half-corrupt payload far more often than an empty one (market_cap_usd as the
+// literal string "0?"), and a thin result is the dangerous case: every coin it
+// drops looks UNRANKED to selectUniverse, which drops unranked crypto — so a
+// 9-coin result once collapsed the whole OKX board to a single row. Hence the
+// size gate below, and Number() rather than parseFloat() so '0?' is recognised
+// as malformed instead of silently becoming 0.
 export async function fetchMarketCapData(): Promise<Map<string, MarketCapData>> {
   const result = new Map<string, MarketCapData>();
   const cachedLogos = getLogoCache();
@@ -56,13 +62,19 @@ export async function fetchMarketCapData(): Promise<Map<string, MarketCapData>> 
     throw new Error('[MarketCap] /api/marketcap returned a non-array payload');
   }
 
+  let malformed = 0;
+
   for (const coin of data as CoinLoreCoin[]) {
     const symbol = (coin.symbol || '').toUpperCase();
     if (!symbol) continue;
 
     const rank = Number(coin.rank) || 9999;
-    const marketCap = parseFloat(coin.market_cap_usd) || 0;
-    if (!marketCap) continue;
+    const marketCap = Number(coin.market_cap_usd);
+    if (!Number.isFinite(marketCap)) {
+      malformed++;
+      continue;
+    }
+    if (marketCap <= 0) continue;
 
     const existing = result.get(symbol);
     // Multiple coins can share a symbol — keep the highest-ranked one.
@@ -77,8 +89,11 @@ export async function fetchMarketCapData(): Promise<Map<string, MarketCapData>> 
     }
   }
 
-  if (result.size === 0) {
-    throw new Error('[MarketCap] resolved to 0 coins — treating as failure');
+  if (result.size < MARKET_CAP.MIN_VALID_TOTAL) {
+    throw new Error(
+      `[MarketCap] resolved to only ${result.size} coins ` +
+      `(${malformed} malformed of ${data.length}) — treating as failure`
+    );
   }
 
   console.log(`[MarketCap] CoinLore: ${result.size} coins`);

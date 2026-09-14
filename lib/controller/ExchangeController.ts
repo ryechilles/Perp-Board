@@ -171,6 +171,12 @@ export class ExchangeController {
     if (prev && sameSet(prev, next)) return;
 
     this.universe = next;
+    // One line per actual universe change — the fastest way to tell a healthy
+    // board from a collapsed one (and which input collapsed it) after the fact.
+    console.log(
+      `[Universe] ${next.size} instruments ` +
+      `(from ${all.size} tickers, ${marketCapData.size} ranked coins, ${spotSymbols.size} spot symbols)`
+    );
     // New members need RSI + funding now, not at the next refresh interval.
     const grew = !prev || order.some((id) => !prev.has(id));
     if (grew) this.scheduleUniverseFetches();

@@ -106,11 +106,18 @@ export function applyRsiFilter(
  *    never have spot).
  *
  * Graceful degradation: when market-cap data is unavailable (empty map — the
- * controller only gets here after a load timeout / failure), crypto falls back
- * to the top `limit` by 24h USD volume instead of going uncapped, so the board
- * never processes the full instrument list. While the spot symbol set is empty
- * (not yet loaded / fetch failed), the spot cut is skipped rather than wiping
- * every crypto row.
+ * controller only gets here after a load timeout / failure) OR unusable, crypto
+ * falls back to the top `limit` by 24h USD volume instead of going uncapped, so
+ * the board never processes the full instrument list. While the spot symbol set
+ * is empty (not yet loaded / fetch failed), the spot cut is skipped rather than
+ * wiping every crypto row.
+ *
+ * "Unusable" means the ranks are present but cover too few of the exchange's
+ * crypto perps to even fill the cap. That is not a normal state — CoinLore's top
+ * 500 always covers far more than 50 listed perps — so it means the rank source
+ * degraded (see MARKET_CAP in constants: a half-corrupt payload once left BTC as
+ * the only ranked OKX perp, and "drop unranked crypto" then emptied the board
+ * down to one row). Falling back to volume keeps a full, useful board instead.
  */
 export function selectUniverse(
   data: ProcessedTicker[],
@@ -118,23 +125,32 @@ export function selectUniverse(
   spot?: SpotUniverseContext | null,
   limit: number = UNIVERSE.MAX_CRYPTO
 ): ProcessedTicker[] {
-  const hasRanks = marketCapData.size > 0;
   const volUsd = (t: ProcessedTicker) => (parseFloat(t.volCcy24h) || 0) * t.priceNum;
 
   const stocks: ProcessedTicker[] = [];
-  const candidates: ProcessedTicker[] = [];
+  const allCrypto: ProcessedTicker[] = [];
+  const ranked: ProcessedTicker[] = [];
   for (const t of data) {
     if (UNIVERSE.EXCLUDED_SYMBOLS.has(t.baseSymbol)) continue;
     if (STOCK_SYMBOLS.has(t.baseSymbol)) {
       stocks.push(t);
-    } else if (!hasRanks || marketCapData.get(t.baseSymbol)?.rank !== undefined) {
-      candidates.push(t);
+      continue;
     }
-    // Unranked crypto is intentionally dropped (when ranks are available).
+    allCrypto.push(t);
+    if (marketCapData.get(t.baseSymbol)?.rank !== undefined) ranked.push(t);
   }
 
+  // Trust the ranks only if they can actually fill the cap; otherwise the rank
+  // source is degraded and dropping unranked crypto would gut the board. (No
+  // logging here — this runs on every render via filterAndSort; the controller
+  // logs the resulting universe instead.)
+  const useRanks = ranked.length >= Math.min(limit, allCrypto.length);
+
+  // Unranked crypto is intentionally dropped while the ranks are trustworthy.
+  const candidates = useRanks ? ranked : allCrypto;
+
   candidates.sort((a, b) => {
-    if (hasRanks) {
+    if (useRanks) {
       const rankA = marketCapData.get(a.baseSymbol)!.rank;
       const rankB = marketCapData.get(b.baseSymbol)!.rank;
       if (rankA !== rankB) return rankA - rankB;

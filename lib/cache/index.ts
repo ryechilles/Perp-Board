@@ -3,7 +3,7 @@
  * Provides consistent caching with TTL support for all app data
  */
 
-import { CACHE_KEYS, TIMING, MA_FLOW, APP_VERSION } from '../constants';
+import { CACHE_KEYS, TIMING, MA_FLOW, APP_VERSION, MARKET_CAP } from '../constants';
 import { RSIData, MarketCapData, MAFlowData, ColumnVisibility, Filters } from '../types';
 
 // ===========================================
@@ -199,7 +199,21 @@ export const hlColumnOrderCache = createArrayCache<string>(CACHE_KEYS.HL_COLUMN_
 // ===========================================
 
 // Market Cap Cache
-export const getMarketCapCache = () => marketCapCache.get();
+//
+// The read is gated on the same plausibility rule as the fetch (see
+// fetchMarketCapData): a thin map means a degraded CoinLore payload was adopted
+// before that gate existed, or by an older build. Seeding the store from it
+// would collapse the universe for the rest of the cache's 30-minute TTL, so an
+// implausible entry is discarded and the fetch is left to repopulate it.
+export const getMarketCapCache = () => {
+  const cached = marketCapCache.get();
+  if (cached && cached.size < MARKET_CAP.MIN_VALID_TOTAL) {
+    console.warn(`[Cache] Discarding market-cap cache — only ${cached.size} coins`);
+    removeCache(CACHE_KEYS.MARKET_CAP_CACHE);
+    return null;
+  }
+  return cached;
+};
 export const setMarketCapCache = (data: Map<string, MarketCapData>) => marketCapCache.set(data);
 
 // MA Flow Cache

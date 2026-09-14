@@ -27,6 +27,32 @@ export const UNIVERSE = {
 };
 
 // ===========================================
+// Market-cap payload sanity gates
+// ===========================================
+// CoinLore intermittently serves a HALF-broken payload rather than an error:
+// `market_cap_usd` comes back as the literal string "0?" and the rank order is
+// scrambled (seen in the wild: 491 of 500 rows corrupt, ETH ranked 5th behind
+// two dead memecoins). Those rows parse to a market cap of 0 and get dropped,
+// so the response stays "non-empty" while losing ~98% of its coins — and since
+// selectUniverse drops crypto WITHOUT a rank, the universe collapsed to the one
+// survivor that is also an OKX perp (BTC): a one-row board.
+//
+// "Empty" is therefore not a sufficient failure signal for this source; "thin"
+// and "malformed" are the shapes it actually fails in. These gates reject such a
+// payload so every layer keeps its last good data instead of adopting it.
+export const MARKET_CAP = {
+  /** Coins requested from CoinLore: 5 pages x 100. */
+  PAGE_SIZE: 100,
+  /** A page with fewer well-formed rows than this is treated as a failed page. */
+  MIN_VALID_PER_PAGE: 50,
+  /** A whole response with fewer well-formed rows than this is rejected. */
+  MIN_VALID_TOTAL: 250,
+  /** Top ranks are always real coins with real caps — any malformed row here
+   *  means the payload is corrupt even if the totals look healthy. */
+  SANITY_TOP_RANK: 10,
+};
+
+// ===========================================
 // API Endpoints
 // ===========================================
 export const API = {
