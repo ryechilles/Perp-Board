@@ -59,15 +59,27 @@ const MAX_RETRIES = 2;
 /**
  * Fetch with AbortController timeout
  */
-async function fetchWithTimeout(url: string, timeoutMs: number = FETCH_TIMEOUT_MS): Promise<Response> {
+async function fetchWithTimeout(
+  url: string,
+  timeoutMs: number = FETCH_TIMEOUT_MS,
+  signal?: AbortSignal
+): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  // Caller cancellation (page left) aborts the request too.
+  const onAbort = () => controller.abort();
+  signal?.addEventListener('abort', onAbort, { once: true });
   try {
     const response = await fetch(url, { signal: controller.signal });
     return response;
   } finally {
     clearTimeout(timeoutId);
+    signal?.removeEventListener('abort', onAbort);
   }
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
 }
 
 /**
@@ -78,7 +90,8 @@ async function fetchWithTimeout(url: string, timeoutMs: number = FETCH_TIMEOUT_M
 async function fetchCandlesWithPagination(
   instId: string,
   bar: string,
-  needed: number
+  needed: number,
+  signal?: AbortSignal
 ): Promise<number[] | null> {
   const allCandles: string[][] = [];
   let after: string | undefined;
@@ -91,6 +104,7 @@ async function fetchCandlesWithPagination(
 
     let success = false;
     for (let retry = 0; retry <= MAX_RETRIES; retry++) {
+      throwIfAborted(signal);
       if (retry > 0) {
         // Back-off delay before retry
         await new Promise(r => setTimeout(r, 500 * retry));
@@ -98,6 +112,7 @@ async function fetchCandlesWithPagination(
 
       await okxCandleMutex.acquire();
       try {
+        throwIfAborted(signal);
         await okxRateLimiter.waitForSlot();
 
         let url = `${OKX_REST_BASE}/market/candles?instId=${instId}&bar=${bar}&limit=${maxPerRequest}`;
@@ -105,7 +120,7 @@ async function fetchCandlesWithPagination(
           url += `&after=${after}`;
         }
 
-        const response = await fetchWithTimeout(url);
+        const response = await fetchWithTimeout(url, FETCH_TIMEOUT_MS, signal);
         if (!response.ok) {
           console.warn(`[MA Flow] HTTP ${response.status} for ${instId} ${bar} (attempt ${retry + 1})`);
           continue; // Will retry after mutex release in finally
@@ -128,6 +143,8 @@ async function fetchCandlesWithPagination(
         after = candles[candles.length - 1][0];
         break;
       } catch (error) {
+        // Caller cancelled — stop immediately (the mutex is released in finally).
+        if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
         const isTimeout = error instanceof DOMException && error.name === 'AbortError';
         console.warn(`[MA Flow] ${isTimeout ? 'Timeout' : 'Fetch failed'} for ${instId} ${bar} (attempt ${retry + 1}):`, error);
         // Will retry after mutex release in finally
@@ -160,9 +177,10 @@ async function fetchCandlesWithPagination(
  */
 async function fetchMAsForTimeframe(
   instId: string,
-  bar: string
+  bar: string,
+  signal?: AbortSignal
 ): Promise<MAValues | null> {
-  const closes = await fetchCandlesWithPagination(instId, bar, MA_FLOW.CANDLES_NEEDED);
+  const closes = await fetchCandlesWithPagination(instId, bar, MA_FLOW.CANDLES_NEEDED, signal);
   if (!closes || closes.length < MA_FLOW.MIN_CANDLES_MA7) return null;
 
   return {
@@ -188,16 +206,19 @@ const TIMEFRAME_BARS: Record<string, string> = {
  * Fetch MA data for a single instrument across 3 timeframes (4H, Daily, Weekly)
  * @param instId - The instrument ID (e.g., "BTC-USDT-SWAP")
  */
-export async function fetchMAForInstrument(instId: string): Promise<MAFlowData | null> {
+export async function fetchMAForInstrument(
+  instId: string,
+  signal?: AbortSignal
+): Promise<MAFlowData | null> {
   try {
     // Fetch 3 timeframes sequentially (to respect rate limits)
-    const ma4h = await fetchMAsForTimeframe(instId, TIMEFRAME_BARS['4h']);
+    const ma4h = await fetchMAsForTimeframe(instId, TIMEFRAME_BARS['4h'], signal);
 
     await new Promise(r => setTimeout(r, 50));
-    const maDaily = await fetchMAsForTimeframe(instId, TIMEFRAME_BARS['daily']);
+    const maDaily = await fetchMAsForTimeframe(instId, TIMEFRAME_BARS['daily'], signal);
 
     await new Promise(r => setTimeout(r, 50));
-    const maWeekly = await fetchMAsForTimeframe(instId, TIMEFRAME_BARS['weekly']);
+    const maWeekly = await fetchMAsForTimeframe(instId, TIMEFRAME_BARS['weekly'], signal);
 
     return {
       ma4h,
@@ -211,6 +232,7 @@ export async function fetchMAForInstrument(instId: string): Promise<MAFlowData |
       lastUpdated: Date.now(),
     };
   } catch (error) {
+    if (signal?.aborted) throw error; // cancellation propagates to the batch
     console.error(`[MA Flow] Failed for ${instId}:`, error);
     return null;
   }
@@ -221,13 +243,16 @@ export async function fetchMAForInstrument(instId: string): Promise<MAFlowData |
 // ===========================================
 
 /**
- * Batch fetch MA data for multiple instruments (Top N by market cap)
+ * Batch fetch MA data for multiple instruments (Top N by market cap).
+ * Cancellable via `signal` (page left / hidden): stops between and inside
+ * requests and resolves quietly.
  */
 export async function fetchMAFlowBatch(
   instIds: string[],
   existingData: Map<string, MAFlowData>,
   onProgress: (text: string) => void,
   onUpdate: (instId: string, data: MAFlowData) => void,
+  signal?: AbortSignal,
 ): Promise<void> {
   const now = Date.now();
 
@@ -246,20 +271,27 @@ export async function fetchMAFlowBatch(
     return;
   }
 
-  for (let i = 0; i < toFetch.length; i++) {
-    const instId = toFetch[i];
-    onProgress(`MA Flow: ${i + 1}/${toFetch.length}`);
+  try {
+    for (let i = 0; i < toFetch.length; i++) {
+      throwIfAborted(signal);
+      const instId = toFetch[i];
+      onProgress(`MA Flow: ${i + 1}/${toFetch.length}`);
 
-    const maData = await fetchMAForInstrument(instId);
-    if (maData) {
-      onUpdate(instId, maData);
-    }
+      const maData = await fetchMAForInstrument(instId, signal);
+      throwIfAborted(signal);
+      if (maData) {
+        onUpdate(instId, maData);
+      }
 
-    // Delay between instruments
-    if (i < toFetch.length - 1) {
-      await new Promise(r => setTimeout(r, MA_FLOW.FETCH_DELAY));
+      // Delay between instruments
+      if (i < toFetch.length - 1) {
+        await new Promise(r => setTimeout(r, MA_FLOW.FETCH_DELAY));
+      }
     }
+  } catch (error) {
+    if (signal?.aborted) return; // cancelled — silent exit, not an error
+    throw error;
+  } finally {
+    onProgress('');
   }
-
-  onProgress('');
 }

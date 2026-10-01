@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, ReactNode } from 'react';
+import { memo, ReactNode, useCallback, useEffect, useState, useTransition } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { APP_CONFIG } from '@/lib/config';
 import { ThemeToggle, PillButtonGroup } from '@/components/ui';
@@ -102,12 +102,39 @@ export const Header = memo(function Header({ actions }: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const activeExchange = EXCHANGES.find(e => pathname === e.href || pathname.startsWith(e.href + '/'))?.id ?? 'okx';
+  const routeExchange = EXCHANGES.find(e => pathname === e.href || pathname.startsWith(e.href + '/'))?.id ?? 'okx';
+
+  // Optimistic selection: the pill moves on click, while the route loads in a
+  // transition. Cleared once the navigation lands (pathname changes).
+  const [pendingExchange, setPendingExchange] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+  useEffect(() => setPendingExchange(null), [pathname]);
+  const activeExchange = pendingExchange ?? routeExchange;
+
+  // Keep the other exchange's route warm in the client router cache, so a
+  // switch never waits on a server round-trip (the cache entry expires after
+  // staleTimes.static — see next.config.js). Re-prefetched on mount, when the
+  // tab becomes visible again and on pointer/focus entering the switch;
+  // prefetch is a no-op while the entry is still fresh.
+  const prefetchOthers = useCallback(() => {
+    EXCHANGES.forEach(e => {
+      if (e.id !== routeExchange) router.prefetch(e.href);
+    });
+  }, [router, routeExchange]);
+  useEffect(() => {
+    prefetchOthers();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') prefetchOthers();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [prefetchOthers]);
 
   const handleExchangeChange = (value: string) => {
     const exchange = EXCHANGES.find(e => e.id === value);
     if (exchange && exchange.id !== activeExchange) {
-      router.push(exchange.href);
+      setPendingExchange(exchange.id);
+      startTransition(() => router.push(exchange.href));
     }
   };
 
@@ -121,7 +148,12 @@ export const Header = memo(function Header({ actions }: HeaderProps) {
         </div>
 
         {/* Exchange switch */}
-        <nav aria-label="Exchange" className="justify-self-end md:justify-self-center">
+        <nav
+          aria-label="Exchange"
+          className="justify-self-end md:justify-self-center"
+          onPointerEnter={prefetchOthers}
+          onFocus={prefetchOthers}
+        >
           <PillButtonGroup
             options={EXCHANGES.map((exchange) => {
               const Logo = exchange.logo;

@@ -466,7 +466,8 @@ export class ExchangeController {
       // The store holds only the universe slice, so MA Flow is capped to it too.
       const tryFetchMAFlow = (retriesLeft: number) => {
         const retry = () => {
-          if (retriesLeft > 0) {
+          // Aborted by teardown (page left / hidden) — don't schedule past it.
+          if (retriesLeft > 0 && !this.inactive) {
             this.timeouts.push(setTimeout(() => tryFetchMAFlow(retriesLeft - 1), 5000));
           }
         };

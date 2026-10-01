@@ -13,6 +13,8 @@ import { getMAFlowCache, setMAFlowCache } from '@/lib/cache';
 export function useMAFlowData(getSortedInstIds: (tickerMap: Map<string, ProcessedTicker>) => string[]) {
   const [maFlowData, setMAFlowData] = useState<Map<string, MAFlowData>>(new Map());
   const isFetchingMAFlowRef = useRef(false);
+  // In-flight batch — aborted by cleanup() (page left or hidden).
+  const abortRef = useRef<AbortController | null>(null);
 
   // Use ref to always access the latest getSortedInstIds
   // This avoids stale closure issues when called from setTimeout/setInterval in the store
@@ -63,6 +65,8 @@ export function useMAFlowData(getSortedInstIds: (tickerMap: Map<string, Processe
     if (instIds.length === 0) return false;
 
     isFetchingMAFlowRef.current = true;
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     try {
       await fetchMAFlowBatch(
@@ -70,10 +74,15 @@ export function useMAFlowData(getSortedInstIds: (tickerMap: Map<string, Processe
         maFlowDataRef.current,
         () => {}, // silent progress for MA Flow
         updateMAFlowData,
+        controller.signal,
       );
-      return true;
+      return !controller.signal.aborted;
     } finally {
-      isFetchingMAFlowRef.current = false;
+      // An aborted run must not clobber the flags of a newer run.
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+        isFetchingMAFlowRef.current = false;
+      }
     }
   }, [updateMAFlowData]);
 
@@ -96,6 +105,9 @@ export function useMAFlowData(getSortedInstIds: (tickerMap: Map<string, Processe
 
   // Cleanup function
   const cleanup = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    isFetchingMAFlowRef.current = false;
     if (saveMAFlowCacheTimeoutRef.current) {
       clearTimeout(saveMAFlowCacheTimeoutRef.current);
       saveMAFlowCacheTimeoutRef.current = null;
