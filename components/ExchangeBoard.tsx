@@ -332,7 +332,7 @@ export function ExchangeBoard({
                   );
                 })}
               </ErrorBoundary>
-              <Footer exchange={exchange} className="hidden lg:flex mt-auto" />
+              <Footer className="hidden lg:flex mt-auto" />
             </div>
           </aside>
 
@@ -514,7 +514,7 @@ export function ExchangeBoard({
                     })}
                   </div>
                 )}
-                <Footer exchange={exchange} className="mt-4" />
+                <Footer className="mt-4" />
               </div>
             </div>
           </section>
