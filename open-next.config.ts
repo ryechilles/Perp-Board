@@ -1,8 +1,16 @@
 import { defineCloudflareConfig } from "@opennextjs/cloudflare";
+import staticAssetsIncrementalCache from "@opennextjs/cloudflare/overrides/incremental-cache/static-assets-incremental-cache";
 
-// Minimal config: no R2 incremental cache configured.
-// This app is effectively client-rendered with a couple of proxy API routes,
-// so the default (in-memory) caching is sufficient. To enable persistent
-// ISR/data caching later, add an R2 bucket binding and an incremental cache
-// override here. See https://opennext.js.org/cloudflare/caching
-export default defineCloudflareConfig({});
+// Every page here is prerendered at build time (the boards are client-rendered
+// shells) and nothing is ever revalidated. The static-assets cache serves that
+// prerendered HTML straight from Workers static assets, and cache interception
+// answers the request before the Next.js server is even loaded — so a page view
+// no longer pays for a server render on each request.
+//
+// This cache is read-only by design: it cannot do ISR / on-demand revalidation.
+// If a page ever needs that, switch to the R2 or KV incremental cache instead.
+// See https://opennext.js.org/cloudflare/caching
+export default defineCloudflareConfig({
+  incrementalCache: staticAssetsIncrementalCache,
+  enableCacheInterception: true,
+});
