@@ -1,7 +1,11 @@
-'use client';
-
 import HyperliquidBoard from '@/components/HyperliquidBoard';
+import { BoardPreloads } from '@/components/BoardPreloads';
 
 export default function HyperliquidPage() {
-  return <HyperliquidBoard />;
+  return (
+    <>
+      <BoardPreloads exchange="hyperliquid" />
+      <HyperliquidBoard />
+    </>
+  );
 }

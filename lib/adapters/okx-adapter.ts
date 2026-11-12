@@ -7,6 +7,7 @@ import { ExchangeAdapter, TickerUpdateCallback, StatusUpdateCallback, RSIData, P
 import { OKXHybridDataManager } from '../api/okx-data-manager';
 import { fetchRSIForInstrument } from '../api/okx-rsi';
 import { fetchRSIBatchGeneric } from '../api/rsi-batch';
+import { RATE_LIMIT } from '../constants';
 import { fetchSpotSymbols, fetchListingDates, fetchFundingRates } from '../api/okx-rest';
 
 export const okxAdapter: ExchangeAdapter = {
@@ -24,7 +25,7 @@ export const okxAdapter: ExchangeAdapter = {
     tier?: 'top50' | 'tier2' | 'tier3' | 'all',
     signal?: AbortSignal
   ): Promise<void> {
-    return fetchRSIBatchGeneric(ids, existing, fetchRSIForInstrument, onProgress, onUpdate, tier, signal);
+    return fetchRSIBatchGeneric(ids, existing, fetchRSIForInstrument, onProgress, onUpdate, tier, signal, RATE_LIMIT.RSI_CONCURRENCY);
   },
 
   preFilterTickers(tickers: ProcessedTicker[]): ProcessedTicker[] {

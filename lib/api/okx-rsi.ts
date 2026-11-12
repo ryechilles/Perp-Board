@@ -6,12 +6,15 @@
 import { RSIData } from '../types';
 import { API } from '../constants';
 import { CandleFetcher, calculateRSIForInstrument } from './rsi-core';
-import { okxCandleMutex, okxFetch } from './okx-gateway';
+import { okxFetch } from './okx-gateway';
 
 const OKX_REST_BASE = API.OKX_REST_BASE;
 
 /** OKX candle fetcher — GET request, response is newest-first string arrays */
 const okxCandleFetcher: CandleFetcher = {
+  // okxFetch meters every request, so the three timeframes can go out together.
+  parallel: true,
+
   async fetchCandles(instId: string, interval: string, limit: number): Promise<number[][] | null> {
     try {
       const response = await okxFetch(`${OKX_REST_BASE}/market/candles?instId=${instId}&bar=${interval}&limit=${limit}`);
@@ -46,7 +49,7 @@ export async function fetchRSIForInstrument(instId: string): Promise<RSIData | n
   return calculateRSIForInstrument(
     instId,
     okxCandleFetcher,
-    okxCandleMutex,
+    null,   // no per-instrument lock — the shared OKX rate limiter is the throttle
     '1D',   // daily
     '1W',   // weekly
     '1H',   // hourly

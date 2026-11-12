@@ -60,12 +60,63 @@ export async function fetchListingDates(): Promise<Map<string, ListingData>> {
   return result;
 }
 
-// Fetch funding rates for the given SWAP instruments (the active universe —
-// the caller only passes live instruments, so no instruments-list lookup).
+/** Normalise one OKX funding-rate row. */
+function toFundingRateData(fr: OKXFundingRate): FundingRateData {
+  const fundingTime = parseInt(fr.fundingTime, 10) || 0;
+  const nextFundingTime = parseInt(fr.nextFundingTime, 10) || 0;
+
+  // Calculate settlement interval in hours
+  let settlementInterval = 8; // default
+  if (fundingTime && nextFundingTime) {
+    const diffMs = nextFundingTime - fundingTime;
+    const diffHours = Math.round(diffMs / (1000 * 60 * 60));
+    if (diffHours > 0 && diffHours <= 8) {
+      settlementInterval = diffHours;
+    }
+  }
+
+  return {
+    fundingRate: parseFloat(fr.fundingRate) || 0,
+    nextFundingRate: parseFloat(fr.nextFundingRate) || 0,
+    fundingTime,
+    nextFundingTime,
+    settlementInterval,
+    lastUpdated: Date.now(),
+  };
+}
+
+// Fetch funding rates for the given SWAP instruments (the active universe).
+// One request: `instId=ANY` returns every swap's funding row, which is then cut
+// down to the instruments asked for. If that request fails or covers none of
+// them, falls back to one request per instrument.
 // REJECTS on failure (never resolves with an empty map) so callers keep the
-// previous data instead of wiping the store. Individual per-instrument failures
-// inside the fan-out are tolerated; only a fully-empty result rejects.
+// previous data instead of wiping the store.
 export async function fetchFundingRates(
+  allowedInstIds: Set<string>
+): Promise<Map<string, FundingRateData>> {
+  try {
+    const res = await okxFetch(`${OKX_REST_BASE}/public/funding-rate?instId=ANY`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.code !== '0' || !Array.isArray(data.data)) {
+      throw new Error(`OKX code ${data.code}`);
+    }
+
+    const result = new Map<string, FundingRateData>();
+    for (const fr of data.data as OKXFundingRate[]) {
+      if (allowedInstIds.has(fr.instId)) result.set(fr.instId, toFundingRateData(fr));
+    }
+    if (result.size > 0) return result;
+    throw new Error('no requested instrument in the response');
+  } catch (err) {
+    console.warn('[Funding] Bulk fetch failed, falling back to per-instrument requests:', err);
+    return fetchFundingRatesFanOut(allowedInstIds);
+  }
+}
+
+// Fallback: one request per instrument. Individual failures are tolerated;
+// only a fully-empty result rejects.
+async function fetchFundingRatesFanOut(
   allowedInstIds: Set<string>
 ): Promise<Map<string, FundingRateData>> {
   const result = new Map<string, FundingRateData>();
@@ -83,31 +134,7 @@ export async function fetchFundingRates(
         const data = await res.json();
 
         if (data.code === '0' && data.data && data.data[0]) {
-          const fr = data.data[0] as OKXFundingRate;
-          const fundingTime = parseInt(fr.fundingTime, 10) || 0;
-          const nextFundingTime = parseInt(fr.nextFundingTime, 10) || 0;
-
-          // Calculate settlement interval in hours
-          let settlementInterval = 8; // default
-          if (fundingTime && nextFundingTime) {
-            const diffMs = nextFundingTime - fundingTime;
-            const diffHours = Math.round(diffMs / (1000 * 60 * 60));
-            if (diffHours > 0 && diffHours <= 8) {
-              settlementInterval = diffHours;
-            }
-          }
-
-          return {
-            instId,
-            data: {
-              fundingRate: parseFloat(fr.fundingRate) || 0,
-              nextFundingRate: parseFloat(fr.nextFundingRate) || 0,
-              fundingTime,
-              nextFundingTime,
-              settlementInterval,
-              lastUpdated: Date.now()
-            }
-          };
+          return { instId, data: toFundingRateData(data.data[0] as OKXFundingRate) };
         }
         return null;
       } catch (err) {

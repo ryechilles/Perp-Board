@@ -7,7 +7,7 @@
 
 import { OKXTicker, TickerUpdateCallback, StatusUpdateCallback } from '../types';
 import { processTicker } from '../utils';
-import { API, UI } from '../constants';
+import { API, TIMING, UI } from '../constants';
 import { BaseDataManager } from './base-data-manager';
 import { okxFetch } from './okx-gateway';
 
@@ -16,6 +16,7 @@ const OKX_REST_BASE = API.OKX_REST_BASE;
 
 export class OKXHybridDataManager extends BaseDataManager {
   private wsLastUpdateTime: Map<string, number> = new Map(); // Track WS update timestamps
+  private lastRestPoll = 0;
 
   constructor(onUpdate: TickerUpdateCallback, onStatus: StatusUpdateCallback) {
     super(onUpdate, onStatus);
@@ -143,6 +144,15 @@ export class OKXHybridDataManager extends BaseDataManager {
   }
 
   protected async pollRest(): Promise<void> {
+    // While the WebSocket streams the universe, the full list is only needed to
+    // notice rank / listing changes outside it — poll it far less often.
+    if (
+      this.wsConnected &&
+      Date.now() - this.lastRestPoll < TIMING.REST_POLLING_INTERVAL_WS_LIVE
+    ) {
+      return;
+    }
+    this.lastRestPoll = Date.now();
     try {
       const response = await okxFetch(`${OKX_REST_BASE}/market/tickers?instType=SWAP`);
       if (!this.isRunning) return;

@@ -84,6 +84,8 @@ export class ExchangeController {
   /** Set true by pause() while the page is hidden — acquisition is suspended
    *  but the store is preserved, so resume() can repaint + refresh. */
   private paused = false;
+  /** The MA Flow tab is open — the only time MA Flow is fetched. */
+  private maFlowActive = false;
 
   // RSI batch buffer — collects synchronous onUpdate calls and flushes once per
   // microtask into a single store write.
@@ -331,6 +333,40 @@ export class ExchangeController {
     }
   }
 
+  // ───────────────────────── MA Flow ─────────────────────────────────────
+  /**
+   * MA Flow costs ~150 candle requests per pass and feeds one tab, so it is
+   * fetched on demand: the board calls this when that tab opens / closes. The
+   * cached data (if any) is shown meanwhile; the fetch itself skips instruments
+   * that are still fresh.
+   */
+  setMAFlowActive(active: boolean): void {
+    if (this.maFlowActive === active) return;
+    this.maFlowActive = active;
+    if (active && this.adapter.features.maFlow && !this.inactive && this.dataManager) {
+      this.tryFetchMAFlow(6);
+    }
+  }
+
+  /** One MA-Flow pass over the universe slice, retried while it is still empty. */
+  private tryFetchMAFlow(retriesLeft: number): void {
+    if (this.inactive || !this.maFlowActive) return;
+    const retry = () => {
+      if (retriesLeft > 0) {
+        this.timeouts.push(setTimeout(() => this.tryFetchMAFlow(retriesLeft - 1), 5000));
+      }
+    };
+    // Empty until the universe is known (cold start) — retry rather than give up.
+    const currentTickers = this.store.getSnapshot().tickers;
+    if (currentTickers.size === 0) {
+      retry();
+      return;
+    }
+    this.cb.fetchMAFlow(currentTickers).then((didFetch) => {
+      if (!didFetch) retry();
+    });
+  }
+
   // ───────────────────────── lifecycle ───────────────────────────────────
 
   /** Acquisition should neither run nor commit results when disposed (unmounted)
@@ -461,37 +497,12 @@ export class ExchangeController {
       setInterval(() => void this.fetchRsi('tier3'), TIMING.RSI_REFRESH_TIER3)
     );
 
-    // MA Flow (OKX only).
+    // MA Flow (OKX only) — fetched only while its tab is open (setMAFlowActive).
     if (this.adapter.features.maFlow) {
-      // The store holds only the universe slice, so MA Flow is capped to it too.
-      const tryFetchMAFlow = (retriesLeft: number) => {
-        const retry = () => {
-          if (retriesLeft > 0) {
-            this.timeouts.push(setTimeout(() => tryFetchMAFlow(retriesLeft - 1), 5000));
-          }
-        };
-        // Empty until the universe is known (cold start) — retry rather than give up.
-        const currentTickers = this.store.getSnapshot().tickers;
-        if (currentTickers.size === 0) {
-          retry();
-          return;
-        }
-        this.cb.fetchMAFlow(currentTickers).then((didFetch) => {
-          if (!didFetch) retry();
-        });
-      };
-      const initialMAFlowTimeout = setTimeout(
-        () => tryFetchMAFlow(6),
-        MA_FLOW.INITIAL_FETCH_DELAY
-      );
-      this.timeouts.push(initialMAFlowTimeout);
-
+      if (this.maFlowActive) this.tryFetchMAFlow(6);
       this.intervals.push(
         setInterval(() => {
-          const currentTickers = this.store.getSnapshot().tickers;
-          if (currentTickers.size > 0) {
-            this.cb.fetchMAFlow(currentTickers);
-          }
+          if (this.maFlowActive) this.tryFetchMAFlow(0);
         }, MA_FLOW.REFRESH_INTERVAL)
       );
     }

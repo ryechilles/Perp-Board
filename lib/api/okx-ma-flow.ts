@@ -6,7 +6,7 @@
 
 import { MAFlowData, MAValues } from '../types';
 import { API, MA_FLOW } from '../constants';
-import { okxRateLimiter, okxCandleMutex } from './okx-gateway';
+import { okxRateLimiter } from './okx-gateway';
 
 const OKX_REST_BASE = API.OKX_REST_BASE;
 
@@ -57,23 +57,25 @@ const FETCH_TIMEOUT_MS = 10000;
 const MAX_RETRIES = 2;
 
 /**
- * Fetch with AbortController timeout
+ * Rate-limited OKX fetch with an AbortController timeout. The timer starts
+ * once the request is actually sent, not while it waits for a rate slot.
  */
 async function fetchWithTimeout(url: string, timeoutMs: number = FETCH_TIMEOUT_MS): Promise<Response> {
+  await okxRateLimiter.waitForSlot();
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(url, { signal: controller.signal });
-    return response;
+    return await fetch(url, { signal: controller.signal });
   } finally {
     clearTimeout(timeoutId);
   }
 }
 
 /**
- * Fetch candles from OKX with pagination support, retry logic, and timeout
- * OKX returns max 100 candles per request, newest first
- * Uses `after` param to fetch older data
+ * Fetch candles from OKX with pagination support, retry logic, and timeout.
+ * OKX returns up to MA_FLOW.CANDLES_PER_REQUEST candles per request, newest
+ * first, so the usual 200-candle need is a single request; `after` pages back
+ * to older data only if more is ever needed.
  */
 async function fetchCandlesWithPagination(
   instId: string,
@@ -82,25 +84,24 @@ async function fetchCandlesWithPagination(
 ): Promise<number[] | null> {
   const allCandles: string[][] = [];
   let after: string | undefined;
-  const maxPerRequest = 100;
+  const maxPerRequest = MA_FLOW.CANDLES_PER_REQUEST;
   let pageAttempts = 0;
   const maxPageAttempts = Math.ceil(needed / maxPerRequest) + 1;
 
   while (allCandles.length < needed && pageAttempts < maxPageAttempts) {
     pageAttempts++;
+    const pageSize = Math.min(maxPerRequest, needed - allCandles.length);
 
     let success = false;
+    let exhausted = false;
     for (let retry = 0; retry <= MAX_RETRIES; retry++) {
       if (retry > 0) {
         // Back-off delay before retry
         await new Promise(r => setTimeout(r, 500 * retry));
       }
 
-      await okxCandleMutex.acquire();
       try {
-        await okxRateLimiter.waitForSlot();
-
-        let url = `${OKX_REST_BASE}/market/candles?instId=${instId}&bar=${bar}&limit=${maxPerRequest}`;
+        let url = `${OKX_REST_BASE}/market/candles?instId=${instId}&bar=${bar}&limit=${pageSize}`;
         if (after) {
           url += `&after=${after}`;
         }
@@ -108,21 +109,21 @@ async function fetchCandlesWithPagination(
         const response = await fetchWithTimeout(url);
         if (!response.ok) {
           console.warn(`[MA Flow] HTTP ${response.status} for ${instId} ${bar} (attempt ${retry + 1})`);
-          continue; // Will retry after mutex release in finally
+          continue;
         }
 
         const data = await response.json();
+        success = true;
         if (data.code !== '0' || !data.data || data.data.length === 0) {
-          success = true; // Not an error, just no more data
+          exhausted = true; // Not an error, just no more data
           break;
         }
 
         const candles = data.data as string[][];
         allCandles.push(...candles);
-        success = true;
 
-        // If we got fewer than requested, there's no more data
-        if (candles.length < maxPerRequest) break;
+        // Fewer than requested means there is no older data
+        if (candles.length < pageSize) exhausted = true;
 
         // Set `after` to the oldest timestamp for next page
         after = candles[candles.length - 1][0];
@@ -130,18 +131,10 @@ async function fetchCandlesWithPagination(
       } catch (error) {
         const isTimeout = error instanceof DOMException && error.name === 'AbortError';
         console.warn(`[MA Flow] ${isTimeout ? 'Timeout' : 'Fetch failed'} for ${instId} ${bar} (attempt ${retry + 1}):`, error);
-        // Will retry after mutex release in finally
-      } finally {
-        okxCandleMutex.release();
       }
     }
 
-    if (!success) break;
-
-    // Small delay between pagination requests
-    if (allCandles.length < needed) {
-      await new Promise(r => setTimeout(r, 50));
-    }
+    if (!success || exhausted) break;
   }
 
   if (allCandles.length === 0) return null;
@@ -190,14 +183,13 @@ const TIMEFRAME_BARS: Record<string, string> = {
  */
 export async function fetchMAForInstrument(instId: string): Promise<MAFlowData | null> {
   try {
-    // Fetch 3 timeframes sequentially (to respect rate limits)
-    const ma4h = await fetchMAsForTimeframe(instId, TIMEFRAME_BARS['4h']);
-
-    await new Promise(r => setTimeout(r, 50));
-    const maDaily = await fetchMAsForTimeframe(instId, TIMEFRAME_BARS['daily']);
-
-    await new Promise(r => setTimeout(r, 50));
-    const maWeekly = await fetchMAsForTimeframe(instId, TIMEFRAME_BARS['weekly']);
+    // The three timeframes go out together — the shared OKX rate limiter
+    // (inside fetchWithTimeout) is what keeps this within the per-IP budget.
+    const [ma4h, maDaily, maWeekly] = await Promise.all([
+      fetchMAsForTimeframe(instId, TIMEFRAME_BARS['4h']),
+      fetchMAsForTimeframe(instId, TIMEFRAME_BARS['daily']),
+      fetchMAsForTimeframe(instId, TIMEFRAME_BARS['weekly']),
+    ]);
 
     return {
       ma4h,
@@ -255,10 +247,6 @@ export async function fetchMAFlowBatch(
       onUpdate(instId, maData);
     }
 
-    // Delay between instruments
-    if (i < toFetch.length - 1) {
-      await new Promise(r => setTimeout(r, MA_FLOW.FETCH_DELAY));
-    }
   }
 
   onProgress('');

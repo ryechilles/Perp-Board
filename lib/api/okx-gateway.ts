@@ -8,12 +8,13 @@
  * funding-rate poll fired up to 20 unmetered requests at once via Promise.all —
  * both could trip OKX's limit and get the IP throttled.
  *
- * Funnel rule: never call `fetch` directly against OKX. Use `okxFetch` for
- * one-shot requests; the heavy paginated candle paths additionally take
- * `okxCandleMutex` so RSI and MA-Flow take turns instead of doubling load.
+ * Funnel rule: never call `fetch` directly against OKX — use `okxFetch`. The
+ * limiter is the ONLY throttle: callers are free to run requests concurrently
+ * (RSI fetches several instruments and all three timeframes at once) because
+ * every request still has to take a slot from this one shared window.
  */
 
-import { Mutex, RateLimiter } from '../concurrency';
+import { RateLimiter } from '../concurrency';
 import { RATE_LIMIT } from '../constants';
 
 /** Shared sliding-window limiter for every OKX REST request (per-IP budget). */
@@ -21,14 +22,6 @@ export const okxRateLimiter = new RateLimiter(
   RATE_LIMIT.MAX_REQUESTS_PER_SECOND,
   RATE_LIMIT.WINDOW_MS,
 );
-
-/**
- * Shared mutex for the heavy, paginated candle paths (RSI + MA Flow) so they
- * run sequentially instead of concurrently. Latency-sensitive one-shot calls
- * (tickers / funding / instruments) deliberately do NOT take this lock — they
- * only wait for a rate slot, so a long candle backfill can't starve them.
- */
-export const okxCandleMutex = new Mutex();
 
 /** Rate-limited OKX fetch. Use for ALL OKX REST calls. */
 export async function okxFetch(input: string, init?: RequestInit): Promise<Response> {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { MARKET_CAP } from '@/lib/constants';
+import { CoinLoreCoin, isWellFormed, payloadProblem } from '@/lib/api/marketcap-validate';
 
 // Market-cap / rank proxy backed by CoinLore (keyless).
 //
@@ -7,46 +8,91 @@ import { MARKET_CAP } from '@/lib/constants';
 // 403 to server-side requests originating from Cloudflare Worker IPs. CoinLore
 // is keyless and serves datacenter IPs fine.
 //
-// Returns the top ~500 coins by market cap (5 pages × 100), cached 5 minutes.
+// Returns the top ~500 coins by market cap (5 pages × 100), fresh for 5 minutes.
 //
-// CoinLore does NOT fail cleanly: instead of an error it can serve a structurally
-// valid payload whose `market_cap_usd` fields are the literal string "0?" and
-// whose ranks are scrambled. Such a payload is worse than no payload — it makes
-// every real coin look unranked, which collapses the board's universe (see
-// MARKET_CAP in lib/constants). So rows are validated here, a page that comes
-// back mostly corrupt counts as a FAILED page, and a response that fails the
-// gates is neither cached nor served: the last good payload is served instead
-// (or 503, so the client keeps its own cached ranks).
+// CoinLore does NOT fail cleanly (see lib/api/marketcap-validate): rows are
+// validated here, a page that comes back mostly corrupt counts as a FAILED
+// page, and a response that fails the gates is neither cached nor served: the
+// last good payload is served instead (or 503, so the client keeps its own
+// cached ranks).
+//
+// Three cache layers, cheapest first:
+//  1. `memory`  — this isolate only; gone when the isolate is.
+//  2. Cloudflare Cache API (`caches.default`) — shared by every isolate in the
+//     same data centre, so a cold isolate no longer has to go back to CoinLore.
+//     Absent outside Workers (local `next dev`) and a silent no-op where the
+//     zone doesn't support it; every use is guarded, so it can only help.
+//  3. `Cache-Control` on the response — the browser reuses the payload across
+//     reloads and revalidates it in the background.
 
 export const dynamic = 'force-dynamic';
 
-// NOTE: this in-memory cache is BEST-EFFORT on Cloudflare Workers. Worker
-// isolates are stateless and per-isolate, so this module-level variable (and the
-// `next: { revalidate }` Data Cache below) only dedupe requests that land on the
-// same warm isolate; they are NOT durable or shared across isolates. That still
-// meaningfully protects CoinLore from concurrent users on a warm isolate. To make
-// the 5-minute cache globally durable, configure an incremental cache (R2/KV) in
-// open-next.config.ts, or use the Cloudflare Cache API (caches.default) here.
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-let cache: { data: CoinLoreCoin[]; timestamp: number } | null = null;
+const FRESH_MS = 5 * 60 * 1000; // serve without refetching
+const KEEP_SECONDS = 60 * 60; // how long the edge keeps a payload as a stale fallback
+const EDGE_CACHE_PATH = '/__cache/marketcap-v1';
+const FETCHED_AT_HEADER = 'x-fetched-at';
 
-interface CoinLoreCoin {
-  symbol?: string;
-  rank?: number | string;
-  market_cap_usd?: string;
-  nameid?: string;
+// Browser: reuse for 2 minutes, then serve stale while refreshing in the background.
+const CLIENT_CACHE_CONTROL = 'public, max-age=120, stale-while-revalidate=600';
+
+interface Cached {
+  data: CoinLoreCoin[];
+  timestamp: number;
 }
 
-/**
- * A row is well-formed when its market cap is a real number. Note `Number()`,
- * not `parseFloat()`: parseFloat('0?') is 0 (indistinguishable from a legitimate
- * zero-cap coin), while Number('0?') is NaN — which is exactly the corruption
- * this gate exists to catch. A genuine '0' still passes.
- */
-function isWellFormed(coin: CoinLoreCoin): boolean {
-  if (!coin || typeof coin.symbol !== 'string' || !coin.symbol) return false;
-  if (!Number.isFinite(Number(coin.rank))) return false;
-  return Number.isFinite(Number(coin.market_cap_usd));
+let memory: Cached | null = null;
+
+const isFresh = (c: Cached | null): boolean =>
+  !!c && Date.now() - c.timestamp < FRESH_MS;
+
+/** Cloudflare's shared edge cache, or null where the runtime has none. */
+function edgeCache(): Cache | null {
+  const storage = (globalThis as { caches?: { default?: Cache } }).caches;
+  return storage?.default ?? null;
+}
+
+async function readEdge(key: string): Promise<Cached | null> {
+  try {
+    const hit = await edgeCache()?.match(key);
+    if (!hit) return null;
+    const timestamp = Number(hit.headers.get(FETCHED_AT_HEADER));
+    const data = await hit.json();
+    if (!Number.isFinite(timestamp) || !Array.isArray(data)) return null;
+    return { data, timestamp };
+  } catch {
+    return null;
+  }
+}
+
+async function writeEdge(key: string, entry: Cached): Promise<void> {
+  try {
+    await edgeCache()?.put(
+      key,
+      new Response(JSON.stringify(entry.data), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': `public, max-age=${KEEP_SECONDS}`,
+          [FETCHED_AT_HEADER]: String(entry.timestamp),
+        },
+      })
+    );
+  } catch {
+    // Best effort — the in-memory layer still holds the payload.
+  }
+}
+
+/** A good payload: cacheable by the browser. */
+function ok(entry: Cached) {
+  return NextResponse.json(entry.data, {
+    headers: { 'Cache-Control': CLIENT_CACHE_CONTROL },
+  });
+}
+
+/** A stale fallback during an upstream outage: usable, but not worth keeping. */
+function stale(entry: Cached) {
+  return NextResponse.json(entry.data, {
+    headers: { 'Cache-Control': 'no-store' },
+  });
 }
 
 /** Fetch one page; null means the page failed or came back mostly corrupt. */
@@ -58,7 +104,8 @@ async function fetchPage(start: number): Promise<CoinLoreCoin[] | null> {
         Accept: 'application/json',
         'User-Agent': 'Mozilla/5.0 (compatible; PerpBoard/1.0)',
       },
-      next: { revalidate: 300 },
+      // Caching is handled explicitly above; keep Next's data cache out of it.
+      cache: 'no-store',
     }
   );
   if (!res.ok) {
@@ -77,71 +124,44 @@ async function fetchPage(start: number): Promise<CoinLoreCoin[] | null> {
   return valid;
 }
 
-/**
- * Whole-payload sanity check. The totals gate catches the common "most rows are
- * '0?'" failure; the top-rank check catches a payload that is thin only where it
- * matters most (the majors that actually define the universe).
- */
-function isPayloadSane(coins: CoinLoreCoin[]): boolean {
-  if (coins.length < MARKET_CAP.MIN_VALID_TOTAL) {
-    console.error(`[MarketCap/CoinLore] payload too thin: ${coins.length} well-formed rows`);
-    return false;
-  }
-  // Every coin ranked in the top N must carry a real, positive market cap.
-  const topRanks = new Set<number>();
-  for (const coin of coins) {
-    const rank = Number(coin.rank);
-    if (rank >= 1 && rank <= MARKET_CAP.SANITY_TOP_RANK) {
-      if (!(Number(coin.market_cap_usd) > 0)) {
-        console.error(`[MarketCap/CoinLore] rank ${rank} (${coin.symbol}) has no market cap`);
-        return false;
-      }
-      topRanks.add(rank);
-    }
-  }
-  if (topRanks.size < MARKET_CAP.SANITY_TOP_RANK) {
-    console.error(`[MarketCap/CoinLore] only ${topRanks.size} of the top ${MARKET_CAP.SANITY_TOP_RANK} ranks present`);
-    return false;
-  }
-  return true;
-}
+export async function GET(request: Request) {
+  if (memory && isFresh(memory)) return ok(memory);
 
-export async function GET() {
-  // Serve from in-memory cache when fresh
-  if (cache && Date.now() - cache.timestamp < CACHE_DURATION) {
-    return NextResponse.json(cache.data);
-  }
+  const edgeKey = new URL(EDGE_CACHE_PATH, request.url).toString();
+  const edge = await readEdge(edgeKey);
+  if (edge && (!memory || edge.timestamp > memory.timestamp)) memory = edge;
+  if (memory && isFresh(memory)) return ok(memory);
 
+  // `memory` is now the newest payload either layer has — the stale fallback.
   try {
     const starts = [0, 100, 200, 300, 400];
     const pages = await Promise.all(starts.map(fetchPage));
 
     const data = pages.flat().filter((c): c is CoinLoreCoin => c !== null);
     const failedPages = pages.filter((p) => p === null).length;
+    const problem = failedPages > 0 ? `${failedPages} failed pages` : payloadProblem(data);
 
-    if (failedPages > 0 || !isPayloadSane(data)) {
+    if (problem) {
       // Upstream is degraded. Never cache this — a poisoned 5-minute cache turns
       // a momentary CoinLore hiccup into a five-minute outage for every client.
-      if (cache) {
-        console.warn(
-          `[MarketCap/CoinLore] degraded response (${failedPages} failed pages, ${data.length} rows) — serving stale cache`
-        );
-        return NextResponse.json(cache.data);
-      }
+      console.error(`[MarketCap/CoinLore] degraded response: ${problem}`);
+      if (memory) return stale(memory);
       return NextResponse.json(
         { error: 'Upstream market data unavailable' },
-        { status: 503 }
+        { status: 503, headers: { 'Cache-Control': 'no-store' } }
       );
     }
 
-    cache = { data, timestamp: Date.now() };
-    return NextResponse.json(data);
+    const entry: Cached = { data, timestamp: Date.now() };
+    memory = entry;
+    await writeEdge(edgeKey, entry);
+    return ok(entry);
   } catch (error) {
     console.error('[MarketCap/CoinLore] Failed:', error);
-    if (cache) return NextResponse.json(cache.data);
+    if (memory) return stale(memory);
     return NextResponse.json(
       { error: 'Failed to fetch market data' },
-      { status: 500 }
+      { status: 500, headers: { 'Cache-Control': 'no-store' } }
     );
   }
 }

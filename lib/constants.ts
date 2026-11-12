@@ -80,10 +80,11 @@ export const TIMING = {
   MARKET_CAP_REFRESH: 5 * 60 * 1000,     // 5 minutes
   FUNDING_RATES_REFRESH: 5 * 60 * 1000,  // 5 minutes
   REST_POLLING_INTERVAL: 5 * 1000,       // 5 seconds
+  REST_POLLING_INTERVAL_WS_LIVE: 30 * 1000, // OKX: full-list poll while the WebSocket already streams the universe
   INITIAL_DATA_RETRY_BASE: 15 * 1000,    // 15s, doubled per attempt (15/30/60s)
 
   // Initial delays
-  INITIAL_RSI_FETCH_DELAY: 2000,         // 2 seconds
+  INITIAL_RSI_FETCH_DELAY: 300,          // debounce only: coalesces market cap + spot landing back-to-back
   UNIVERSE_FALLBACK_DELAY: 8000,         // cold start: degrade the universe if market cap / spot haven't loaded
   API_BATCH_DELAY: 100,                  // 100ms between API batches
 
@@ -112,9 +113,12 @@ export const TIMING = {
 // Rate Limiting
 // ===========================================
 export const RATE_LIMIT = {
-  MAX_REQUESTS_PER_SECOND: 8,
+  // OKX allows 20 candle requests/s per IP; 10 leaves room for a second tab.
+  MAX_REQUESTS_PER_SECOND: 10,
   WINDOW_MS: 1000,
   API_BATCH_SIZE: 20,
+  // OKX instruments fetched at once by the RSI pass (x3 timeframes each).
+  RSI_CONCURRENCY: 4,
 } as const;
 
 // ===========================================
@@ -193,11 +197,9 @@ export const MA_FLOW = {
   REFRESH_INTERVAL: 10 * 60 * 1000,   // 10 minutes
   STALE_THRESHOLD: 10 * 60 * 1000,    // 10 minutes
 
-  // Fetch delay between instruments
-  FETCH_DELAY: 200,                    // 200ms
-
-  // Delay before starting MA fetch (after RSI)
-  INITIAL_FETCH_DELAY: 8000,           // 8 seconds
+  // OKX /market/candles serves up to 300 candles per request, so the 200
+  // needed for MA200 fit in one.
+  CANDLES_PER_REQUEST: 300,
 
   // Token pool size (Top N by market cap) — follows the universe cap
   TOKEN_COUNT: UNIVERSE.MAX_CRYPTO,

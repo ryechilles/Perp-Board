@@ -43,6 +43,9 @@ const BATCH_SIZE = 10;
  * @param onUpdate - Callback when new data is fetched (called with instId and RSIData)
  * @param tier - Optional: fetch specific tier only ('top50', 'tier2', 'tier3', or 'all'/undefined)
  * @param signal - Optional AbortSignal to cancel the batch mid-flight
+ * @param concurrency - Instruments fetched at once. 1 (default) is the paced,
+ *   one-at-a-time path with the per-tier delay; above 1 the per-tier delay is
+ *   skipped and the exchange's rate limiter is the only throttle.
  */
 export async function fetchRSIBatchGeneric(
   instruments: string[],
@@ -51,7 +54,8 @@ export async function fetchRSIBatchGeneric(
   onProgress: (text: string) => void,
   onUpdate: (id: string, data: RSIData) => void,
   tier?: 'top50' | 'tier2' | 'tier3' | 'all',
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  concurrency: number = 1
 ): Promise<void> {
   const now = Date.now();
 
@@ -98,27 +102,38 @@ export async function fetchRSIBatchGeneric(
     label: string,
     delayMs: number
   ): Promise<void> {
-    for (let i = 0; i < items.length; i++) {
-      // ── Abort check ──
-      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+    const paced = concurrency <= 1;
+    let next = 0;
 
-      const id = items[i];
-      onProgress(`Loading ${label}: ${i + 1}/${items.length}`);
+    // Each worker pulls the next instrument in rank order, so the top of the
+    // board still fills first when several run at once.
+    const worker = async (): Promise<void> => {
+      while (next < items.length) {
+        // ── Abort check ──
+        if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
 
-      const rsiData = await fetchSingle(id);
-      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+        const i = next++;
+        const id = items[i];
+        onProgress(`Loading ${label}: ${i + 1}/${items.length}`);
 
-      if (rsiData) {
-        pendingBatch.push([id, rsiData]);
-        if (pendingBatch.length >= BATCH_SIZE) {
-          flushBatch();
+        const rsiData = await fetchSingle(id);
+        if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+
+        if (rsiData) {
+          pendingBatch.push([id, rsiData]);
+          if (pendingBatch.length >= BATCH_SIZE) {
+            flushBatch();
+          }
+        }
+
+        if (paced && next < items.length) {
+          await abortableDelay(delayMs, signal);
         }
       }
+    };
 
-      if (i < items.length - 1) {
-        await abortableDelay(delayMs, signal);
-      }
-    }
+    const workers = Math.max(1, Math.min(concurrency, items.length));
+    await Promise.all(Array.from({ length: workers }, worker));
     // Flush remaining at tier boundary
     flushBatch();
   }

@@ -21,7 +21,15 @@ export interface CandleFetcher {
   fetchCandles(symbol: string, interval: string, limit: number): Promise<number[][] | null>;
   /** Wait for rate limit slot */
   waitForSlot(): Promise<void>;
+  /**
+   * Fetch the three timeframes concurrently instead of one after another. Only
+   * for exchanges whose rate limiter alone is enough protection (OKX); a tight
+   * weight budget (Hyperliquid) keeps the sequential, paced path.
+   */
+  parallel?: boolean;
 }
+
+const pause = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
 /**
  * Calculate full RSI data for a single instrument using the provided candle fetcher.
@@ -29,11 +37,14 @@ export interface CandleFetcher {
  * - Daily RSI (7, 14) + 7D change + sparkline
  * - Weekly RSI (7, 14)
  * - Hourly: 1H/4H change + 24H sparkline (with 4H fallback)
+ *
+ * `mutex` serializes whole instruments (pass null to rely on the rate limiter
+ * and let the caller choose the concurrency).
  */
 export async function calculateRSIForInstrument(
   symbol: string,
   fetcher: CandleFetcher,
-  mutex: Mutex,
+  mutex: Mutex | null,
   /** Interval string for daily candles (e.g., "1D" for OKX, "1d" for Hyperliquid) */
   dailyInterval: string,
   /** Interval string for weekly candles */
@@ -43,10 +54,37 @@ export async function calculateRSIForInstrument(
   /** Interval string for 4H candles (fallback) */
   fourHourInterval: string,
 ): Promise<RSIData | null> {
-  await mutex.acquire();
+  await mutex?.acquire();
 
   try {
-    await fetcher.waitForSlot();
+    /** One rate-limited candle request; a failure is null, never a throw. */
+    const fetchTimeframe = async (interval: string, limit: number): Promise<number[][] | null> => {
+      await fetcher.waitForSlot();
+      try {
+        return await fetcher.fetchCandles(symbol, interval, limit);
+      } catch {
+        console.warn(`Candles failed for ${symbol} ${interval}`);
+        return null;
+      }
+    };
+
+    let dailyCandles: number[][] | null;
+    let weeklyCandles: number[][] | null;
+    let hourlyCandles: number[][] | null;
+
+    if (fetcher.parallel) {
+      [dailyCandles, weeklyCandles, hourlyCandles] = await Promise.all([
+        fetchTimeframe(dailyInterval, 100),
+        fetchTimeframe(weeklyInterval, 100),
+        fetchTimeframe(hourlyInterval, 24),
+      ]);
+    } else {
+      dailyCandles = await fetchTimeframe(dailyInterval, 100);
+      await pause(TIMING.API_BATCH_DELAY);
+      weeklyCandles = await fetchTimeframe(weeklyInterval, 100);
+      await pause(TIMING.API_BATCH_DELAY);
+      hourlyCandles = await fetchTimeframe(hourlyInterval, 24);
+    }
 
     let rsi7: number | null = null;
     let rsi14: number | null = null;
@@ -60,8 +98,6 @@ export async function calculateRSIForInstrument(
     let td: TDState | null = null;
 
     // ===== Daily candles for RSI + 7D change =====
-    const dailyCandles = await fetcher.fetchCandles(symbol, dailyInterval, 100);
-
     if (dailyCandles && dailyCandles.length >= 15) {
       const closes = dailyCandles.map(c => c[4]);
       rsi7 = calculateRSI(closes, 7);
@@ -71,68 +107,38 @@ export async function calculateRSIForInstrument(
       td = calculateTDState(dailyCandles);
     }
 
-    // Small delay before weekly request
-    await new Promise(r => setTimeout(r, TIMING.API_BATCH_DELAY));
-    await fetcher.waitForSlot();
-
     // ===== Weekly candles for weekly RSI =====
-    try {
-      const weeklyCandles = await fetcher.fetchCandles(symbol, weeklyInterval, 100);
-
-      if (weeklyCandles && weeklyCandles.length >= 15) {
-        const closesW = weeklyCandles.map(c => c[4]);
-        rsiW7 = calculateRSI(closesW, 7);
-        rsiW14 = calculateRSI(closesW, 14);
-      }
-    } catch (e) {
-      console.warn(`Weekly RSI failed for ${symbol}`);
+    if (weeklyCandles && weeklyCandles.length >= 15) {
+      const closesW = weeklyCandles.map(c => c[4]);
+      rsiW7 = calculateRSI(closesW, 7);
+      rsiW14 = calculateRSI(closesW, 14);
     }
 
-    // Small delay before hourly request
-    await new Promise(r => setTimeout(r, TIMING.API_BATCH_DELAY));
-    await fetcher.waitForSlot();
-
     // ===== Hourly candles for 1H/4H change + 24H sparkline =====
-    try {
-      const hourlyCandles = await fetcher.fetchCandles(symbol, hourlyInterval, 24);
+    if (hourlyCandles && hourlyCandles.length >= 2) {
+      sparkline24h = hourlyCandles.map(c => c[4]);
+      const currentClose = hourlyCandles[hourlyCandles.length - 1][4];
 
-      if (hourlyCandles && hourlyCandles.length >= 2) {
-        sparkline24h = hourlyCandles.map(c => c[4]);
-        const currentClose = hourlyCandles[hourlyCandles.length - 1][4];
+      const prev1hClose = hourlyCandles[hourlyCandles.length - 2][4];
+      if (prev1hClose > 0) {
+        change1h = ((currentClose - prev1hClose) / prev1hClose) * 100;
+      }
 
-        // 1H change
-        if (hourlyCandles.length >= 2) {
-          const prev1hClose = hourlyCandles[hourlyCandles.length - 2][4];
-          if (prev1hClose > 0) {
-            change1h = ((currentClose - prev1hClose) / prev1hClose) * 100;
-          }
-        }
-
-        // 4H change
-        if (hourlyCandles.length >= 5) {
-          const prev4hClose = hourlyCandles[hourlyCandles.length - 5][4];
-          if (prev4hClose > 0) {
-            change4h = ((currentClose - prev4hClose) / prev4hClose) * 100;
-          }
+      if (hourlyCandles.length >= 5) {
+        const prev4hClose = hourlyCandles[hourlyCandles.length - 5][4];
+        if (prev4hClose > 0) {
+          change4h = ((currentClose - prev4hClose) / prev4hClose) * 100;
         }
       }
-    } catch (e) {
-      console.warn(`1H data failed for ${symbol}`);
-
-      // Fallback: fetch 4H candles for change4h only
-      try {
-        await fetcher.waitForSlot();
-        const candles4h = await fetcher.fetchCandles(symbol, fourHourInterval, 2);
-
-        if (candles4h && candles4h.length >= 2) {
-          const currentClose = candles4h[candles4h.length - 1][4];
-          const prevClose = candles4h[candles4h.length - 2][4];
-          if (prevClose > 0) {
-            change4h = ((currentClose - prevClose) / prevClose) * 100;
-          }
+    } else if (!hourlyCandles) {
+      // Hourly request failed — fall back to 4H candles for change4h only.
+      const candles4h = await fetchTimeframe(fourHourInterval, 2);
+      if (candles4h && candles4h.length >= 2) {
+        const currentClose = candles4h[candles4h.length - 1][4];
+        const prevClose = candles4h[candles4h.length - 2][4];
+        if (prevClose > 0) {
+          change4h = ((currentClose - prevClose) / prevClose) * 100;
         }
-      } catch (e2) {
-        console.warn(`4H fallback failed for ${symbol}`);
       }
     }
 
@@ -153,6 +159,6 @@ export async function calculateRSIForInstrument(
     console.error(`Failed to fetch RSI for ${symbol}:`, error);
     return null;
   } finally {
-    mutex.release();
+    mutex?.release();
   }
 }

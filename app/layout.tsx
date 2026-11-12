@@ -52,16 +52,15 @@ export default function RootLayout({
             gtag('config', '${GA_MEASUREMENT_ID}');
           `}
         </Script>
-        {/* Preconnect to asset CDNs to cut connection latency (fonts are self-hosted via next/font) */}
-        <link rel="preconnect" href="https://assets.coingecko.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://assets.coincap.io" crossOrigin="anonymous" />
+        {/* Preconnect to the token-logo CDN (plain <img>, so no crossOrigin). Each
+            exchange's API hosts are preconnected by its own page — see BoardPreloads. */}
+        <link rel="preconnect" href="https://c1.coinlore.com" />
         {/* Responsive: mobile renders a card layout, desktop the full table */}
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         {/* Version meta tag */}
         <meta name="version" content={APP_CONFIG.version} />
         {/* Standard favicon */}
         <link rel="icon" type="image/png" href="/favicon.png" />
-        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         {/* Apple touch icon */}
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         {/* Safari pinned tab */}

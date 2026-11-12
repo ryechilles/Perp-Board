@@ -108,6 +108,8 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
   // Suspend/resume acquisition when the page is hidden/visible (see ExchangeBoard).
   const pause = useCallback(() => controller.pause(), [controller]);
   const resume = useCallback(() => controller.resume(), [controller]);
+  // MA Flow is fetched only while its tab is open (see ExchangeBoard).
+  const setMAFlowActive = useCallback((active: boolean) => controller.setMAFlowActive(active), [controller]);
 
   // Exchange-specific pre-filter (stable reference via adapter)
   const preFilter = adapter.preFilterTickers;
@@ -182,7 +184,6 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
       preFilter
     );
     // rsiData is intentionally a dependency only when it affects the list.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     tickers,
     filtersHook.searchTerm,
@@ -196,6 +197,7 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
     listingData,
     adapter,
     preFilter,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     rsiAffectsList ? rsiData : null,
   ]);
 
@@ -267,6 +269,7 @@ export function useExchangeStore(adapter: ExchangeAdapter) {
     cleanup,
     pause,
     resume,
+    setMAFlowActive,
     toggleFavorite: favoritesHook.toggleFavorite,
     updateColumn: columnsHook.updateColumn,
     setColumnsPreset: columnsHook.setColumnsPreset,

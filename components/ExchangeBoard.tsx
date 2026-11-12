@@ -10,12 +10,13 @@ import { TableHeader, TableRow, TokenCard, TableRowSkeleton, TokenCardSkeleton }
 import { TabContainer, WidgetGrid } from '@/components/layout';
 import { ColumnKey } from '@/lib/types';
 import { COLUMN_DEFINITIONS } from '@/lib/utils';
+import { FIXED_COLUMNS as FIXED_COLUMN_KEYS } from '@/lib/constants';
 import { useExchangeStore } from '@/hooks/useExchangeStore';
 import { useUrlState } from '@/hooks/useUrlState';
 import { useVirtualRows } from '@/hooks/useVirtualRows';
 
 // Fixed column configuration (shared across exchanges)
-const FIXED_COLUMNS: ColumnKey[] = ['favorite', 'rank', 'logo', 'symbol'];
+const FIXED_COLUMNS: ColumnKey[] = [...FIXED_COLUMN_KEYS];
 const FIXED_WIDTHS: Record<string, number> = {
   favorite: 36,
   rank: 34,
@@ -24,6 +25,27 @@ const FIXED_WIDTHS: Record<string, number> = {
 };
 
 const ROW_HEIGHT = 48;
+
+// Matches Tailwind's `lg` breakpoint, where the card list gives way to the table.
+const DESKTOP_QUERY = '(min-width: 1024px)';
+
+/**
+ * Which layout is on screen: true = desktop table, false = mobile cards, null =
+ * not known yet (server render / first paint). Both layouts exist in the markup
+ * and CSS picks one; this lets the board stop mounting the rows of the hidden
+ * one, so each tick renders and subscribes one list instead of two.
+ */
+function useIsDesktop(): boolean | null {
+  const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
+  useEffect(() => {
+    const mql = window.matchMedia(DESKTOP_QUERY);
+    const update = () => setIsDesktop(mql.matches);
+    update();
+    mql.addEventListener('change', update);
+    return () => mql.removeEventListener('change', update);
+  }, []);
+  return isDesktop;
+}
 
 // ===========================================
 // Types
@@ -65,6 +87,7 @@ export function ExchangeBoard({
   enableUrlState = false,
 }: ExchangeBoardProps) {
   const [activeTab, setActiveTab] = useState(tabs[0]?.id ?? 'rsi');
+  const isDesktop = useIsDesktop();
 
   // Drag state
   const [draggedColumn, setDraggedColumn] = useState<ColumnKey | null>(null);
@@ -132,6 +155,7 @@ export function ExchangeBoard({
       cancelled = true;
       store.cleanup();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Pause background acquisition while the tab is hidden (tab switch, app
@@ -151,6 +175,13 @@ export function ExchangeBoard({
     return () => document.removeEventListener('visibilitychange', onVisibilityChange);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // MA Flow is only fetched while its tab is open.
+  const maFlowTabOpen = activeTab === 'maflow';
+  useEffect(() => {
+    store.setMAFlowActive(maFlowTabOpen);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [maFlowTabOpen]);
 
   // Scroll handler
   const handleScroll = useCallback(() => {
@@ -362,7 +393,6 @@ export function ExchangeBoard({
                 <Controls
                   exchange={exchange}
                   columns={store.columns}
-                  columnOrder={store.columnOrder}
                   filters={store.filters}
                   searchTerm={store.searchTerm}
                   overboughtCount={quickFilterCounts.overbought}
@@ -371,7 +401,6 @@ export function ExchangeBoard({
                   onColumnsPreset={store.setColumnsPreset}
                   onFiltersChange={store.setFilters}
                   onSearchChange={store.setSearchTerm}
-                  onColumnOrderChange={store.updateColumnOrder}
                   onScrollToTop={handleScrollToTop}
                 />
               </div>
@@ -440,7 +469,7 @@ export function ExchangeBoard({
                             <td colSpan={visibleColumns.length + 1} style={{ height: paddingTop, padding: 0, border: 0 }} />
                           </tr>
                         )}
-                        {virtualRows.map(({ index }) => {
+                        {isDesktop !== false && virtualRows.map(({ index }) => {
                           const ticker = filteredData[index];
                           return (
                             <TableRow
@@ -497,7 +526,7 @@ export function ExchangeBoard({
                     className="surface-card overflow-hidden"
                     style={{ paddingTop: cardPaddingTop, paddingBottom: cardPaddingBottom }}
                   >
-                    {cardVirtualRows.map(({ index }) => {
+                    {isDesktop !== true && cardVirtualRows.map(({ index }) => {
                       const ticker = filteredData[index];
                       return (
                         <div key={ticker.instId} ref={measureCard} data-index={index}>
