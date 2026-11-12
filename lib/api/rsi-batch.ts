@@ -22,8 +22,11 @@ function abortableDelay(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
-/** Batch size for grouped setState updates */
+/** Batch size for grouped store updates when instruments arrive concurrently */
 const BATCH_SIZE = 10;
+/** Paced (one-at-a-time) fetches take ~1s per instrument — waiting for 10
+ *  would leave the top rows blank for ~10s, so flush in small groups. */
+const BATCH_SIZE_PACED = 3;
 
 /**
  * Generic RSI batch fetcher with tiered priority
@@ -121,7 +124,7 @@ export async function fetchRSIBatchGeneric(
 
         if (rsiData) {
           pendingBatch.push([id, rsiData]);
-          if (pendingBatch.length >= BATCH_SIZE) {
+          if (pendingBatch.length >= (paced ? BATCH_SIZE_PACED : BATCH_SIZE)) {
             flushBatch();
           }
         }

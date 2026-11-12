@@ -23,7 +23,7 @@ function HyperliquidFooterLogo() {
 }
 
 // Exchange-specific referral config
-const EXCHANGE_REFERRAL: Record<string, { href: string; title: string; logo: () => JSX.Element }> = {
+const EXCHANGE_REFERRAL: Record<string, { href: string; title: string; logo: () => React.JSX.Element }> = {
   okx: {
     href: 'https://okx.com/join/95869751',
     title: 'OKX',
