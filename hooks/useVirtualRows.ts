@@ -115,10 +115,11 @@ export function useVirtualRows({
       if (changed) forceUpdate();
     });
     rowObserverRef.current = ro;
+    const elements = elementByIndex.current;
     return () => {
       ro.disconnect();
       rowObserverRef.current = null;
-      elementByIndex.current.clear();
+      elements.clear();
     };
   }, []);
 

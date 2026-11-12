@@ -22,6 +22,12 @@ jobs:
 
       - run: npm ci
 
+      # Gate the deploy: a lint error, type error or failing test stops here,
+      # before anything reaches Cloudflare.
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+
       - name: Build and deploy
         run: npm run deploy
         env:

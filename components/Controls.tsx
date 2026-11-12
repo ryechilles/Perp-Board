@@ -14,7 +14,6 @@ type QuickFilter = 'all' | 'crypto' | 'stock' | 'top25' | 'meme' | 'overbought' 
 
 interface ControlsProps {
   columns: ColumnVisibility;
-  columnOrder: ColumnKey[];
   filters: Filters;
   searchTerm: string;
   overboughtCount: number;
@@ -24,13 +23,11 @@ interface ControlsProps {
   onColumnsPreset: (preset: 'all' | 'none' | 'default') => void;
   onFiltersChange: (filters: Filters) => void;
   onSearchChange: (term: string) => void;
-  onColumnOrderChange: (order: ColumnKey[]) => void;
   onScrollToTop?: () => void;
 }
 
 export function Controls({
   columns,
-  columnOrder,
   filters,
   searchTerm,
   overboughtCount,
@@ -40,7 +37,6 @@ export function Controls({
   onColumnsPreset,
   onFiltersChange,
   onSearchChange,
-  onColumnOrderChange,
   onScrollToTop,
 }: ControlsProps) {
   const [showCustomizePanel, setShowCustomizePanel] = useState(false);

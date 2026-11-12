@@ -10,7 +10,7 @@ export function EthBtcRatio() {
 
   return (
     <div role="img" aria-label="ETH/BTC ratio mini chart" className="surface-card overflow-hidden min-h-[120px]">
-      {/* @ts-ignore - TradingView Web Component */}
+      {/* @ts-expect-error - TradingView Web Component */}
       <tv-mini-chart symbol="OKX:ETHBTC"></tv-mini-chart>
     </div>
   );

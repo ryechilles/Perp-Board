@@ -341,8 +341,7 @@ export function applyMarketCapFilter(
  */
 export function applyMemeFilter(
   data: ProcessedTicker[],
-  isMemeFilter: string | undefined,
-  marketCapData: Map<string, MarketCapData>
+  isMemeFilter: string | undefined
 ): ProcessedTicker[] {
   if (!isMemeFilter) return data;
 
@@ -565,7 +564,7 @@ export function filterAndSort(
   filtered = applyRsiFilters(filtered, filters, ctx.rsiData);
   filtered = applyFundingFilter(filtered, filters.fundingRate, ctx.fundingRateData);
   filtered = applyMarketCapFilter(filtered, filters.marketCapMin, ctx.marketCapData);
-  filtered = applyMemeFilter(filtered, filters.isMeme, ctx.marketCapData);
+  filtered = applyMemeFilter(filtered, filters.isMeme);
   filtered = applyDRsiSignalFilter(filtered, filters.dRsiSignal, ctx.rsiData);
   filtered = applyWRsiSignalFilter(filtered, filters.wRsiSignal, ctx.rsiData);
   filtered = applyAssetCategoryFilter(filtered, filters.assetCategory);
