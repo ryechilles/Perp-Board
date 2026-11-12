@@ -365,7 +365,7 @@ export function Controls({
   return (
     <>
       {/* Mobile search (desktop search lives in the toolbar) */}
-      <SearchField value={searchTerm} onChange={onSearchChange} className="md:hidden mb-3 w-full" />
+      <SearchField value={searchTerm} onChange={onSearchChange} className="md:hidden mb-2.5 w-full" />
 
       {/* Scope + quick filters + customize */}
       <div className="flex items-center gap-3 relative z-[60]">
@@ -432,7 +432,7 @@ export function Controls({
         <button
           ref={customizeButtonRef}
           type="button"
-          className="hidden md:inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[0.8125rem] font-medium text-tint flex-shrink-0 transition-colors hover:bg-tint/10 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40"
+          className="hidden md:inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[0.8125rem] text-foreground/80 ring-1 ring-inset ring-separator flex-shrink-0 transition-colors hover:bg-fill hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40"
           onClick={() => setShowCustomizePanel(!showCustomizePanel)}
           aria-label="Customize columns and filters"
           aria-expanded={showCustomizePanel}
@@ -440,7 +440,7 @@ export function Controls({
           <SlidersHorizontal className="w-[15px] h-[15px]" aria-hidden="true" />
           Customize
           {(hasFilters || hasNonDefaultColumns) && (
-            <span className="w-1.5 h-1.5 rounded-full bg-tint" aria-hidden="true" />
+            <span className="w-1.5 h-1.5 rounded-full bg-up" aria-hidden="true" />
           )}
         </button>
       </div>

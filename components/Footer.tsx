@@ -48,7 +48,7 @@ export function Footer({ exchange = 'okx', className = '' }: FooterProps) {
   const Logo = referral.logo;
 
   return (
-    <footer className={`flex items-center justify-between px-1 py-1 ${className}`}>
+    <footer className={`flex items-center justify-between ${className}`}>
       <span className="text-[0.6875rem] text-faint">
         © {currentYear} Perp Board
       </span>

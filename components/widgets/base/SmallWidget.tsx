@@ -32,8 +32,8 @@ export interface SmallWidgetProps {
 /**
  * SmallWidget - Base template for sidebar widgets
  *
- * An inset-grouped card (iOS Settings style): white surface, hairline shadow,
- * 14px corners, a title + secondary subtitle header, no header rule.
+ * A flat panel: small-caps title + secondary subtitle, hairline chrome only
+ * (inside `.flat-panels` it is just a section divided from the next by a rule).
  *
  * - `padded={false}` lets list content run edge to edge (see TokenListRow)
  * - `tooltip` adds an ⓘ button that expands an explanation inline
@@ -55,11 +55,11 @@ export function SmallWidget({
   return (
     <section className={cn('surface-card w-full min-w-[280px] flex flex-col', className)}>
       {/* Header */}
-      <div className="flex items-start justify-between gap-2 px-4 pt-3.5">
+      <div className="flex items-start justify-between gap-2 px-4 pt-4">
         <div className="min-w-0">
-          <h2 className="text-[0.9375rem] leading-5 font-semibold tracking-[-0.015em] truncate">{title}</h2>
+          <h2 className="label-caps truncate">{title}</h2>
           {subtitle && (
-            <p className="text-xs text-muted-foreground truncate mt-px">{subtitle}</p>
+            <p className="text-xs text-faint truncate mt-0.5">{subtitle}</p>
           )}
         </div>
         <div className="flex items-center gap-1 flex-shrink-0 -mr-1">
@@ -69,7 +69,7 @@ export function SmallWidget({
               type="button"
               onClick={() => setShowTooltip(!showTooltip)}
               className={cn(
-                'w-6 h-6 rounded-full grid place-items-center text-faint transition-colors',
+                'w-6 h-6 -mt-1 rounded-md grid place-items-center text-faint transition-colors',
                 'hover:bg-fill hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40',
                 showTooltip && 'text-tint hover:text-tint'
               )}

@@ -47,7 +47,7 @@ function FundingAprValue({ rate, interval }: { rate: number | undefined | null; 
   const apr = rate * ((365 * 24) / (interval || FUNDING.DEFAULT_INTERVAL_HOURS)) * 100;
   const w = Math.sqrt(Math.min(Math.abs(apr), 60) / 60) * 28;
   return (
-    <span className="inline-grid justify-items-end gap-[5px] leading-[1.15]">
+    <span className="inline-grid justify-items-end gap-1 leading-[1.15]">
       <span className={cn('font-medium tabular-nums', getFundingAprClass(rate))}>
         {formatFundingApr(rate, interval)}
       </span>
@@ -157,7 +157,7 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
     const def = COLUMN_DEFINITIONS[key];
     const isFixed = isFixedColumn(key);
     const alignClass = def.align === 'right' ? 'text-right' : def.align === 'center' ? 'text-center' : 'text-left';
-    const baseClass = cn('h-12 px-3 text-[0.8125rem] whitespace-nowrap hairline-b', alignClass, isFixed && 'sticky-cell');
+    const baseClass = cn('h-10 px-3 text-[0.8125rem] whitespace-nowrap hairline-b', alignClass, isFixed && 'sticky-cell');
 
     switch (key) {
       case 'favorite':
@@ -187,7 +187,7 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
 
       case 'symbol':
         return (
-          <td key={key} className={cn(baseClass, 'pl-0 pr-2 text-[0.84rem] font-semibold tracking-[-0.01em]')} style={getCellStyle(key)}>
+          <td key={key} className={cn(baseClass, 'pl-0 pr-2 text-[0.875rem] font-medium')} style={getCellStyle(key)}>
             <div className="truncate" translate="no">{base}</div>
           </td>
         );
@@ -201,7 +201,7 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
 
       case 'price':
         return (
-          <td key={key} className={cn(baseClass, 'pl-2 text-[0.84rem] font-medium tabular-nums')}>
+          <td key={key} className={cn(baseClass, 'pl-2 tabular-nums')}>
             {formatPrice(ticker.priceNum)}
           </td>
         );

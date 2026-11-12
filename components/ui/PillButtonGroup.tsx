@@ -134,14 +134,14 @@ function PillButton<T extends string = string>({
           fullWidth && 'w-full',
           variant === 'segmented'
             ? cn(
-                size === 'sm' ? 'h-6 px-2.5 text-xs rounded-md' : 'h-7 px-3.5 text-[0.8125rem] rounded-[7px]',
+                size === 'sm' ? 'h-6 px-2.5 text-xs rounded-[5px]' : 'h-7 px-3 text-[0.8125rem] rounded-md',
                 fullWidth && 'px-1.5',
-                active ? 'segment-on font-semibold' : 'hover:bg-fill'
+                active ? 'segment-on' : 'text-muted-foreground hover:text-foreground'
               )
             : cn(
                 size === 'sm' ? 'h-7 px-2.5 text-xs' : 'h-7 px-3 text-[0.8125rem]',
                 'rounded-full',
-                active ? 'bg-foreground text-background' : 'bg-fill hover:bg-fill-strong'
+                active ? 'bg-foreground text-background' : 'ring-1 ring-inset ring-separator text-foreground/80 hover:bg-fill hover:text-foreground'
               ),
           option.disabled && 'pointer-events-none opacity-50'
         )}
@@ -233,7 +233,7 @@ export function PillButtonGroup<T extends string = string>(props: PillButtonGrou
       role="group"
       className={cn(
         'items-center',
-        variant === 'segmented' ? 'rounded-[9px] bg-fill p-0.5 gap-0.5' : 'gap-1',
+        variant === 'segmented' ? 'rounded-lg bg-fill p-0.5 gap-0.5' : 'gap-1.5',
         fullWidth
           ? 'flex w-full'
           : scrollable

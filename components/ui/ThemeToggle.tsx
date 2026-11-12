@@ -25,11 +25,11 @@ export function ThemeToggle() {
     localStorage.setItem('theme', next ? 'dark' : 'light');
     document
       .querySelector('meta[name="theme-color"]')
-      ?.setAttribute('content', next ? '#000000' : '#f2f2f4');
+      ?.setAttribute('content', next ? '#0b0c0e' : '#f4f4f5');
   };
 
   const cls =
-    'w-8 h-8 rounded-[9px] grid place-items-center text-muted-foreground transition-colors hover:bg-fill hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40';
+    'w-11 h-11 md:w-[30px] md:h-[30px] rounded-lg grid place-items-center text-muted-foreground transition-colors hover:bg-fill hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40';
 
   if (!mounted) {
     // Render invisible placeholder to prevent layout shift

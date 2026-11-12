@@ -92,13 +92,15 @@ const EXCHANGES = [
 interface HeaderProps {
   /** Right-side toolbar content (e.g. the search field), desktop only */
   actions?: ReactNode;
+  /** Connection status line, shown beside the exchange switch on desktop */
+  status?: ReactNode;
 }
 
 /**
- * App toolbar — translucent material bar: brand on the left, the exchange
- * switch centered, search + appearance on the right.
+ * App toolbar: brand, exchange switch and status on the left; search +
+ * appearance on the right.
  */
-export const Header = memo(function Header({ actions }: HeaderProps) {
+export const Header = memo(function Header({ actions, status }: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -112,16 +114,16 @@ export const Header = memo(function Header({ actions }: HeaderProps) {
   };
 
   return (
-    <header className="px-safe h-[52px] flex-shrink-0 flex items-center">
-      <div className="max-w-[1600px] mx-auto w-full grid grid-cols-[auto_1fr_auto] md:grid-cols-[1fr_auto_1fr] items-center gap-2 md:gap-3">
+    <header className="px-safe h-12 flex-shrink-0 flex items-center">
+      <div className="w-full flex items-center gap-3 md:gap-4">
         {/* Brand */}
-        <div className="flex items-center gap-2.5 min-w-0" title={APP_CONFIG.versionDisplay}>
-          <PerpLogo className="w-[26px] h-[26px] rounded-[7px] flex-shrink-0 shadow-[0_0_0_0.5px_rgb(0_0_0/0.08)]" />
-          <span className="sr-only sm:not-sr-only text-[0.9375rem] font-semibold tracking-[-0.015em]" translate="no">{APP_CONFIG.name}</span>
+        <div className="flex items-center gap-2 min-w-0" title={APP_CONFIG.versionDisplay}>
+          <PerpLogo className="w-6 h-6 rounded-md flex-shrink-0" />
+          <span className="sr-only sm:not-sr-only text-sm font-semibold" translate="no">{APP_CONFIG.name}</span>
         </div>
 
         {/* Exchange switch */}
-        <nav aria-label="Exchange" className="justify-self-end md:justify-self-center">
+        <nav aria-label="Exchange">
           <PillButtonGroup
             options={EXCHANGES.map((exchange) => {
               const Logo = exchange.logo;
@@ -133,8 +135,11 @@ export const Header = memo(function Header({ actions }: HeaderProps) {
           />
         </nav>
 
+        {/* Connection status — desktop; mobile shows it above the list */}
+        {status && <div className="hidden lg:block min-w-0">{status}</div>}
+
         {/* Search + appearance */}
-        <div className="flex items-center justify-end gap-1.5">
+        <div className="flex items-center justify-end gap-1.5 ml-auto">
           {actions && <div className="hidden md:block">{actions}</div>}
           <ThemeToggle />
         </div>

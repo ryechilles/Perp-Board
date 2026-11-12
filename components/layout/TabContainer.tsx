@@ -1,8 +1,7 @@
 'use client';
 
-import { ReactNode, createContext, useContext, useState, useMemo } from 'react';
+import { ReactNode, createContext, useContext, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { PillButtonGroup, PillButtonOption } from '@/components/ui';
 
 // Tab context for state management
 interface TabContextValue {
@@ -52,7 +51,7 @@ export interface TabContainerProps {
  *
  * Supports two variants:
  * - 'horizontal': Traditional horizontal tab bar with underline indicator
- * - 'sidebar': Full-width Apple segmented control
+ * - 'sidebar': Underline tabs spanning the column
  */
 export function TabContainer({
   tabs,
@@ -77,28 +76,37 @@ export function TabContainer({
     onTabChange?.(tabId);
   };
 
-  // Convert tabs to PillButtonGroup options for sidebar variant
-  const pillOptions = useMemo((): PillButtonOption<string>[] => {
-    return tabs.map((tab) => ({
-      value: tab.id,
-      label: tab.label,
-      icon: tab.icon,
-      badge: tab.badge,
-      disabled: tab.disabled,
-    }));
-  }, [tabs]);
-
-  // Sidebar variant - full-width segmented control
+  // Sidebar variant - underline tabs spanning the column
   if (variant === 'sidebar') {
     return (
       <TabContext.Provider value={{ activeTab, setActiveTab: handleTabChange }}>
         <div className={cn('flex flex-col', className)}>
-          <PillButtonGroup
-            options={pillOptions}
-            value={activeTab}
-            onChange={handleTabChange}
-            fullWidth
-          />
+          <div role="tablist" className="flex items-stretch overflow-x-auto hairline-b">
+            {tabs.map((tab) => {
+              const active = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  id={`tab-${tab.id}`}
+                  aria-selected={active}
+                  disabled={tab.disabled}
+                  onClick={() => !tab.disabled && handleTabChange(tab.id)}
+                  className={cn(
+                    'relative h-11 lg:h-10 px-3 flex-shrink-0 text-[0.8125rem] whitespace-nowrap transition-colors',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50',
+                    active
+                      ? 'font-medium text-foreground after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-up'
+                      : 'text-muted-foreground hover:text-foreground',
+                    tab.disabled && 'opacity-50 cursor-not-allowed'
+                  )}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
 
           {/* Tab Panels (only render if children exist) */}
           {children && <div className="flex-1 mt-4">{children}</div>}

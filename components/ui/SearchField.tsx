@@ -32,7 +32,7 @@ export function SearchField({ value, onChange, className, shortcut = false }: Se
   return (
     <label
       className={cn(
-        'flex items-center gap-1.5 h-8 pl-2.5 pr-2 rounded-[9px] bg-fill text-muted-foreground cursor-text',
+        'flex items-center gap-2 h-9 md:h-[30px] pl-2.5 pr-2 rounded-lg bg-fill text-muted-foreground cursor-text',
         'focus-within:ring-[3px] focus-within:ring-ring/40 transition-shadow',
         className
       )}

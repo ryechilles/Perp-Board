@@ -4,57 +4,56 @@
 
 @layer base {
   /* ── Palette ────────────────────────────────────────────
-   * Apple system palette. Ground is a cool grouped-background grey,
-   * surfaces are white; semantic colors come in two strengths:
-   *   --up / --down        vivid fill (bars, dots, tints)
-   *   --up-ink / --down-ink readable text on the surface
+   * Flat, data-first system. Chrome is neutral grey / white; colour is
+   * reserved for data. Semantic colours come in two strengths:
+   *   --up / --down        fill (bars, dots, tints)
+   *   --up-ink / --down-ink readable text on the surface (≥ 4.5:1)
    * RSI zones use cold (oversold) / hot (overbought) so they never
    * collide with price green/red.
    * ──────────────────────────────────────────────────────── */
   :root {
-    --background: 240 7% 95%;       /* #F2F2F4 ground */
-    --foreground: 240 3% 12%;       /* #1D1D1F */
+    --background: 240 5% 96%;       /* #F4F4F5 ground */
+    --foreground: 240 6% 10%;       /* #18181B */
     --card: 0 0% 100%;
-    --card-foreground: 240 3% 12%;
+    --card-foreground: 240 6% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 3% 12%;
-    --primary: 240 3% 12%;
+    --popover-foreground: 240 6% 10%;
+    --primary: 240 6% 10%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 240 6% 95%;
-    --secondary-foreground: 240 3% 12%;
-    --muted: 240 6% 94%;
-    --muted-foreground: 240 2% 44%; /* #6E6E73 */
-    --accent: 240 6% 94%;
-    --accent-foreground: 240 3% 12%;
-    --destructive: 3 100% 59%;
+    --secondary: 240 5% 94%;
+    --secondary-foreground: 240 6% 10%;
+    --muted: 240 5% 93%;
+    --muted-foreground: 240 4% 44%; /* #6B6B73 */
+    --accent: 240 5% 93%;
+    --accent-foreground: 240 6% 10%;
+    --destructive: 4 74% 49%;
     --destructive-foreground: 0 0% 100%;
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
-    --ring: 210 100% 45%;           /* #0071E3 */
-    --radius: 0.625rem;
+    --border: 240 5% 90%;
+    --input: 240 5% 90%;
+    --ring: 209 90% 42%;
+    --radius: 0.5rem;
 
-    --tint: 210 100% 45%;           /* accent blue */
+    --tint: 240 6% 10%;             /* interactive text: neutral, not blue */
     --segment: 0 0% 100%;           /* selected segment */
-    --fill: 240 4% 49% / 0.12;      /* translucent control fill */
-    --fill-strong: 240 4% 49% / 0.2;
-    --separator: 240 5% 25% / 0.13;
-    --faint: 240 2% 64%;            /* tertiary label */
+    --fill: 240 6% 20% / 0.06;      /* translucent control fill */
+    --fill-strong: 240 6% 20% / 0.11;
+    --separator: 240 6% 10% / 0.09; /* 1px hairline */
+    --faint: 240 4% 62%;            /* tertiary label */
 
-    --up: 135 59% 49%;              /* #34C759 */
-    --up-ink: 137 68% 32%;
-    --down: 3 100% 59%;             /* #FF3B30 */
-    --down-ink: 354 100% 42%;
-    --cold: 199 78% 55%;            /* #32ADE6 */
-    --cold-soft: 199 72% 81%;
-    --cold-ink: 198 89% 36%;
-    --hot: 32 100% 50%;             /* #FF8A00 */
-    --hot-soft: 33 100% 80%;
-    --hot-ink: 28 100% 37%;
+    --up: 152 70% 36%;
+    --up-ink: 152 85% 27%;          /* #0A7F48 */
+    --down: 4 78% 55%;
+    --down-ink: 4 74% 49%;          /* #D92D20 */
+    --cold: 209 85% 52%;
+    --cold-soft: 207 80% 85%;
+    --cold-ink: 209 90% 42%;        /* #0B6FCC */
+    --hot: 28 92% 50%;
+    --hot-soft: 32 85% 82%;
+    --hot-ink: 26 90% 37%;          /* #B45309 */
     --zone-neutral: 240 5% 86%;
     --star: 43 100% 50%;
 
-    --shadow-card: 0 0 0 0.5px rgb(0 0 0 / 0.04), 0 1px 2px rgb(0 0 0 / 0.04);
-    --shadow-segment: 0 3px 8px rgb(0 0 0 / 0.1), 0 1px 1px rgb(0 0 0 / 0.04);
+    --shadow-segment: 0 0 0 0.5px rgb(0 0 0 / 0.08), 0 1px 2px rgb(0 0 0 / 0.08);
 
     /* ── Spacing & Sizing Tokens ─────────────────────────────
      * Based on 4px grid. All interactive element heights and
@@ -99,48 +98,47 @@
   }
 
   .dark {
-    --background: 0 0% 0%;
-    --foreground: 240 11% 96%;      /* #F5F5F7 */
-    --card: 240 3% 11%;             /* #1C1C1E */
-    --card-foreground: 240 11% 96%;
-    --popover: 240 2% 18%;          /* #2C2C2E elevated */
-    --popover-foreground: 240 11% 96%;
-    --primary: 240 11% 96%;
-    --primary-foreground: 240 3% 11%;
-    --secondary: 240 2% 16%;
-    --secondary-foreground: 240 11% 96%;
-    --muted: 240 2% 17%;
-    --muted-foreground: 240 2% 61%; /* #98989D */
-    --accent: 240 2% 17%;
-    --accent-foreground: 240 11% 96%;
-    --destructive: 3 100% 61%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 240 2% 20%;
-    --input: 240 2% 20%;
-    --ring: 210 100% 52%;
+    --background: 220 12% 5%;       /* #0B0C0E */
+    --foreground: 220 9% 93%;       /* #EDEEF0 */
+    --card: 220 9% 8%;
+    --card-foreground: 220 9% 93%;
+    --popover: 220 8% 12%;
+    --popover-foreground: 220 9% 93%;
+    --primary: 220 9% 93%;
+    --primary-foreground: 220 12% 5%;
+    --secondary: 220 8% 13%;
+    --secondary-foreground: 220 9% 93%;
+    --muted: 220 8% 14%;
+    --muted-foreground: 220 6% 57%; /* #8A8F98 */
+    --accent: 220 8% 14%;
+    --accent-foreground: 220 9% 93%;
+    --destructive: 0 100% 71%;
+    --destructive-foreground: 220 12% 5%;
+    --border: 220 7% 16%;
+    --input: 220 7% 16%;
+    --ring: 206 100% 68%;
 
-    --tint: 210 100% 52%;           /* #0A84FF */
-    --segment: 240 1% 39%;          /* #636366 */
-    --fill: 240 4% 49% / 0.24;
-    --fill-strong: 240 4% 49% / 0.34;
-    --separator: 240 2% 34% / 0.6;
-    --faint: 240 1% 39%;
+    --tint: 220 9% 93%;
+    --segment: 220 8% 17%;
+    --fill: 0 0% 100% / 0.06;
+    --fill-strong: 0 0% 100% / 0.11;
+    --separator: 0 0% 100% / 0.09;
+    --faint: 220 6% 40%;
 
-    --up: 135 64% 50%;              /* #30D158 */
-    --up-ink: 135 64% 50%;
-    --down: 3 100% 61%;             /* #FF453A */
-    --down-ink: 3 100% 69%;
-    --cold: 197 100% 70%;           /* #64D2FF */
-    --cold-soft: 199 52% 25%;
-    --cold-ink: 197 100% 70%;
-    --hot: 36 100% 52%;             /* #FF9F0A */
-    --hot-soft: 34 77% 21%;
-    --hot-ink: 36 100% 63%;
-    --zone-neutral: 240 2% 23%;
+    --up: 154 69% 55%;              /* #3DDC97 */
+    --up-ink: 154 69% 55%;
+    --down: 0 100% 71%;             /* #FF6B6B */
+    --down-ink: 0 100% 71%;
+    --cold: 206 100% 68%;           /* #5AB8FF */
+    --cold-soft: 207 40% 28%;
+    --cold-ink: 206 100% 68%;
+    --hot: 29 100% 63%;             /* #FF9F43 */
+    --hot-soft: 32 48% 24%;
+    --hot-ink: 29 100% 63%;
+    --zone-neutral: 220 9% 18%;
     --star: 50 100% 52%;
 
-    --shadow-card: 0 0 0 0.5px rgb(255 255 255 / 0.06);
-    --shadow-segment: 0 3px 8px rgb(0 0 0 / 0.3);
+    --shadow-segment: 0 0 0 0.5px rgb(255 255 255 / 0.08);
   }
 }
 
@@ -156,12 +154,11 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* SF Pro on Apple platforms; Inter (self-hosted) is the closest match elsewhere */
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', var(--font-inter), 'Segoe UI', 'Roboto', sans-serif;
+    /* Geist for UI text; numbers switch to Geist Mono via .tabular-nums */
+    font-family: var(--font-sans), system-ui, -apple-system, 'Segoe UI', sans-serif;
     font-size: 0.8125rem;
     line-height: 1.38;
-    letter-spacing: -0.006em;
-    font-optical-sizing: auto;
+    letter-spacing: -0.003em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -191,9 +188,12 @@
   }
 }
 
-/* Tabular numbers for consistency */
+/* Numbers: every numeric value in the app carries .tabular-nums, so this one
+ * rule sets them all in the monospace face (prices, percentages, RSI, ranks). */
 .tabular-nums {
+  font-family: var(--font-mono), ui-monospace, 'SF Mono', Menlo, monospace;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 
 /* Animation */
@@ -205,7 +205,7 @@
   animation: spin 0.8s linear infinite;
 }
 
-/* Native controls pick up the accent blue */
+/* Native controls pick up the interactive colour */
 input[type="checkbox"] {
   accent-color: hsl(var(--tint));
 }
@@ -260,11 +260,28 @@ input[type="number"]::-moz-selection {
   .thead-material { background-color: hsl(var(--card)); }
 }
 
-/* Surfaces: grouped-list cards — no outline, a hairline shadow only */
+/* Surfaces are flat: a white panel with a 1px hairline, no shadow. */
 .surface-card {
   background-color: hsl(var(--card));
-  border-radius: 14px;
-  box-shadow: var(--shadow-card);
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px hsl(var(--separator));
+}
+/* Inside a flat region (the Insights column) panels lose their own chrome and
+ * are simply separated by hairlines. */
+.flat-panels .surface-card {
+  background-color: transparent;
+  border-radius: 0;
+  box-shadow: inset 0 -1px 0 hsl(var(--separator));
+}
+
+/* Small caps label: column headers, panel titles, stat captions */
+.label-caps {
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
 }
 
 /* Segmented control selected segment */
@@ -273,9 +290,10 @@ input[type="number"]::-moz-selection {
   box-shadow: var(--shadow-segment);
 }
 
-/* Hairline separators (0.5px on retina) */
-.hairline-b { box-shadow: inset 0 -0.5px 0 hsl(var(--separator)); }
-.hairline-t { box-shadow: inset 0 0.5px 0 hsl(var(--separator)); }
+/* Hairline separators */
+.hairline-b { box-shadow: inset 0 -1px 0 hsl(var(--separator)); }
+.hairline-t { box-shadow: inset 0 1px 0 hsl(var(--separator)); }
+.hairline-r { box-shadow: inset -1px 0 0 hsl(var(--separator)); }
 }
 
 /* Inset-grouped list: separators start past the leading avatar */
@@ -338,10 +356,10 @@ h1, h2, h3, .text-lg, .text-xl, .text-2xl, .text-3xl {
   letter-spacing: -0.02em;
 }
 .large-title {
-  font-size: 1.75rem;
-  line-height: 2.125rem;
-  font-weight: 700;
-  letter-spacing: -0.022em;
+  font-size: 1rem;
+  line-height: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 /* ch-based max-width utility for readable text columns */

@@ -9,7 +9,8 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { TableHeader, TableRow, TokenCard, TableRowSkeleton, TokenCardSkeleton } from '@/components/table';
 import { TabContainer, WidgetGrid } from '@/components/layout';
 import { ColumnKey } from '@/lib/types';
-import { COLUMN_DEFINITIONS } from '@/lib/utils';
+import { BarChart3, List, Star } from 'lucide-react';
+import { COLUMN_DEFINITIONS, getRsiAvg, getRsiSignal, getRsiTextClass } from '@/lib/utils';
 import { FIXED_COLUMNS as FIXED_COLUMN_KEYS } from '@/lib/constants';
 import { useExchangeStore } from '@/hooks/useExchangeStore';
 import { useUrlState } from '@/hooks/useUrlState';
@@ -24,7 +25,7 @@ const FIXED_WIDTHS: Record<string, number> = {
   symbol: 70, // fits 6-char symbols; longer ones truncate
 };
 
-const ROW_HEIGHT = 48;
+const ROW_HEIGHT = 40;
 
 // Matches Tailwind's `lg` breakpoint, where the card list gives way to the table.
 const DESKTOP_QUERY = '(min-width: 1024px)';
@@ -88,6 +89,8 @@ export function ExchangeBoard({
 }: ExchangeBoardProps) {
   const [activeTab, setActiveTab] = useState(tabs[0]?.id ?? 'rsi');
   const isDesktop = useIsDesktop();
+  // Mobile shows one section at a time, switched from the bottom navigation.
+  const [mobileView, setMobileView] = useState<'markets' | 'insights'>('markets');
 
   // Drag state
   const [draggedColumn, setDraggedColumn] = useState<ColumnKey | null>(null);
@@ -113,7 +116,7 @@ export function ExchangeBoard({
       const tableH = tableContainerRef.current?.clientHeight ?? 0;
       if (tableH > 0) setTableSkeletonRows(Math.max(8, Math.ceil(tableH / ROW_HEIGHT)));
       const vh = typeof window !== 'undefined' ? window.innerHeight : 0;
-      if (vh > 0) setCardSkeletonRows(Math.max(6, Math.ceil(vh / 64)));
+      if (vh > 0) setCardSkeletonRows(Math.max(6, Math.ceil(vh / 56)));
     };
     measure();
     const el = tableContainerRef.current;
@@ -238,7 +241,7 @@ export function ExchangeBoard({
     count: filteredData.length,
     getScrollElement: getCardScrollElement,
     getOffsetTop: getCardsOffsetTop,
-    estimateSize: 64,
+    estimateSize: 56,
     overscan: 8,
   });
 
@@ -313,6 +316,58 @@ export function ExchangeBoard({
     error: { dot: 'bg-down', label: 'Offline' },
   }[store.status];
 
+  const statusLine = (
+    <p className="flex items-center gap-2 text-xs text-muted-foreground min-w-0" aria-live="polite">
+      <span className="inline-flex items-center gap-1.5 flex-shrink-0">
+        <span className={`w-1.5 h-1.5 rounded-full ${statusMeta.dot}`} aria-hidden="true" />
+        {statusMeta.label}
+      </span>
+      {store.tickers.size > 0 && (
+        <>
+          <span aria-hidden="true">·</span>
+          <span className="truncate">
+            <span className="tabular-nums">{filteredData.length}</span>{' '}
+            {filteredData.length === 1 ? 'perpetual' : 'perpetuals'} on {exchangeLabel}
+          </span>
+        </>
+      )}
+    </p>
+  );
+
+  // Mobile summary strip: the three numbers worth seeing before the list.
+  const rsiAverages = store.getRsiAverages();
+  const marketRsi = getRsiAvg(rsiAverages.avgRsi7, rsiAverages.avgRsi14);
+  const marketSignal = getRsiSignal(rsiAverages.avgRsi7, rsiAverages.avgRsi14);
+
+  const showInsights = mobileView === 'insights';
+  const watchlist = store.view === 'favorites';
+  const mobileNav = [
+    { id: 'markets', label: 'Markets', Icon: List, active: !showInsights && !watchlist },
+    { id: 'insights', label: 'Insights', Icon: BarChart3, active: showInsights },
+    { id: 'watchlist', label: 'Watchlist', Icon: Star, active: !showInsights && watchlist },
+  ] as const;
+  const handleMobileNav = (id: (typeof mobileNav)[number]['id']) => {
+    if (id === 'insights') {
+      setMobileView('insights');
+    } else {
+      setMobileView('markets');
+      store.setView(id === 'watchlist' ? 'favorites' : 'market');
+    }
+    mainScrollRef.current?.scrollTo({ top: 0 });
+  };
+
+  const emptyState = watchlist ? (
+    <>
+      <span className="text-[0.9375rem] font-semibold">Your watchlist is empty</span>
+      <span className="text-[0.8125rem] text-muted-foreground">Tap the star next to a token to add it.</span>
+    </>
+  ) : (
+    <>
+      <span className="text-[0.9375rem] font-semibold">No matching tokens</span>
+      <span className="text-[0.8125rem] text-muted-foreground">Try another search or clear the filters.</span>
+    </>
+  );
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
       {/* Skip link — first focusable element, jumps keyboard users past the header */}
@@ -325,23 +380,30 @@ export function ExchangeBoard({
 
       {/* Toolbar */}
       <div className="material-bar hairline-b pt-safe relative z-[70]">
-        <Header actions={<SearchField value={store.searchTerm} onChange={store.setSearchTerm} shortcut className="w-[220px]" />} />
+        <Header
+          status={statusLine}
+          actions={<SearchField value={store.searchTerm} onChange={store.setSearchTerm} shortcut className="w-[240px]" />}
+        />
       </div>
 
       {/* Page scroller on mobile; fixed two-column app frame on desktop */}
       <div ref={mainScrollRef} className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden">
-        <div className="max-w-[1600px] mx-auto w-full px-safe pt-5 pb-safe lg:pb-6 flex flex-col gap-6 lg:h-full lg:grid lg:grid-cols-[340px_minmax(0,1fr)]">
+        <div className="w-full flex flex-col lg:h-full lg:grid lg:grid-cols-[340px_minmax(0,1fr)]">
 
           {/* ── Insights ─────────────────────────── */}
-          <aside aria-labelledby="insights-title" className="flex flex-col gap-3.5 lg:min-h-0">
-            <h2 id="insights-title" className="large-title px-1">Insights</h2>
+          <aside
+            aria-labelledby="insights-title"
+            className={`${showInsights ? 'flex' : 'hidden'} lg:flex flex-col bg-card lg:bg-transparent lg:min-h-0 lg:hairline-r`}
+          >
+            <h2 id="insights-title" className="sr-only">Insights</h2>
             <TabContainer
               tabs={tabs}
               activeTab={activeTab}
               onTabChange={setActiveTab}
               variant="sidebar"
+              className="px-1 lg:px-2"
             />
-            <div className="lg:flex-1 lg:min-h-0 lg:overflow-y-auto flex flex-col gap-3.5 lg:pb-2">
+            <div className="flat-panels lg:flex-1 lg:min-h-0 lg:overflow-y-auto flex flex-col">
               <ErrorBoundary>
                 {tabs.map((tab) => {
                   if (activeTab !== tab.id) return null;
@@ -351,7 +413,7 @@ export function ExchangeBoard({
                     <WidgetGrid
                       key={tab.id}
                       variant="vertical"
-                      gap="md"
+                      className="gap-0"
                       sortable
                       itemIds={config.order}
                       onOrderChange={config.setOrder}
@@ -363,33 +425,46 @@ export function ExchangeBoard({
                   );
                 })}
               </ErrorBoundary>
-              <Footer exchange={exchange} className="hidden lg:flex mt-auto" />
+              <Footer exchange={exchange} className="px-4 py-3 mt-auto" />
             </div>
           </aside>
 
           {/* ── Markets ──────────────────────────── */}
-          <section id="main-content" aria-labelledby="markets-title" className="flex flex-col gap-3.5 lg:min-h-0">
-            <div className="flex items-baseline justify-between gap-3 px-1">
-              <h1 id="markets-title" className="large-title">Markets</h1>
-              <p className="flex items-center gap-2 text-[0.8125rem] text-muted-foreground min-w-0" aria-live="polite">
-                <span className="inline-flex items-center gap-1.5 flex-shrink-0">
-                  <span className={`w-[7px] h-[7px] rounded-full ${statusMeta.dot}`} aria-hidden="true" />
-                  {statusMeta.label}
-                </span>
-                {store.tickers.size > 0 && (
-                  <>
-                    <span aria-hidden="true">·</span>
-                    <span className="truncate tabular-nums">
-                      {filteredData.length} {filteredData.length === 1 ? 'perpetual' : 'perpetuals'} on {exchangeLabel}
-                    </span>
-                  </>
-                )}
-              </p>
-            </div>
+          <section
+            id="main-content"
+            aria-labelledby="markets-title"
+            className={`${showInsights ? 'hidden' : 'flex'} lg:flex flex-col lg:min-h-0 lg:bg-card`}
+          >
+            <h1 id="markets-title" className="sr-only">Markets</h1>
 
-            {/* Table card (desktop); on mobile the controls sit on the ground above the card list */}
-            <div className="flex flex-col lg:flex-1 lg:min-h-0 lg:surface-card lg:overflow-hidden">
-              <div className="lg:px-3.5 lg:py-3 lg:hairline-b flex-shrink-0">
+            {/* Mobile summary strip — opens Insights */}
+            <button
+              type="button"
+              onClick={() => handleMobileNav('insights')}
+              className="lg:hidden grid grid-cols-3 text-left hairline-b focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50"
+              aria-label="Open insights"
+            >
+              <span className="flex flex-col gap-0.5 px-4 py-3 hairline-r min-w-0">
+                <span className="label-caps truncate">Market RSI</span>
+                <span className={`text-xl font-medium tabular-nums ${getRsiTextClass(marketRsi)}`}>
+                  {marketRsi != null ? marketRsi.toFixed(1) : '—'}
+                </span>
+                <span className="text-xs text-muted-foreground truncate">{marketSignal.label}</span>
+              </span>
+              <span className="flex flex-col gap-0.5 px-4 py-3 hairline-r min-w-0">
+                <span className="label-caps truncate">Oversold</span>
+                <span className="text-xl font-medium tabular-nums text-cold-ink">{quickFilterCounts.oversold}</span>
+                <span className="text-xs text-muted-foreground truncate">Daily RSI &lt; 25</span>
+              </span>
+              <span className="flex flex-col gap-0.5 px-4 py-3 min-w-0">
+                <span className="label-caps truncate">Overbought</span>
+                <span className="text-xl font-medium tabular-nums text-hot-ink">{quickFilterCounts.overbought}</span>
+                <span className="text-xs text-muted-foreground truncate">Daily RSI &gt; 75</span>
+              </span>
+            </button>
+
+            <div className="flex flex-col lg:flex-1 lg:min-h-0">
+              <div className="px-4 py-2.5 lg:px-5 lg:py-2 lg:hairline-b flex-shrink-0">
                 <Controls
                   exchange={exchange}
                   columns={store.columns}
@@ -456,8 +531,7 @@ export function ExchangeBoard({
                         <tr>
                           <td colSpan={visibleColumns.length + 1}>
                             <div className="flex flex-col items-center justify-center gap-1 py-20 text-center">
-                              <span className="text-[0.9375rem] font-semibold">No matching tokens</span>
-                              <span className="text-[0.8125rem] text-muted-foreground">Try another search or clear the filters.</span>
+                              {emptyState}
                             </div>
                           </td>
                         </tr>
@@ -503,27 +577,29 @@ export function ExchangeBoard({
                 </table>
               </div>
 
-              {/* Mobile card list — shown below lg in place of the table.
-                  Scrolls with the page (mainScrollRef); virtualized via a wrapper
-                  whose padding reserves total list height. */}
-              <div className="lg:hidden mt-3">
+              {/* Mobile list — shown below lg in place of the table. Scrolls with
+                  the page (mainScrollRef); virtualized via a wrapper whose padding
+                  reserves total list height. */}
+              <div className="lg:hidden">
+                <div className="flex items-center justify-between gap-3 px-4 py-1.5 hairline-b">
+                  {statusLine}
+                </div>
                 {filteredData.length === 0 ? (
                   store.tickers.size === 0 ? (
-                    <div className="surface-card overflow-hidden">
+                    <div className="bg-card overflow-hidden">
                       {Array.from({ length: cardSkeletonRows }).map((_, i) => (
                         <TokenCardSkeleton key={i} />
                       ))}
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center gap-1 py-16 text-center">
-                      <span className="text-[0.9375rem] font-semibold">No matching tokens</span>
-                      <span className="text-[0.8125rem] text-muted-foreground">Try another search or clear the filters.</span>
+                    <div className="flex flex-col items-center justify-center gap-1 px-4 py-16 text-center">
+                      {emptyState}
                     </div>
                   )
                 ) : (
                   <div
                     ref={cardsWrapperRef}
-                    className="surface-card overflow-hidden"
+                    className="bg-card overflow-hidden"
                     style={{ paddingTop: cardPaddingTop, paddingBottom: cardPaddingBottom }}
                   >
                     {isDesktop !== true && cardVirtualRows.map(({ index }) => {
@@ -543,12 +619,30 @@ export function ExchangeBoard({
                     })}
                   </div>
                 )}
-                <Footer exchange={exchange} className="mt-4" />
+                <Footer exchange={exchange} className="px-4 py-3" />
               </div>
             </div>
           </section>
         </div>
       </div>
+
+      {/* Mobile bottom navigation */}
+      <nav aria-label="Sections" className="lg:hidden flex-shrink-0 flex bg-background hairline-t pb-[env(safe-area-inset-bottom)]">
+        {mobileNav.map(({ id, label, Icon, active }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => handleMobileNav(id)}
+            aria-current={active ? 'page' : undefined}
+            className={`flex-1 h-14 flex flex-col items-center justify-center gap-1 text-[0.6875rem] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50 ${
+              active ? 'text-foreground font-medium' : 'text-muted-foreground'
+            }`}
+          >
+            <Icon className="w-5 h-5" strokeWidth={active ? 2 : 1.6} aria-hidden="true" />
+            {label}
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }

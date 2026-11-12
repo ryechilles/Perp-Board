@@ -15,7 +15,7 @@ export function RsiMeter({ value, className }: { value: number; className?: stri
   return (
     <span className={cn('relative inline-block w-[52px] h-1 rounded-full rsi-track', className)} aria-hidden="true">
       <span
-        className="absolute top-1/2 w-2.5 h-2.5 -mt-[5px] -ml-[5px] rounded-full bg-card shadow-[0_0_0_1.5px_hsl(var(--foreground)),0_1px_3px_rgb(0_0_0/0.2)]"
+        className="absolute top-1/2 w-0.5 h-2.5 -mt-[5px] -ml-px rounded-[1px] bg-foreground shadow-[0_0_0_1.5px_hsl(var(--card))]"
         style={{ left: `${left}%` }}
       />
     </span>
@@ -44,15 +44,15 @@ export function formatSignedPercent(value: number, decimals = 2): string {
   return `${sign}${Math.abs(value).toFixed(decimals)}%`;
 }
 
-/** Tinted change pill (Stocks-style). */
+/** Signed change as plain coloured text — colour carries the direction, no chip. */
 export function ChangePill({ change, className }: { change: number | null | undefined; className?: string }) {
   if (change == null) return <span className="text-faint">—</span>;
   const up = change >= 0;
   return (
     <span
       className={cn(
-        'inline-flex items-center justify-end min-w-[66px] h-6 px-2 rounded-md text-[0.78rem] font-semibold tabular-nums',
-        up ? 'bg-up/[0.14] text-up-ink' : 'bg-down/[0.11] text-down-ink',
+        'inline-flex items-center justify-end text-[0.8125rem] font-medium tabular-nums',
+        up ? 'text-up-ink' : 'text-down-ink',
         className
       )}
     >
@@ -90,7 +90,7 @@ export function ZoneGauge({ segments, position, ticks, label }: ZoneGaugeProps) 
   return (
     <div role={label ? 'img' : undefined} aria-label={label}>
       <div className="relative">
-        <div className="flex gap-0.5 h-2" aria-hidden="true">
+        <div className="flex gap-0.5 h-1.5" aria-hidden="true">
           {segments.map((seg, i) => (
             <span
               key={i}
@@ -106,12 +106,10 @@ export function ZoneGauge({ segments, position, ticks, label }: ZoneGaugeProps) 
         </div>
         {position != null && (
           <span
-            className="absolute top-1/2 w-4 h-4 -mt-2 -ml-2 rounded-full bg-card grid place-items-center shadow-[0_0_0_0.5px_rgb(0_0_0/0.08),0_2px_6px_rgb(0_0_0/0.22)] transition-[left] duration-500"
+            className="absolute top-1/2 w-0.5 h-3.5 -mt-[7px] -ml-px rounded-[1px] bg-foreground shadow-[0_0_0_2px_hsl(var(--card))] transition-[left] duration-500"
             style={{ left: `${Math.min(Math.max(position, 0), 100)}%` }}
             aria-hidden="true"
-          >
-            <span className="w-2 h-2 rounded-full bg-foreground" />
-          </span>
+          />
         )}
       </div>
       {ticks && (

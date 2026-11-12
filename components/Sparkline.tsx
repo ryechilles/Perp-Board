@@ -149,7 +149,7 @@ export function SparklineChange({ change, sparklineData }: SparklineChangeProps)
       <span className={`text-[0.78rem] font-medium tabular-nums ${change >= 0 ? 'text-up-ink' : 'text-down-ink'}`}>
         {formatSignedPercent(change)}
       </span>
-      <Sparkline data={sparklineData} change={change} width={56} height={16} />
+      <Sparkline data={sparklineData} change={change} width={56} height={12} />
     </span>
   );
 }

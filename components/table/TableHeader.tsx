@@ -131,7 +131,7 @@ export function TableHeader({
               onDragLeave={onDragLeave}
               onDrop={(e) => onDrop(e, key)}
               onDragEnd={onDragEnd}
-              className={`group/th h-[34px] ${padClass} text-xs whitespace-nowrap ${isActive ? 'font-semibold text-foreground' : 'font-medium text-muted-foreground'} ${isFixed ? '' : 'thead-material hairline-b'} ${alignClass} ${sortable ? 'cursor-pointer hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50' : ''} ${!isFixed ? 'cursor-grab active:cursor-grabbing' : ''} ${isDragging ? 'opacity-50' : ''} ${isDragOver ? 'shadow-[inset_2px_0_0_hsl(var(--tint))]' : ''} select-none`}
+              className={`group/th h-8 ${padClass} text-[0.6875rem] uppercase tracking-[0.04em] whitespace-nowrap font-medium ${isActive ? 'text-foreground' : 'text-muted-foreground'} ${isFixed ? '' : 'thead-material hairline-b'} ${alignClass} ${sortable ? 'cursor-pointer hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50' : ''} ${!isFixed ? 'cursor-grab active:cursor-grabbing' : ''} ${isDragging ? 'opacity-50' : ''} ${isDragOver ? 'shadow-[inset_2px_0_0_hsl(var(--tint))]' : ''} select-none`}
               style={stickyStyle}
               onClick={() => sortable && onSort(key)}
               onKeyDown={(e) => {
@@ -158,7 +158,7 @@ export function TableHeader({
                   >
                     <Info className="w-3 h-3 text-faint hover:text-muted-foreground cursor-pointer" aria-hidden="true" />
                     <div className={`absolute top-full mt-2 z-50 hidden group-hover/tooltip:block group-focus-within/tooltip:block pointer-events-none ${isRightHalf ? 'right-0' : 'left-0'}`}>
-                      <div className="bg-popover border border-separator rounded-xl px-3 py-2.5 shadow-lg min-w-[220px] text-left font-normal pointer-events-auto">
+                      <div className="bg-popover border border-separator rounded-lg px-3 py-2.5 shadow-lg min-w-[220px] text-left font-normal normal-case tracking-normal pointer-events-auto">
                         <div className="text-xs text-foreground font-semibold mb-1.5">{tooltipItems[0]}</div>
                         <div className="text-[0.6875rem] text-muted-foreground space-y-0.5">
                           {tooltipItems.slice(1).map((item, i) => (

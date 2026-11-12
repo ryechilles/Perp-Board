@@ -21,7 +21,7 @@ function CellSkeleton({ col }: { col: ColumnKey }) {
       return <Skeleton className="h-3.5 w-12" />;
     case 'change':
     case 'change4h':
-      return <Skeleton className="h-6 w-[66px] rounded-md ml-auto" />;
+      return <Skeleton className="h-3 w-14 ml-auto" />;
     case 'change7d':
     case 'fundingApr':
       // Value stacked over a 56px graphic (sparkline / diverging bar)
@@ -52,7 +52,7 @@ export function TableRowSkeleton({ visibleColumns, getColStyle }: TableRowSkelet
       {visibleColumns.map((col) => (
         <td
           key={col}
-          className={`h-12 align-middle hairline-b ${col === 'favorite' ? 'pl-3.5 pr-0' : col === 'rank' ? 'px-1' : col === 'logo' ? 'pl-2 pr-2.5' : col === 'symbol' ? 'pl-0 pr-2' : col === 'price' ? 'pl-2 pr-3' : 'px-3'}`}
+          className={`h-10 align-middle hairline-b ${col === 'favorite' ? 'pl-3.5 pr-0' : col === 'rank' ? 'px-1' : col === 'logo' ? 'pl-2 pr-2.5' : col === 'symbol' ? 'pl-0 pr-2' : col === 'price' ? 'pl-2 pr-3' : 'px-3'}`}
           style={getColStyle(col)}
         >
           <CellSkeleton col={col} />
@@ -69,7 +69,7 @@ export function TableRowSkeleton({ visibleColumns, getColStyle }: TableRowSkelet
  */
 export function TokenCardSkeleton() {
   return (
-    <div className="flex items-center gap-3 min-h-[64px] pl-3.5 pr-4 py-2.5 hairline-b">
+    <div className="flex items-center gap-3 min-h-[56px] pl-3.5 pr-4 py-2 hairline-b">
       <Skeleton className="h-3.5 w-3.5 rounded-sm" />
       <Skeleton className="h-8 w-8 rounded-full" />
       <div className="flex-1 flex flex-col gap-1.5">

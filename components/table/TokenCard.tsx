@@ -62,12 +62,12 @@ export const TokenCard = memo(function TokenCard({
   const tdSignal = rsi?.td?.signal;
 
   return (
-    <div className="relative flex items-center gap-3 min-h-[64px] pl-2 pr-4 py-2.5 after:content-[''] after:absolute after:bottom-0 after:left-[80px] after:right-0 after:h-px after:bg-separator after:scale-y-50">
+    <div className="flex items-center gap-3 min-h-[56px] pl-2 pr-4 py-2 hairline-b">
       <button
         type="button"
         onClick={() => onToggleFavorite(instId)}
         className={cn(
-          'w-7 h-7 -mr-1.5 rounded-md grid place-items-center flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
+          'w-11 h-11 -mx-2 rounded-md grid place-items-center flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
           isFavorite ? 'text-star' : 'text-faint/60'
         )}
         aria-label={isFavorite ? `Remove ${base} from favorites` : `Add ${base} to favorites`}
@@ -75,14 +75,14 @@ export const TokenCard = memo(function TokenCard({
       >
         <Star className="w-3.5 h-3.5" fill={isFavorite ? 'currentColor' : 'none'} strokeWidth={1.6} aria-hidden="true" />
       </button>
-      <TokenAvatar symbol={base} logo={marketCap?.logo} size="lg" className="w-8 h-8" />
+      <TokenAvatar symbol={base} logo={marketCap?.logo} size="lg" className="w-7 h-7" />
 
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-1.5">
-          <span className="font-semibold text-[0.9375rem] tracking-[-0.01em] truncate" translate="no">{base}</span>
+          <span className="font-medium text-[0.9375rem] truncate" translate="no">{base}</span>
           <span className="text-[0.6875rem] text-faint tabular-nums">#{index + 1}</span>
         </div>
-        <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground whitespace-nowrap tabular-nums">
+        <div className="flex items-center gap-2 mt-0.5 text-[0.6875rem] text-muted-foreground whitespace-nowrap tabular-nums">
           <span>
             RSI{' '}
             <span className={cn('font-semibold', getRsiTextClass(dRsi))}>{dRsi != null ? dRsi.toFixed(0) : '—'}</span>
@@ -99,9 +99,9 @@ export const TokenCard = memo(function TokenCard({
         </div>
       </div>
 
-      <div className="flex flex-col items-end gap-1 flex-shrink-0">
-        <span className="font-medium text-[0.9375rem] tabular-nums leading-tight">{formatPrice(ticker.priceNum)}</span>
-        <ChangePill change={ticker.changeNum} className="h-[22px] min-w-[64px] text-xs" />
+      <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+        <span className="text-[0.875rem] tabular-nums leading-tight">{formatPrice(ticker.priceNum)}</span>
+        <ChangePill change={ticker.changeNum} className="text-xs" />
       </div>
     </div>
   );

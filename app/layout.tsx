@@ -1,19 +1,23 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
-import { Inter } from 'next/font/google';
+import { Geist, Geist_Mono } from 'next/font/google';
 import { APP_CONFIG } from '@/lib/config';
 import { TooltipProvider } from '@/components/ui';
 import './globals.css';
 
 const GA_MEASUREMENT_ID = 'G-VJB7B5NH29';
 
-// Self-hosted variable Inter via next/font: no render-blocking @import,
-// automatic font-display swap, preload, and zero layout shift (adjustFontFallback).
-const inter = Inter({
+// Self-hosted via next/font: no render-blocking @import, font-display swap,
+// preload, and zero layout shift. Geist for UI text, Geist Mono for numbers.
+const geistSans = Geist({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-inter',
-  axes: ['opsz'], // keep optical sizing axis (font-optical-sizing: auto in globals.css)
+  variable: '--font-sans',
+});
+const geistMono = Geist_Mono({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-mono',
 });
 
 export const metadata: Metadata = {
@@ -31,12 +35,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={inter.variable}>
+    <html lang="en" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable}`}>
       <head>
         {/* Apply saved theme before paint: prevents flash + keeps color-scheme/theme-color in sync */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme');var d=t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches);var el=document.documentElement;if(d)el.classList.add('dark');el.style.colorScheme=d?'dark':'light';var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',d?'#000000':'#f2f2f4');}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('theme');var d=t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches);var el=document.documentElement;if(d)el.classList.add('dark');el.style.colorScheme=d?'dark':'light';var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',d?'#0b0c0e':'#f4f4f5');}catch(e){}})();`,
           }}
         />
         {/* Google Analytics */}
@@ -66,7 +70,7 @@ export default function RootLayout({
         {/* Safari pinned tab */}
         <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#22B96A" />
         {/* Default matches light page background; init script + ThemeToggle keep it in sync with the active theme */}
-        <meta name="theme-color" content="#f2f2f4" />
+        <meta name="theme-color" content="#f4f4f5" />
       </head>
       <body>
         <TooltipProvider>
