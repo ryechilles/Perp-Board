@@ -46,10 +46,10 @@ export const COLUMN_TOOLTIPS: Partial<Record<ColumnKey, string[]>> = {
 // short signal badges centered.
 export const COLUMN_DEFINITIONS: Record<ColumnKey, { label: string; width: number; align: 'left' | 'right' | 'center'; fixed?: boolean; sortable?: boolean }> = {
   favorite: { label: '', width: 36, align: 'center', fixed: true, sortable: false },
-  rank: { label: '#', width: 38, align: 'left', fixed: true, sortable: true },
+  rank: { label: '#', width: 38, align: 'right', fixed: true, sortable: true },
   logo: { label: '', width: 42, align: 'center', fixed: true, sortable: false },
   symbol: { label: 'Token', width: 70, align: 'left', fixed: true, sortable: true },
-  price: { label: 'Price', width: 124, align: 'right', sortable: true },
+  price: { label: 'Price', width: 104, align: 'right', sortable: true },
   fundingRate: { label: 'Funding rate', width: 96, align: 'right', sortable: true },
   fundingApr: { label: 'Funding APR', width: 100, align: 'right', sortable: true },
   fundingInterval: { label: 'Interval', width: 72, align: 'right', sortable: true },

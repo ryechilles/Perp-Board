@@ -69,8 +69,8 @@ Numbers are the product. Every number on screen goes through a component in
 `components/data/Num.tsx`, which applies four rules:
 
 1. **Tabular figures** (`.num`) — digits line up in columns.
-2. **Decimal alignment** — `<Price aligned>` right-aligns the integer part and
-   left-aligns the fraction, so a column of prices lines up on the point.
+2. **One edge per column** — readouts are inline and flush with their cell;
+   in the table that is flush right, on the same edge as the header label.
 3. **Insignificant characters step back** — decimals, `%`, `$` and `B` / `T`
    are dimmed (`.num-dim`), so the eye lands on the significant digits.
 4. **Tiny prices use subscript zeros** — `0.0000043` is written `0.0₅43`.
@@ -133,7 +133,9 @@ on `/system` and in this file.
 ## Layout
 
 From `lg` up the app is a fixed frame: app bar, Insights sidebar on the left,
-the table on the right. The table shares spare width across its columns and
+the table on the right. Every column has one edge: the header label, and
+every cell under it, sit exactly on it (sort chevrons and ⓘ hang outside the
+label and take no space). The table shares spare width across its columns and
 pins star / rank / token while scrolling sideways. Below `lg` it is one section
 at a time (Markets / Insights / Watchlist) with a card list in place of the
 table; it uses the same components and gets no separate styling.

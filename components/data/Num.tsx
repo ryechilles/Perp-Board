@@ -9,6 +9,8 @@ import { toneText } from '@/components/ui';
  *   1. tabular figures            3. tiny prices use subscript-zero notation
  *   2. decimals / units stepped   4. colour only where the value's tone says so
  *      back (.num-dim)
+ * Readouts are inline and take the alignment of their cell — in a table that
+ * is flush right, on the same edge as the column header.
  */
 
 const Dash = () => <span className="text-fg-faint">—</span>;
@@ -17,47 +19,30 @@ const Dash = () => <span className="text-fg-faint">—</span>;
 
 interface PriceProps {
   value: number | null | undefined;
-  /**
-   * Align on the decimal point: the integer part is right-aligned and the
-   * fraction left-aligned in a fixed slot, so a column of prices lines up on the
-   * dot. Use in table columns; leave off for inline prices.
-   */
-  aligned?: boolean;
   className?: string;
 }
 
-function Fraction({ frac, zeros }: { frac: string; zeros?: number }) {
-  if (zeros != null) {
-    // 0.0₅43 — the leading zeros are noise, the significant digits are not
-    return (
-      <>
-        <span className="num-dim">
-          .0<sub className="align-baseline text-[0.72em] relative top-[0.25em]">{zeros}</sub>
-        </span>
-        {frac}
-      </>
-    );
-  }
-  return frac ? <span className="num-dim">.{frac}</span> : null;
-}
-
-export function Price({ value, aligned = false, className }: PriceProps) {
+/**
+ * A price. The fraction steps back, so in a right-aligned column the eye reads
+ * the integer part and the column still ends on one clean edge under its header.
+ */
+export function Price({ value, className }: PriceProps) {
   if (value == null) return <Dash />;
   const { int, frac, zeros } = priceParts(value);
-  if (!aligned) {
-    return (
-      <span className={cn('num', className)}>
-        {int}
-        <Fraction frac={frac} zeros={zeros} />
-      </span>
-    );
-  }
   return (
-    <span className={cn('num inline-grid grid-cols-[auto_6.2ch] font-medium', className)}>
-      <span className="text-right">{int}</span>
-      <span className="text-left font-normal">
-        <Fraction frac={frac} zeros={zeros} />
-      </span>
+    <span className={cn('num', className)}>
+      {int}
+      {zeros != null ? (
+        // 0.0₅43 — the leading zeros are noise, the significant digits are not
+        <>
+          <span className="num-dim font-normal">
+            .0<sub className="relative top-[0.25em] align-baseline text-[0.72em]">{zeros}</sub>
+          </span>
+          {frac}
+        </>
+      ) : (
+        frac && <span className="num-dim font-normal">.{frac}</span>
+      )}
     </span>
   );
 }

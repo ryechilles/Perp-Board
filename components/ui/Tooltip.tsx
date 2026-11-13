@@ -82,7 +82,7 @@ export function InfoTip({ label, content, align = 'end', className }: InfoTipPro
           className
         )}
       >
-        <Info className="size-3" aria-hidden="true" />
+        <Info className="size-3.5" aria-hidden="true" />
       </button>
     </Tip>
   );

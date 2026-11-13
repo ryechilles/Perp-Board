@@ -55,6 +55,7 @@ export function TableHeader({
           const active = sort.column === key;
           const fixed = isFixed(key);
           const tooltip = COLUMN_TOOLTIPS[key];
+          const right = def.align === 'right';
 
           const style = stickyStyle(spansLogo ? 'logo' : key, columns, isScrolled && key === 'symbol', 30);
           if (style && spansLogo) {
@@ -93,17 +94,22 @@ export function TableHeader({
                 dragOverColumn === key && 'shadow-edge-accent'
               )}
             >
-              <span className="inline-flex items-center gap-1">
-                {sortable && <SortGlyph active={active} direction={sort.direction} />}
+              {/* The label is the alignment anchor: it sits exactly on the column's
+                  edge, like the cells below. The sort chevron and the ⓘ hang
+                  outside it (towards the column's free side) and take no space. */}
+              <span className="relative inline-flex items-center gap-1">
                 {def.label}
                 {key === 'symbol' && totalCount > 0 && <span className="num font-normal text-fg-faint">{totalCount}</span>}
-                {tooltip && (
-                  <InfoTip
-                    label={def.label}
-                    content={<TipBody title={tooltip[0]} items={tooltip.slice(1)} />}
-                    className="normal-case tracking-normal"
-                  />
-                )}
+                <span className={cn('absolute top-1/2 flex -translate-y-1/2 items-center gap-1', right ? 'right-full mr-1 flex-row-reverse' : 'left-full ml-1')}>
+                  {tooltip && (
+                    <InfoTip
+                      label={def.label}
+                      content={<TipBody title={tooltip[0]} items={tooltip.slice(1)} />}
+                      className="normal-case tracking-normal"
+                    />
+                  )}
+                  {sortable && <SortGlyph active={active} direction={sort.direction} />}
+                </span>
               </span>
             </th>
           );
@@ -120,7 +126,7 @@ function SortGlyph({ active, direction }: { active: boolean; direction: SortConf
       aria-hidden="true"
       viewBox="0 0 10 10"
       className={cn(
-        'size-2.5 transition-opacity',
+        'size-2.5 flex-shrink-0 transition-opacity',
         active ? 'opacity-100' : 'opacity-0 group-hover/th:opacity-50',
         active && direction === 'asc' && 'rotate-180'
       )}

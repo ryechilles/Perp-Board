@@ -12,7 +12,7 @@ const clamp = (v: number) => Math.min(Math.max(v, 0), 100);
  */
 export function Meter({ value, tone = 'neutral', className }: { value: number; tone?: Tone; className?: string }) {
   return (
-    <span className={cn('relative inline-block h-[3px] w-12 rounded-full bg-track align-middle', className)} aria-hidden="true">
+    <span className={cn('relative block h-[3px] w-12 flex-shrink-0 rounded-full bg-track', className)} aria-hidden="true">
       <span
         className={cn('absolute top-1/2 size-[7px] -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-surface-1', toneFill[tone])}
         style={{ left: `${clamp(value)}%` }}

@@ -287,11 +287,11 @@ export function Showcase() {
         {/* ── Data components ── */}
         <Section title="Data components" lead="components/data — how a market value looks. The colour rules live here, not in the screens.">
           <div className={grid}>
-            <Specimen name="Price" note="aligned on the decimal point" className="flex-col items-end">
-              <Price value={69113.3} aligned />
-              <Price value={1956.24} aligned />
-              <Price value={0.31261} aligned />
-              <Price value={0.0000043} aligned />
+            <Specimen name="Price" note="fraction steps back" className="flex-col items-end">
+              <Price value={69113.3} />
+              <Price value={1956.24} />
+              <Price value={0.31261} />
+              <Price value={0.0000043} />
             </Specimen>
             <Specimen name="Delta · Percent" note="the only red and green">
               <Delta value={3.86} />
@@ -368,7 +368,7 @@ export function Showcase() {
                 {ROWS.map((r) => (
                   <tr key={r.symbol} className="data-row group">
                     <td className="h-row px-3 rule-b"><TokenCell symbol={r.symbol} /></td>
-                    <td className="px-3 text-right rule-b"><Price value={r.price} aligned /></td>
+                    <td className="px-3 text-right rule-b"><Price value={r.price} /></td>
                     <td className="px-3 text-right rule-b"><Delta value={r.d24} /></td>
                     <td className="px-3 text-right rule-b"><SparkDelta change={r.d7} sparklineData={[...r.spark]} /></td>
                     <td className="px-3 text-right rule-b"><FundingValue rate={r.rate} interval={8} /></td>

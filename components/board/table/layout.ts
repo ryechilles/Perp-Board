@@ -14,7 +14,7 @@ export const FIXED_COLUMNS: ColumnKey[] = [...FIXED_COLUMN_KEYS];
 /** Pinned columns have exact widths (their sticky offsets are sums of these). */
 export const FIXED_WIDTHS: Partial<Record<ColumnKey, number>> = {
   favorite: 38,
-  rank: 30,
+  rank: 32,   // right-aligned, so 1- and 2-digit ranks share a ones column
   logo: 30,   // 20px avatar + gap to the symbol
   symbol: 76, // fits 6-char symbols; longer ones truncate
 };
@@ -38,7 +38,7 @@ export function colStyle(key: ColumnKey): CSSProperties {
 export function cellPad(key: ColumnKey): string {
   switch (key) {
     case 'favorite': return 'pl-3.5 pr-0';
-    case 'rank': return 'px-0';
+    case 'rank': return 'pl-0 pr-3';
     case 'logo': return 'pl-0 pr-2.5';
     case 'symbol': return 'pl-0 pr-2';
     default: return 'px-3 last:pr-4';

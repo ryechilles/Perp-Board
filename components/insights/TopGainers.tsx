@@ -67,7 +67,6 @@ export function TopGainers({ tickers, rsiData, marketCapData, onTokenClick, exch
   return (
     <Panel
       title="Top Gainers"
-      note="Excl. BTC"
       actions={<TimeFrameSelect value={timeFrame} onChange={setTimeFrame} />}
       flush
       loading={isLoading}

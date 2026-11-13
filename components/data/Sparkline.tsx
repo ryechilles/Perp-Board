@@ -145,7 +145,7 @@ export function SparkDelta({ change, sparklineData }: SparkDeltaProps) {
     return <span className="text-fg-faint">—</span>;
   }
   return (
-    <span className="inline-flex items-center justify-end gap-2">
+    <span className="flex items-center justify-end gap-2">
       <Sparkline data={sparklineData} change={change} />
       <Percent value={change} className="min-w-14 text-right" />
     </span>

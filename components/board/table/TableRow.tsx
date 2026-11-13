@@ -67,7 +67,7 @@ export const TableRow = memo(forwardRef<HTMLTableRowElement, TableRowProps>(func
       case 'symbol':
         return <div className="truncate font-semibold" translate="no">{base}</div>;
       case 'price':
-        return <Price value={ticker.priceNum} aligned />;
+        return <Price value={ticker.priceNum} className="font-medium" />;
       case 'fundingRate':
         return <FundingValue rate={funding?.fundingRate} interval={funding?.settlementInterval} show="rate" />;
       case 'fundingApr':

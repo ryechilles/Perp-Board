@@ -45,15 +45,18 @@ export function TdValue({ td }: { td: TDState | null | undefined }) {
   if (d.kind === 'none') return <span className="text-fg-faint">—</span>;
   if (d.kind === 'signal') {
     return (
-      <Tag tone={d.side === 'buy' ? 'up' : 'down'} solid={d.strong} title={d.title} className="num">
+      <Tag tone={d.side === 'buy' ? 'up' : 'down'} solid={d.strong} title={d.title} className="num w-6 justify-center px-0">
         {d.letter}
         {d.count}
       </Tag>
     );
   }
   return (
-    <span title={d.title} className="num text-small text-fg-faint">
-      {d.letter} {d.count}
+    // Fixed slot: every B / S sits on one vertical line and the counts end on
+    // the same edge as the tags above and below
+    <span title={d.title} className="num inline-flex w-6 justify-between text-small text-fg-faint">
+      <span>{d.letter}</span>
+      <span>{d.count}</span>
     </span>
   );
 }

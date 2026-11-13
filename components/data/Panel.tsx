@@ -38,7 +38,7 @@ export function Panel({ title, note, info, actions, children, flush = false, loa
         {note && <span className="min-w-0 truncate text-small text-fg-faint">{note}</span>}
         <span className="flex-1" />
         {actions}
-        {info && <InfoTip label={title} content={info} />}
+        {info && <InfoTip label={title} content={info} className="-mr-0.5" />}
       </header>
       <div className={cn(flush ? 'pb-2 pt-1' : 'px-4 pb-4 pt-2')}>
         {loading ? (
@@ -94,7 +94,7 @@ export function ListRow({ symbol, logo, detail, value, onClick }: ListRowProps) 
         type="button"
         onClick={onClick}
         aria-label={`Show ${symbol} in the table`}
-        className="focus-ring-inset group/row flex h-control-lg w-full items-center gap-2 px-4 text-left outline-none transition-colors hover:bg-fill"
+        className="focus-ring-inset group/row relative flex h-control-lg w-full items-center gap-2 px-4 text-left outline-none transition-colors hover:bg-fill"
       >
         <TokenAvatar symbol={symbol} logo={logo} size="md" />
         <span className="flex min-w-0 flex-1 items-baseline gap-2">
@@ -102,7 +102,8 @@ export function ListRow({ symbol, logo, detail, value, onClick }: ListRowProps) 
           {detail && <span className="truncate text-small text-fg-muted">{detail}</span>}
         </span>
         <span className="flex-shrink-0">{value}</span>
-        <ChevronRight className="-mr-1.5 size-3.5 text-fg-faint opacity-0 transition-opacity group-hover/row:opacity-100" aria-hidden="true" />
+        {/* Hangs in the right padding: takes no space, so values end on the panel's edge */}
+        <ChevronRight className="absolute right-0.5 size-3 text-fg-faint opacity-0 transition-opacity group-hover/row:opacity-100" aria-hidden="true" />
       </button>
     </li>
   );
