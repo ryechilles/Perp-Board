@@ -1,21 +1,19 @@
-// Custom components
-export { PillButtonGroup } from './PillButtonGroup';
-export type { PillButtonGroupProps, PillButtonOption } from './PillButtonGroup';
-export { TokenAvatar } from './TokenAvatar';
-export { TimeFrameSelector } from './TimeFrameSelector';
-export { TooltipList } from './TooltipList';
-export { Spinner } from './spinner';
-export { Skeleton } from './skeleton';
-export { ThemeToggle } from './ThemeToggle';
+/**
+ * Base components — interaction and chrome. Built only from the tokens.
+ * Number / market readouts live in components/data.
+ */
+export { Button, IconButton } from './Button';
+export type { ButtonProps, IconButtonProps } from './Button';
+export { Segmented } from './Segmented';
+export type { SegmentedOption } from './Segmented';
+export { Chips } from './Chips';
+export type { ChipOption, ChipsProps } from './Chips';
+export { Tabs } from './Tabs';
+export type { TabItem } from './Tabs';
+export { Tag, Kbd } from './Tag';
+export { Tip, TipBody, InfoTip, TooltipProvider } from './Tooltip';
 export { SearchField } from './SearchField';
-export { RsiMeter, RsiReading, ChangePill, ZoneGauge, formatSignedPercent } from './Metrics';
-export type { ZoneSegment } from './Metrics';
-
-// shadcn/ui components
-export { Button, buttonVariants } from './button';
-export { Badge, badgeVariants } from './badge';
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent } from './card';
-export { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs';
-export { Toggle, toggleVariants } from './toggle';
-export { ToggleGroup, ToggleGroupItem } from './toggle-group';
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from './tooltip';
+export { Skeleton } from './Skeleton';
+export { ThemeToggle } from './ThemeToggle';
+export { TokenAvatar } from './TokenAvatar';
+export { toneText, toneSoft, toneSolid, toneFill, toneFillSoft } from './tone';

@@ -46,21 +46,21 @@ export const COLUMN_TOOLTIPS: Partial<Record<ColumnKey, string[]>> = {
 // short signal badges centered.
 export const COLUMN_DEFINITIONS: Record<ColumnKey, { label: string; width: number; align: 'left' | 'right' | 'center'; fixed?: boolean; sortable?: boolean }> = {
   favorite: { label: '', width: 36, align: 'center', fixed: true, sortable: false },
-  rank: { label: '#', width: 38, align: 'center', fixed: true, sortable: true },
+  rank: { label: '#', width: 38, align: 'left', fixed: true, sortable: true },
   logo: { label: '', width: 42, align: 'center', fixed: true, sortable: false },
   symbol: { label: 'Token', width: 70, align: 'left', fixed: true, sortable: true },
-  price: { label: 'Price', width: 96, align: 'right', sortable: true },
+  price: { label: 'Price', width: 124, align: 'right', sortable: true },
   fundingRate: { label: 'Funding rate', width: 96, align: 'right', sortable: true },
-  fundingApr: { label: 'Funding APR', width: 104, align: 'right', sortable: true },
+  fundingApr: { label: 'Funding APR', width: 100, align: 'right', sortable: true },
   fundingInterval: { label: 'Interval', width: 72, align: 'right', sortable: true },
   change4h: { label: '4h', width: 88, align: 'right', sortable: true },
   change: { label: '24h', width: 88, align: 'right', sortable: true },
-  change7d: { label: '7 days', width: 88, align: 'right', sortable: true },
+  change7d: { label: '7 days', width: 132, align: 'right', sortable: true },
   volume24h: { label: 'Volume 24h', width: 92, align: 'right', sortable: true },
   marketCap: { label: 'Market cap', width: 96, align: 'right', sortable: true },
-  dRsiSignal: { label: 'Daily RSI', width: 104, align: 'right', sortable: true },
-  tdSeq: { label: 'TD', width: 64, align: 'center', sortable: true },
-  wRsiSignal: { label: 'Weekly RSI', width: 104, align: 'right', sortable: true },
+  dRsiSignal: { label: 'Daily RSI', width: 108, align: 'right', sortable: true },
+  tdSeq: { label: 'TD', width: 68, align: 'right', sortable: true },
+  wRsiSignal: { label: 'Weekly RSI', width: 112, align: 'right', sortable: true },
   rsi7: { label: 'D-RSI7', width: 72, align: 'right', sortable: true },
   rsi14: { label: 'D-RSI14', width: 76, align: 'right', sortable: true },
   rsiW7: { label: 'W-RSI7', width: 72, align: 'right', sortable: true },
@@ -78,14 +78,6 @@ export function formatFundingApr(rate: number | undefined | null, intervalHours:
   return `${sign}${Math.abs(apr).toFixed(1)}%`;
 }
 
-// Get funding APR color class
-export function getFundingAprClass(rate: number | undefined | null): string {
-  if (rate === undefined || rate === null) return 'text-faint';
-  if (rate > 0) return 'text-up-ink';
-  if (rate < 0) return 'text-down-ink';
-  return 'text-muted-foreground';
-}
-
 // Format funding rate as percentage
 export function formatFundingRate(rate: number | undefined | null): string {
   if (rate === undefined || rate === null) return '--';
@@ -98,14 +90,6 @@ export function formatFundingRate(rate: number | undefined | null): string {
 export function formatSettlementInterval(hours: number | undefined | null): string {
   if (hours === undefined || hours === null || hours === 0) return '--';
   return `${hours}h`;
-}
-
-// Get funding rate color class
-export function getFundingRateClass(rate: number | undefined | null): string {
-  if (rate === undefined || rate === null) return 'text-faint';
-  if (rate > FUNDING.POSITIVE_THRESHOLD) return 'text-up-ink';
-  if (rate < FUNDING.NEGATIVE_THRESHOLD) return 'text-down-ink';
-  return 'text-muted-foreground';
 }
 
 // Format listing date

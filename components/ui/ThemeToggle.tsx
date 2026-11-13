@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { Moon, Sun } from 'lucide-react';
+import { THEME_COLOR } from '@/lib/config';
+import { IconButton } from './Button';
+
 
 export function ThemeToggle() {
   const [isDark, setIsDark] = useState(false);
@@ -9,36 +12,25 @@ export function ThemeToggle() {
 
   useEffect(() => {
     setMounted(true);
-    const saved = localStorage.getItem('theme');
-    if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      setIsDark(true);
-      document.documentElement.classList.add('dark');
-    }
+    setIsDark(document.documentElement.classList.contains('dark'));
   }, []);
 
   const toggle = () => {
     const next = !isDark;
     setIsDark(next);
-    const el = document.documentElement;
-    el.classList.toggle('dark', next);
-    el.style.colorScheme = next ? 'dark' : 'light';
+    document.documentElement.classList.toggle('dark', next);
     localStorage.setItem('theme', next ? 'dark' : 'light');
     document
       .querySelector('meta[name="theme-color"]')
-      ?.setAttribute('content', next ? '#0b0c0e' : '#f4f4f5');
+      ?.setAttribute('content', next ? THEME_COLOR.dark : THEME_COLOR.light);
   };
 
-  const cls =
-    'w-11 h-11 md:w-[30px] md:h-[30px] rounded-lg grid place-items-center text-muted-foreground transition-colors hover:bg-fill hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40';
-
-  if (!mounted) {
-    // Render invisible placeholder to prevent layout shift
-    return <span className={`${cls} invisible`} aria-hidden="true" />;
-  }
+  // Same box before hydration, so the bar does not shift
+  if (!mounted) return <span className="size-control-md" aria-hidden="true" />;
 
   return (
-    <button type="button" className={cls} onClick={toggle} aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
-      {isDark ? <Sun className="w-[17px] h-[17px]" /> : <Moon className="w-[17px] h-[17px]" />}
-    </button>
+    <IconButton label={isDark ? 'Switch to light mode' : 'Switch to dark mode'} onClick={toggle}>
+      {isDark ? <Sun className="size-4" aria-hidden="true" /> : <Moon className="size-4" aria-hidden="true" />}
+    </IconButton>
   );
 }

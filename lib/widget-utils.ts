@@ -58,16 +58,6 @@ export interface TokenWithChange {
 // Formatting Functions
 // ===========================================
 
-// Format percentage with color class
-export function formatChange(value: number | null | undefined): { text: string; color: string } {
-  if (value === null || value === undefined) {
-    return { text: '--', color: 'text-muted-foreground' };
-  }
-  const sign = value > 0 ? '+' : '';
-  const color = value > 0 ? 'text-up-ink' : value < 0 ? 'text-down-ink' : 'text-muted-foreground';
-  return { text: `${sign}${value.toFixed(2)}%`, color };
-}
-
 // Get change value based on timeframe
 export function getChangeByTimeFrame(token: TokenWithChange, tf: TimeFrame): number | null {
   switch (tf) {
@@ -110,17 +100,6 @@ export function calculateFundingApr(
 // ===========================================
 
 /**
- * Get tokens filtered by RSI threshold
- * Used by RsiOversold and RsiOverbought widgets
- *
- * @param tickers - All tickers
- * @param rsiData - RSI data map
- * @param marketCapData - Market cap data map
- * @param mode - 'oversold' (avgRsi < threshold) or 'overbought' (avgRsi > threshold)
- * @param topN - Number of top tokens by market cap to consider (default: WIDGET.TOP_TOKENS_COUNT)
- * @param displayLimit - Number of results to return (default: WIDGET.DISPLAY_LIMIT)
- */
-/**
  * One-line description of the sidebar widget universe (see widgetTickers in
  * useExchangeStore), for widget tooltips.
  */
@@ -129,21 +108,23 @@ export function widgetUniverseNote(exchangeLabel: string): string {
   return `Top ${UNIVERSE.MAX_CRYPTO} crypto by market cap on ${exchangeLabel}${spot} — excludes stablecoins and stock perps`;
 }
 
-export function getTokensByRsiThreshold(
+/**
+ * The top-N tokens by market cap that have an average RSI, ordered by how
+ * extreme they are for `mode`: lowest first for 'oversold', highest first for
+ * 'overbought'.
+ */
+export function rankTokensByRsi(
   tickers: Map<string, ProcessedTicker>,
   rsiData: Map<string, RSIData>,
   marketCapData: Map<string, MarketCapData>,
   mode: 'oversold' | 'overbought',
-  topN: number = WIDGET.TOP_TOKENS_COUNT,
-  displayLimit: number = WIDGET.DISPLAY_LIMIT
+  topN: number = WIDGET.TOP_TOKENS_COUNT
 ): TokenWithRsi[] {
   const allTokens: TokenWithRsi[] = [];
 
-  // Collect all tokens with market cap and RSI data
   tickers.forEach((ticker) => {
     const mc = marketCapData.get(ticker.baseSymbol);
     const rsi = rsiData.get(ticker.instId);
-
     if (!mc || !mc.marketCap || !rsi) return;
 
     const avgRsi = calculateAvgRsi(rsi);
@@ -159,16 +140,23 @@ export function getTokensByRsiThreshold(
     });
   });
 
-  // Sort by market cap and take top N
-  const topTokens = allTokens
+  return allTokens
     .sort((a, b) => b.marketCap - a.marketCap)
-    .slice(0, topN);
+    .slice(0, topN)
+    .sort((a, b) => (mode === 'oversold' ? a.avgRsi - b.avgRsi : b.avgRsi - a.avgRsi));
+}
 
-  // Filter by RSI threshold and sort
+/** Tokens past the RSI threshold for `mode`, most extreme first. */
+export function getTokensByRsiThreshold(
+  tickers: Map<string, ProcessedTicker>,
+  rsiData: Map<string, RSIData>,
+  marketCapData: Map<string, MarketCapData>,
+  mode: 'oversold' | 'overbought',
+  topN: number = WIDGET.TOP_TOKENS_COUNT,
+  displayLimit: number = WIDGET.DISPLAY_LIMIT
+): TokenWithRsi[] {
   const threshold = mode === 'oversold' ? RSI.OVERSOLD : RSI.OVERBOUGHT;
-
-  return topTokens
-    .filter(t => mode === 'oversold' ? t.avgRsi <= threshold : t.avgRsi >= threshold)
-    .sort((a, b) => mode === 'oversold' ? a.avgRsi - b.avgRsi : b.avgRsi - a.avgRsi)
+  return rankTokensByRsi(tickers, rsiData, marketCapData, mode, topN)
+    .filter((t) => (mode === 'oversold' ? t.avgRsi <= threshold : t.avgRsi >= threshold))
     .slice(0, displayLimit);
 }

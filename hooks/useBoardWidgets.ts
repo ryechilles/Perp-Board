@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 import { useWidgetOrder } from './useWidgetOrder';
-import { TabWidgetConfig } from '@/components/ExchangeBoard';
+import { TabWidgetConfig } from '@/components/board/ExchangeBoard';
 import { useExchangeStore } from './useExchangeStore';
 
 /** Store type returned by useExchangeStore */

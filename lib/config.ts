@@ -22,4 +22,10 @@ export const APP_CONFIG = {
   },
 } as const;
 
+/**
+ * Page-ground colour per theme, mirrored into <meta name="theme-color"> so the
+ * browser chrome matches. Keep in sync with --surface-0 in app/globals.css.
+ */
+export const THEME_COLOR = { light: '#f3f4f6', dark: '#090a0c' } as const;
+
 export const { name, version, versionDisplay, description } = APP_CONFIG;

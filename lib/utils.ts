@@ -9,7 +9,7 @@
 import { OKXTicker, ProcessedTicker, RsiSignalType, TDSignal, TDState } from './types';
 import { MEME_TOKENS as MEME_TOKENS_SET, RSI, UI } from './constants';
 import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { extendTailwindMerge } from 'tailwind-merge';
 
 // ===========================================
 // Re-exports for backward compatibility
@@ -22,10 +22,8 @@ export {
   COLUMN_DEFINITIONS,
   COLUMN_TOOLTIPS,
   formatFundingApr,
-  getFundingAprClass,
   formatFundingRate,
   formatSettlementInterval,
-  getFundingRateClass,
   formatListDate,
 } from './columns';
 
@@ -34,6 +32,19 @@ export { DEFAULT_COLUMN_ORDER, DEFAULT_COLUMNS, getDefaultColumns } from './defa
 // ===========================================
 // Tailwind Utilities
 // ===========================================
+
+// tailwind-merge must know the system's own scale names, otherwise it reads
+// `text-body` as a colour and drops it next to `text-fg`. Keep in sync with
+// tailwind.config.js.
+const twMerge = extendTailwindMerge({
+  extend: {
+    classGroups: {
+      'font-size': [{ text: ['caption', 'small', 'body', 'title', 'display'] }],
+      rounded: [{ rounded: ['none', 'tag', 'control', 'panel', 'full'] }],
+      shadow: [{ shadow: ['none', 'seg', 'edge', 'edge-accent', 'tab-accent', 'focus', 'pop', 'drawer'] }],
+    },
+  },
+});
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -155,47 +166,33 @@ export function calculateRSI(closes: number[], period: number): number | null {
 export interface RsiSignalInfo {
   signal: RsiSignalType;
   label: string;
-  pillStyle: string;
   level: number;
 }
 
 export function getRsiSignal(rsi7: number | null, rsi14: number | null): RsiSignalInfo {
   if (rsi7 === null && rsi14 === null) {
-    return { signal: 'neutral', label: '--', pillStyle: 'bg-fill text-faint', level: 5 };
+    return { signal: 'neutral', label: '--', level: 5 };
   }
 
   const avg = rsi7 !== null && rsi14 !== null
     ? (rsi7 + rsi14) / 2
     : rsi7 ?? rsi14 ?? 50;
 
-  if (avg <= RSI.EXTREME_OVERSOLD) return { signal: 'extreme-oversold', label: 'Extreme Oversold', pillStyle: 'bg-cold text-white', level: 1 };
-  if (avg <= RSI.OVERSOLD) return { signal: 'oversold', label: 'Oversold', pillStyle: 'bg-cold/20 text-cold-ink', level: 2 };
-  if (avg <= RSI.VERY_WEAK) return { signal: 'very-weak', label: 'Very Weak', pillStyle: 'bg-cold/10 text-cold-ink', level: 3 };
-  if (avg <= RSI.WEAK) return { signal: 'weak', label: 'Weak', pillStyle: 'bg-fill text-cold-ink', level: 4 };
-  if (avg <= RSI.NEUTRAL_HIGH) return { signal: 'neutral', label: 'Neutral', pillStyle: 'bg-fill text-muted-foreground', level: 5 };
-  if (avg <= RSI.STRONG) return { signal: 'strong', label: 'Strong', pillStyle: 'bg-fill text-hot-ink', level: 6 };
-  if (avg <= RSI.VERY_STRONG) return { signal: 'very-strong', label: 'Very Strong', pillStyle: 'bg-hot/10 text-hot-ink', level: 7 };
-  if (avg <= RSI.OVERBOUGHT) return { signal: 'overbought', label: 'Overbought', pillStyle: 'bg-hot/20 text-hot-ink', level: 8 };
-  return { signal: 'extreme-overbought', label: 'Extreme Overbought', pillStyle: 'bg-hot text-white', level: 9 };
+  if (avg <= RSI.EXTREME_OVERSOLD) return { signal: 'extreme-oversold', label: 'Extreme Oversold', level: 1 };
+  if (avg <= RSI.OVERSOLD) return { signal: 'oversold', label: 'Oversold', level: 2 };
+  if (avg <= RSI.VERY_WEAK) return { signal: 'very-weak', label: 'Very Weak', level: 3 };
+  if (avg <= RSI.WEAK) return { signal: 'weak', label: 'Weak', level: 4 };
+  if (avg <= RSI.NEUTRAL_HIGH) return { signal: 'neutral', label: 'Neutral', level: 5 };
+  if (avg <= RSI.STRONG) return { signal: 'strong', label: 'Strong', level: 6 };
+  if (avg <= RSI.VERY_STRONG) return { signal: 'very-strong', label: 'Very Strong', level: 7 };
+  if (avg <= RSI.OVERBOUGHT) return { signal: 'overbought', label: 'Overbought', level: 8 };
+  return { signal: 'extreme-overbought', label: 'Extreme Overbought', level: 9 };
 }
 
 /** Average of the RSI7/RSI14 pair (either may be missing). */
 export function getRsiAvg(rsi7: number | null | undefined, rsi14: number | null | undefined): number | null {
   if (rsi7 != null && rsi14 != null) return (rsi7 + rsi14) / 2;
   return rsi7 ?? rsi14 ?? null;
-}
-
-/**
- * Text color for an RSI reading on the cold→hot zone scale
- * (matches the .rsi-track gradient and the RSI.* thresholds).
- */
-export function getRsiTextClass(rsi: number | null | undefined): string {
-  if (rsi == null) return 'text-faint';
-  if (rsi <= RSI.OVERSOLD) return 'text-cold-ink';
-  if (rsi <= RSI.WEAK) return 'text-cold-ink/80';
-  if (rsi <= RSI.NEUTRAL_HIGH) return 'text-muted-foreground';
-  if (rsi <= RSI.VERY_STRONG) return 'text-hot-ink/85';
-  return 'text-hot-ink';
 }
 
 export function calculate7DChange(candles: number[][]): number | null {
@@ -297,43 +294,35 @@ export function calculateTDState(candles: number[][]): TDState | null {
 /** Minimum in-progress setup count worth displaying (1-3 are noise) */
 export const TD_SETUP_DISPLAY_MIN = 4;
 
-/** Complete class set for a highlighted signal pill */
-const TD_PILL_BASE = 'inline-flex items-center justify-center min-w-[36px] h-[22px] px-1.5 rounded-md font-mono text-[11px] font-semibold tabular-nums whitespace-nowrap';
-/** In-progress counts: no container — bare faded text so only 9/13 signals carry visual weight */
-const TD_TEXT_MUTED = 'inline-block font-mono text-[11px] font-medium tabular-nums whitespace-nowrap text-faint';
 export interface TdDisplay {
+  /** 'signal' = a completed 9 / 13 on the latest candle; 'progress' = a count on its way there */
+  kind: 'signal' | 'progress' | 'none';
+  side: 'buy' | 'sell' | null;
   /** B(uy) / S(ell) — null when there is nothing to show */
   letter: 'B' | 'S' | null;
   count: number | null;
-  /** Rendered when there is no letter (the em dash) */
-  label: string;
-  className: string;
+  /** True for a completed Countdown 13 (the stronger of the two signals) */
+  strong: boolean;
   title?: string;
 }
 
 /**
- * Display parts + complete className for the TD column (shared by table row and mobile card).
- * Priority: completed 9/13 (colored pill) > active countdown (faded text) >
- * setup streak >= TD_SETUP_DISPLAY_MIN (faded text) > "--".
- * Setup vs countdown is carried by the tooltip, not by the label.
- *
- * Letter and count come back separately so TdValue can put them in a fixed-width
- * slot: the letter lands on one vertical line for every row, with a tight gap to
- * the digits instead of a full character of padding.
+ * What the TD column shows for an instrument.
+ * Priority: completed 9/13 (signal) > active countdown > setup streak >=
+ * TD_SETUP_DISPLAY_MIN (both 'progress') > nothing.
+ * Setup vs countdown is carried by the title, not by the label.
  */
 export function getTdDisplay(td: TDState | null | undefined): TdDisplay {
+  const letterOf = (type: 'buy' | 'sell') => (type === 'buy' ? 'B' : 'S') as 'B' | 'S';
   if (td?.signal) {
     const s = td.signal;
-    const title = `${s.type === 'buy' ? 'Buy' : 'Sell'} ${s.count === 13 ? 'Countdown 13' : 'Setup 9'} completed`;
-    const color = s.type === 'buy'
-      ? (s.count === 13 ? 'bg-up text-white' : 'bg-up/15 text-up-ink')
-      : (s.count === 13 ? 'bg-down text-white' : 'bg-down/[0.12] text-down-ink');
     return {
-      letter: s.type === 'buy' ? 'B' : 'S',
+      kind: 'signal',
+      side: s.type,
+      letter: letterOf(s.type),
       count: s.count,
-      label: '',
-      title,
-      className: `${TD_PILL_BASE} ${color}`,
+      strong: s.count === 13,
+      title: `${s.type === 'buy' ? 'Buy' : 'Sell'} ${s.count === 13 ? 'Countdown 13' : 'Setup 9'} completed`,
     };
   }
   const setup = td?.setup && td.setup.count >= TD_SETUP_DISPLAY_MIN ? td.setup : null;
@@ -341,38 +330,23 @@ export function getTdDisplay(td: TDState | null | undefined): TdDisplay {
   // When both are active, show the one closer to completion (setup/9 vs countdown/13)
   if (setup && (!countdown || setup.count / 9 >= countdown.count / 13)) {
     return {
-      letter: setup.type === 'buy' ? 'B' : 'S',
+      kind: 'progress',
+      side: setup.type,
+      letter: letterOf(setup.type),
       count: setup.count,
-      label: '',
+      strong: false,
       title: `${setup.type === 'buy' ? 'Buy' : 'Sell'} Setup ${setup.count}/9`,
-      className: TD_TEXT_MUTED,
     };
   }
   if (countdown) {
     return {
-      letter: countdown.type === 'buy' ? 'B' : 'S',
+      kind: 'progress',
+      side: countdown.type,
+      letter: letterOf(countdown.type),
       count: countdown.count,
-      label: '',
+      strong: false,
       title: `${countdown.type === 'buy' ? 'Buy' : 'Sell'} Countdown ${countdown.count}/13`,
-      className: TD_TEXT_MUTED,
     };
   }
-  return { letter: null, count: null, label: '—', className: 'inline-block text-[11px] text-faint' };
-}
-
-// ===========================================
-// RSI Pill Styles
-// ===========================================
-
-export function getRsiPillStyle(rsi: number | null | undefined): string {
-  if (rsi === null || rsi === undefined) return 'bg-fill text-faint';
-  if (rsi <= 20) return 'bg-cold text-white';
-  if (rsi <= 25) return 'bg-cold/20 text-cold-ink';
-  if (rsi <= 30) return 'bg-cold/10 text-cold-ink';
-  if (rsi <= 40) return 'bg-fill text-cold-ink';
-  if (rsi <= 60) return 'bg-fill text-muted-foreground';
-  if (rsi <= 70) return 'bg-fill text-hot-ink';
-  if (rsi <= 80) return 'bg-hot/10 text-hot-ink';
-  if (rsi <= 85) return 'bg-hot/20 text-hot-ink';
-  return 'bg-hot text-white';
+  return { kind: 'none', side: null, letter: null, count: null, strong: false };
 }

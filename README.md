@@ -23,19 +23,8 @@ npm run deploy   # 手动部署，需先 npx wrangler login
 
 ## UI system
 
-Flat, data-first. Chrome is neutral grey / white; colour is reserved for data.
+Three layers: **tokens** (`app/globals.css`) → **components** (`components/ui`, `components/data`) → **screens** (`components/board`, `components/insights`). Rules and the full inventory are in [`DESIGN.md`](DESIGN.md); everything is rendered live at `/system`.
 
-- **Tokens** live in `app/globals.css` (`:root` for light, `.dark` for dark) and are exposed to Tailwind in `tailwind.config.js`. Change a value there, not in a component.
-  - Surfaces: `background` (ground), `card` (panels), `fill` (control fill), `separator` (1px hairlines).
-  - Text: `foreground`, `muted-foreground`, `faint`.
-  - Data only: `up` / `down` (price direction, live state), `cold` / `hot` (RSI oversold / overbought). Use the `-ink` variant for text.
-- **Type**: Geist for UI text, Geist Mono for numbers. Any element with `tabular-nums` renders in the mono face — put it on every numeric value.
-- **Shape**: 4px grid; radius 6 (controls), 8 (inputs), 10 (panels), full (chips). No shadows — regions are separated by `hairline-b` / `hairline-t` / `hairline-r`.
-- **Building blocks**:
-  - `label-caps` — small caps label for column headers, panel titles, stat captions.
-  - `surface-card` — a panel; inside `.flat-panels` it drops its chrome and is divided by hairlines.
-  - `PillButtonGroup` — segmented control (`variant="segmented"`) and filter chips (`variant="chips"`).
-  - `TabContainer variant="sidebar"` — underline tabs.
-  - `SmallWidget` — insight panel shell (caps title, subtitle, info toggle).
-  - `ChangePill`, `RsiReading`, `ZoneGauge` (`components/ui/Metrics.tsx`) — numeric readouts.
-- **Layout**: mobile is one section at a time (Markets / Insights / Watchlist) switched from the bottom navigation, with a three-stat summary above the list; from `lg` up it is a fixed two-column frame, Insights left and the table right.
+- Colour budget: `accent` = selected / live / focus, `up` / `down` = price direction, `cold` / `hot` = RSI extremes. Everything else is neutral.
+- One face (Inter), five sizes. Every number goes through a data component: tabular, decimal-aligned, units dimmed.
+- ESLint rejects anything outside the system (off-scale classes, raw colours, raw `<button>` in screens), so CI stops it before deploy.

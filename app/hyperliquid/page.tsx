@@ -1,5 +1,5 @@
-import HyperliquidBoard from '@/components/HyperliquidBoard';
-import { BoardPreloads } from '@/components/BoardPreloads';
+import HyperliquidBoard from '@/components/board/HyperliquidBoard';
+import { BoardPreloads } from '@/components/board/BoardPreloads';
 
 export default function HyperliquidPage() {
   return (

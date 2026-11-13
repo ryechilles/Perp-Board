@@ -1,181 +1,142 @@
----
-description: Review UI code for Vercel Web Interface Guidelines compliance
-argument-hint: <file-or-pattern>
-source: https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md
----
+# Perp Board UI system
 
-# Web Interface Guidelines
+Three layers. Each one is built only from the layer below it.
 
-Review these files for compliance: $ARGUMENTS
+| Layer | Lives in | Job |
+|---|---|---|
+| **Tokens** | `app/globals.css`, named in `tailwind.config.js` | Every colour, size, radius and shadow the UI may use |
+| **Components** | `components/ui` (base), `components/data` (market values) | The only things that turn tokens into pixels |
+| **Screens** | `components/board`, `components/insights`, `app/` | Arrange components. No styling decisions of their own |
 
-Read files, check against rules below. Output concise but comprehensive—sacrifice grammar for brevity. High signal-to-noise.
+Everything here is rendered live at **`/system`** — in both themes, with the real
+implementations. Check that page after changing a token or a component.
+
+## Tokens
+
+Change a value in `app/globals.css` (`:root` = light, `.dark` = dark). Never
+write a raw value in a component.
+
+### Colour
+
+| Token | Use |
+|---|---|
+| `surface-0` / `surface-1` / `surface-2` / `surface-pop` | Page ground and app bar / table and panels / sidebar / tooltips and drawer |
+| `fill` / `fill-strong` | Control fill and hover wash / pressed, skeleton |
+| `fg` / `fg-muted` / `fg-faint` | Primary text / secondary / placeholders, units, ticks |
+| `line` / `line-strong` | Rules / control outlines |
+| `accent` / `accent-soft` / `on-accent` | **Selected, live, focused** — nothing else |
+| `up` / `down` | **Price direction** — nothing else |
+| `cold` / `hot` | **RSI extremes** (≤ 25 / ≥ 75) — nothing else |
+| `track`, `star` | Meter tracks, the watchlist star |
+
+That is the colour budget: if a value is not selected, a price move or an RSI
+extreme, it is neutral. A screen full of mid-range RSI readings has no colour
+in it, so the two readings that matter stand out.
+
+`up`, `down`, `cold`, `hot`, `accent` and the surfaces take an alpha modifier
+(`bg-up/10`).
+
+### Type
+
+One face — Inter — for text and numbers. Five sizes, three weights.
+
+| Class | Size | Use |
+|---|---|---|
+| `text-display` | 30 | A panel's headline figure |
+| `text-title` | 15 | Stat values, headings |
+| `text-body` | 13 | Default |
+| `text-small` | 12 | Secondary text |
+| `text-caption` | 11 | Caps labels (`.caps`), tags, ticks |
+
+Weights: `font-normal`, `font-medium`, `font-semibold`.
+
+### Size and shape
+
+| Class | Value | Use |
+|---|---|---|
+| `h-control-sm` / `-md` / `-lg` | 24 / 28 / 32 | Every interactive control |
+| `h-row` | 36 | Table rows, tabs |
+| `rounded-tag` / `-control` / `-panel` / `-full` | 4 / 6 / 10 | Tags, segments / buttons, fields / panels, drawer / chips, dots |
+| `shadow-seg` / `-pop` / `-drawer` | | Selected segment / tooltip / drawer |
+| `shadow-edge` / `-edge-accent` | | 1px control outline / selected outline |
+| `.rule-b` / `.rule-t` / `.rule-r` | | 1px rules that never change a box's size |
+
+Spacing uses Tailwind's 4px grid (`gap-2`, `px-4`…); prefer 4 / 8 / 12 / 16 / 24.
+
+## Numbers
+
+Numbers are the product. Every number on screen goes through a component in
+`components/data/Num.tsx`, which applies four rules:
+
+1. **Tabular figures** (`.num`) — digits line up in columns.
+2. **Decimal alignment** — `<Price aligned>` right-aligns the integer part and
+   left-aligns the fraction, so a column of prices lines up on the point.
+3. **Insignificant characters step back** — decimals, `%`, `$` and `B` / `T`
+   are dimmed (`.num-dim`), so the eye lands on the significant digits.
+4. **Tiny prices use subscript zeros** — `0.0000043` is written `0.0₅43`.
+
+Formatting logic is in `lib/format.ts` and is unit-tested (`tests/format.test.ts`).
+
+## Components
+
+### Base — `components/ui`
+
+| Component | Use |
+|---|---|
+| `Button` | Any action. `solid` (the one primary action), `outline` (default), `ghost`, and `bare` — no chrome, for a custom hit area |
+| `IconButton` | Icon-only action; `label` is required |
+| `Segmented` | Mutually exclusive views (exchange, asset class, time frame) |
+| `Chips` | Filters that toggle; single or `multiple` |
+| `Tabs` | Pages inside a region |
+| `SearchField`, `Kbd` | Search with the ⌘K hint |
+| `Tag` | A short state label, toned; `solid` for the rare strongest state |
+| `Tip`, `TipBody`, `InfoTip` | The one tooltip (Radix): hover, focus, or click on an ⓘ |
+| `Skeleton` | Loading placeholder |
+| `TokenAvatar`, `ThemeToggle` | |
+
+### Data — `components/data`
+
+These own the colour rules. A screen picks the readout; it never picks a colour.
+
+| Component | Rule it enforces |
+|---|---|
+| `Price`, `Money`, `Percent`, `Figure` | The four number rules above |
+| `Delta` | Red / green by direction — the only place they appear |
+| `RsiReading`, `Meter`, `Gauge` | Neutral in the middle, `cold` ≤ 25, `hot` ≥ 75 |
+| `FundingValue` | Neutral until ±10% APR (`FUNDING.HIGHLIGHT_APR`) |
+| `TdValue` | A completed 9 is a tinted tag, a 13 a solid one; counts in progress are faint text |
+| `Sparkline`, `SparkDelta` | Colour follows the change |
+| `Panel`, `List`, `ListRow`, `ListHeading`, `EmptyLine`, `Stat` | The one shell for a sidebar block. An empty list is one quiet line, never a hero |
+| `TokenCell`, `FavoriteButton` | |
+
+`lib/` never returns class names. It returns a **`Tone`** (`'neutral' | 'up' |
+'down' | 'cold' | 'hot'`) and `components/ui/tone.ts` is the only place a tone
+becomes a colour.
 
 ## Rules
 
-### Accessibility
+Enforced by ESLint (`eslint.config.mjs`) and so by CI before every deploy:
 
-- Icon-only buttons need `aria-label`
-- Form controls need `<label>` or `aria-label`
-- Interactive elements need keyboard handlers (`onKeyDown`/`onKeyUp`)
-- `<button>` for actions, `<a>`/`<Link>` for navigation (not `<div onClick>`)
-- Images need `alt` (or `alt=""` if decorative)
-- Decorative icons need `aria-hidden="true"`
-- Async updates (toasts, validation) need `aria-live="polite"`
-- Use semantic HTML (`<button>`, `<a>`, `<label>`, `<table>`) before ARIA
-- Headings hierarchical `<h1>`–`<h6>`; include skip link for main content
-- `scroll-margin-top` on heading anchors
+- **Only system classes.** Tailwind's own scales are replaced, so `text-sm`,
+  `rounded-lg`, `bg-red-500`, `font-bold` generate nothing — and fail lint.
+- **No raw colours** (`bg-[#…]`). The exception is brand artwork in
+  `components/board/logos.tsx`.
+- **Screens use the scale.** Outside `components/ui` and `components/data`, no
+  arbitrary sizes (`p-[13px]`, `text-[0.8rem]`) and no raw `<button>`.
+- **`lib/` and `hooks/` carry no presentation.**
 
-### Focus States
+Adding to the system: a new value goes in `app/globals.css` +
+`tailwind.config.js` (and `cn()`'s class groups in `lib/utils.ts` if it is a
+font size, radius or shadow); a new pattern becomes a component with an entry
+on `/system` and in this file.
 
-- Interactive elements need visible focus: `focus-visible:ring-*` or equivalent
-- Never `outline-none` / `outline: none` without focus replacement
-- Use `:focus-visible` over `:focus` (avoid focus ring on click)
-- Group focus with `:focus-within` for compound controls
+## Layout
 
-### Forms
+From `lg` up the app is a fixed frame: app bar, Insights sidebar on the left,
+the table on the right. The table shares spare width across its columns and
+pins star / rank / token while scrolling sideways. Below `lg` it is one section
+at a time (Markets / Insights / Watchlist) with a card list in place of the
+table; it uses the same components and gets no separate styling.
 
-- Inputs need `autocomplete` and meaningful `name`
-- Use correct `type` (`email`, `tel`, `url`, `number`) and `inputmode`
-- Never block paste (`onPaste` + `preventDefault`)
-- Labels clickable (`htmlFor` or wrapping control)
-- Disable spellcheck on emails, codes, usernames (`spellCheck={false}`)
-- Checkboxes/radios: label + control share single hit target (no dead zones)
-- Submit button stays enabled until request starts; spinner during request
-- Errors inline next to fields; focus first error on submit
-- Placeholders end with `…` and show example pattern
-- `autocomplete="off"` on non-auth fields to avoid password manager triggers
-- Warn before navigation with unsaved changes (`beforeunload` or router guard)
-
-### Animation
-
-- Honor `prefers-reduced-motion` (provide reduced variant or disable)
-- Animate `transform`/`opacity` only (compositor-friendly)
-- Never `transition: all`—list properties explicitly
-- Set correct `transform-origin`
-- SVG: transforms on `<g>` wrapper with `transform-box: fill-box; transform-origin: center`
-- Animations interruptible—respond to user input mid-animation
-
-### Typography
-
-- `…` not `...`
-- Curly quotes `"` `"` not straight `"`
-- Non-breaking spaces: `10&nbsp;MB`, `⌘&nbsp;K`, brand names
-- Loading states end with `…`: `"Loading…"`, `"Saving…"`
-- `font-variant-numeric: tabular-nums` for number columns/comparisons
-- Use `text-wrap: balance` or `text-pretty` on headings (prevents widows)
-
-### Content Handling
-
-- Text containers handle long content: `truncate`, `line-clamp-*`, or `break-words`
-- Flex children need `min-w-0` to allow text truncation
-- Handle empty states—don't render broken UI for empty strings/arrays
-- User-generated content: anticipate short, average, and very long inputs
-
-### Images
-
-- `<img>` needs explicit `width` and `height` (prevents CLS)
-- Below-fold images: `loading="lazy"`
-- Above-fold critical images: `priority` or `fetchpriority="high"`
-
-### Performance
-
-- Large lists (>50 items): virtualize (`virtua`, `content-visibility: auto`)
-- No layout reads in render (`getBoundingClientRect`, `offsetHeight`, `offsetWidth`, `scrollTop`)
-- Batch DOM reads/writes; avoid interleaving
-- Prefer uncontrolled inputs; controlled inputs must be cheap per keystroke
-- Add `<link rel="preconnect">` for CDN/asset domains
-- Critical fonts: `<link rel="preload" as="font">` with `font-display: swap`
-
-### Navigation & State
-
-- URL reflects state—filters, tabs, pagination, expanded panels in query params
-- Links use `<a>`/`<Link>` (Cmd/Ctrl+click, middle-click support)
-- Deep-link all stateful UI (if uses `useState`, consider URL sync via nuqs or similar)
-- Destructive actions need confirmation modal or undo window—never immediate
-
-### Touch & Interaction
-
-- `touch-action: manipulation` (prevents double-tap zoom delay)
-- `-webkit-tap-highlight-color` set intentionally
-- `overscroll-behavior: contain` in modals/drawers/sheets
-- During drag: disable text selection, `inert` on dragged elements
-- `autoFocus` sparingly—desktop only, single primary input; avoid on mobile
-
-### Safe Areas & Layout
-
-- Full-bleed layouts need `env(safe-area-inset-*)` for notches
-- Avoid unwanted scrollbars: `overflow-x-hidden` on containers, fix content overflow
-- Flex/grid over JS measurement for layout
-
-### Dark Mode & Theming
-
-- `color-scheme: dark` on `<html>` for dark themes (fixes scrollbar, inputs)
-- `<meta name="theme-color">` matches page background
-- Native `<select>`: explicit `background-color` and `color` (Windows dark mode)
-
-### Locale & i18n
-
-- Dates/times: use `Intl.DateTimeFormat` not hardcoded formats
-- Numbers/currency: use `Intl.NumberFormat` not hardcoded formats
-- Detect language via `Accept-Language` / `navigator.languages`, not IP
-- Brand names, code tokens, identifiers: wrap with `translate="no"` to prevent garbled auto-translation
-
-### Hydration Safety
-
-- Inputs with `value` need `onChange` (or use `defaultValue` for uncontrolled)
-- Date/time rendering: guard against hydration mismatch (server vs client)
-- `suppressHydrationWarning` only where truly needed
-
-### Hover & Interactive States
-
-- Buttons/links need `hover:` state (visual feedback)
-- Interactive states increase contrast: hover/active/focus more prominent than rest
-
-### Content & Copy
-
-- Active voice: "Install the CLI" not "The CLI will be installed"
-- Title Case for headings/buttons (Chicago style)
-- Numerals for counts: "8 deployments" not "eight"
-- Specific button labels: "Save API Key" not "Continue"
-- Error messages include fix/next step, not just problem
-- Second person; avoid first person
-- `&` over "and" where space-constrained
-
-### Anti-patterns (flag these)
-
-- `user-scalable=no` or `maximum-scale=1` disabling zoom
-- `onPaste` with `preventDefault`
-- `transition: all`
-- `outline-none` without focus-visible replacement
-- Inline `onClick` navigation without `<a>`
-- `<div>` or `<span>` with click handlers (should be `<button>`)
-- Images without dimensions
-- Large arrays `.map()` without virtualization
-- Form inputs without labels
-- Icon buttons without `aria-label`
-- Hardcoded date/number formats (use `Intl.*`)
-- `autoFocus` without clear justification
-
-## Output Format
-
-Group by file. Use `file:line` format (VS Code clickable). Terse findings.
-
-```text
-## src/Button.tsx
-
-src/Button.tsx:42 - icon button missing aria-label
-src/Button.tsx:18 - input lacks label
-src/Button.tsx:55 - animation missing prefers-reduced-motion
-src/Button.tsx:67 - transition: all → list properties
-
-## src/Modal.tsx
-
-src/Modal.tsx:12 - missing overscroll-behavior: contain
-src/Modal.tsx:34 - "..." → "…"
-
-## src/Card.tsx
-
-✓ pass
-```
-
-State issue + location. Skip explanation unless fix non-obvious. No preamble.
+Interface details beyond the system (focus, forms, motion, hydration…) follow
+`docs/web-interface-guidelines.md`.

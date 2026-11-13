@@ -134,6 +134,11 @@ export const RSI = {
   STRONG: 70,
   VERY_STRONG: 80,
   OVERBOUGHT: 85,
+
+  // Where an RSI reading gets a colour (cold / hot). Same cut-offs as the
+  // Oversold / Overbought quick filters; everything between stays neutral.
+  TONE_COLD: 25,
+  TONE_HOT: 75,
 } as const;
 
 // ===========================================
@@ -142,6 +147,9 @@ export const RSI = {
 export const FUNDING = {
   // APR threshold for "killer" alerts
   KILLER_APR_THRESHOLD: 20,               // 20% APR
+
+  // |APR| from which a funding value is coloured in the table; below it is neutral
+  HIGHLIGHT_APR: 10,
 
   // Funding rate thresholds (as decimal)
   POSITIVE_THRESHOLD: 0.0001,
@@ -165,22 +173,14 @@ export const WIDGET = {
 // ===========================================
 // AHR999 Indicator Zones
 // ===========================================
-// Zone colors for the bar visualization
-export const AHR999_ZONE_COLORS = [
-  { width: '9%', color: 'bg-up' },            // Bottom
-  { width: '15%', color: 'bg-up/40' },        // DCA
-  { width: '16%', color: 'bg-zone-neutral' }, // Wait
-  { width: '40%', color: 'bg-down/40' },      // Take Profit
-  { width: '20%', color: 'bg-down' },         // Top
-] as const;
-
-// Zone legend data
-export const AHR999_ZONE_LEGEND = [
-  { range: '<0.45', label: 'Bottom', color: 'bg-up' },
-  { range: '0.45–1.2', label: 'DCA', color: 'bg-up/40' },
-  { range: '1.2–2.0', label: 'Wait', color: 'bg-zone-neutral' },
-  { range: '2.0–4.0', label: 'Take Profit', color: 'bg-down/40' },
-  { range: '>4', label: 'Top', color: 'bg-down' },
+// One entry per zone, in scale order. `width` is the zone's share of the 0–5
+// gauge; `tone` + `strong` say what it means (components pick the colour).
+export const AHR999_ZONES = [
+  { label: 'Bottom', range: '<0.45', width: 9, tone: 'up', strong: true },
+  { label: 'DCA', range: '0.45–1.2', width: 15, tone: 'up', strong: false },
+  { label: 'Wait', range: '1.2–2.0', width: 16, tone: 'neutral', strong: false },
+  { label: 'Take Profit', range: '2.0–4.0', width: 40, tone: 'down', strong: false },
+  { label: 'Top', range: '>4', width: 20, tone: 'down', strong: true },
 ] as const;
 
 // ===========================================

@@ -16,9 +16,9 @@ interface TokenAvatarProps {
 }
 
 const sizeClasses = {
-  sm: 'w-4 h-4 text-[0.5rem]',
-  md: 'w-5 h-5 text-[0.5625rem]',
-  lg: 'w-6 h-6 text-[0.625rem]',
+  sm: 'size-4',
+  md: 'size-5',
+  lg: 'size-6',
 };
 
 // Intrinsic pixel size per variant — set as width/height attrs to prevent CLS
@@ -82,7 +82,7 @@ export function TokenAvatar({ symbol, logo, size = 'md', className }: TokenAvata
         width={sizePx[size]}
         height={sizePx[size]}
         loading="lazy"
-        className={cn('rounded-full bg-muted flex-shrink-0 max-w-none object-cover', sizeClasses[size], className)}
+        className={cn('rounded-full bg-fill flex-shrink-0 max-w-none object-cover', sizeClasses[size], className)}
         onError={() => setIdx((i) => i + 1)}
       />
     );
@@ -91,14 +91,15 @@ export function TokenAvatar({ symbol, logo, size = 'md', className }: TokenAvata
   return (
     <div
       className={cn(
-        'rounded-full bg-muted flex-shrink-0 flex items-center justify-center text-muted-foreground font-medium',
+        'rounded-full bg-fill-strong flex-shrink-0 flex items-center justify-center text-fg-muted font-semibold leading-none',
         sizeClasses[size],
         className
       )}
+      // The letter scales with the avatar; it is the one size outside the type scale
+      style={{ fontSize: sizePx[size] * 0.45 }}
+      aria-hidden="true"
     >
       {symbol.charAt(0)}
     </div>
   );
 }
-
-export default TokenAvatar;

@@ -1,11 +1,11 @@
-import PerpBoard from '@/components/PerpBoard';
-import { BoardPreloads } from '@/components/BoardPreloads';
+import OkxBoard from '@/components/board/OkxBoard';
+import { BoardPreloads } from '@/components/board/BoardPreloads';
 
 export default function OkxPage() {
   return (
     <>
       <BoardPreloads exchange="okx" />
-      <PerpBoard />
+      <OkxBoard />
     </>
   );
 }

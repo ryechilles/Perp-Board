@@ -2,372 +2,219 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────────────────────────────────
+ * Tokens — the single source of truth. Named in tailwind.config.js, documented
+ * in DESIGN.md, rendered live at /system.
+ *
+ * Colour budget:
+ *   accent      selected / live / focus — nothing else
+ *   up / down   price direction — nothing else
+ *   cold / hot  RSI extremes — nothing else
+ *   everything else is neutral.
+ * Channel triplets (r g b) so Tailwind can apply alpha: bg-up/10.
+ * ───────────────────────────────────────────────────────────────────────── */
 @layer base {
-  /* ── Palette ────────────────────────────────────────────
-   * Flat, data-first system. Chrome is neutral grey / white; colour is
-   * reserved for data. Semantic colours come in two strengths:
-   *   --up / --down        fill (bars, dots, tints)
-   *   --up-ink / --down-ink readable text on the surface (≥ 4.5:1)
-   * RSI zones use cold (oversold) / hot (overbought) so they never
-   * collide with price green/red.
-   * ──────────────────────────────────────────────────────── */
   :root {
-    --background: 240 5% 96%;       /* #F4F4F5 ground */
-    --foreground: 240 6% 10%;       /* #18181B */
-    --card: 0 0% 100%;
-    --card-foreground: 240 6% 10%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 6% 10%;
-    --primary: 240 6% 10%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 240 5% 94%;
-    --secondary-foreground: 240 6% 10%;
-    --muted: 240 5% 93%;
-    --muted-foreground: 240 4% 44%; /* #6B6B73 */
-    --accent: 240 5% 93%;
-    --accent-foreground: 240 6% 10%;
-    --destructive: 4 74% 49%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 240 5% 90%;
-    --input: 240 5% 90%;
-    --ring: 209 90% 42%;
-    --radius: 0.5rem;
+    --surface-0: 243 244 246;
+    --surface-1: 255 255 255;
+    --surface-2: 247 248 249;
+    --surface-pop: 255 255 255;
+    --fill: rgb(20 24 32 / 0.055);
+    --fill-strong: rgb(20 24 32 / 0.1);
 
-    --tint: 240 6% 10%;             /* interactive text: neutral, not blue */
-    --segment: 0 0% 100%;           /* selected segment */
-    --fill: 240 6% 20% / 0.06;      /* translucent control fill */
-    --fill-strong: 240 6% 20% / 0.11;
-    --separator: 240 6% 10% / 0.09; /* 1px hairline */
-    --faint: 240 4% 62%;            /* tertiary label */
+    --fg: 21 23 28;
+    --fg-muted: 99 104 114;
+    --fg-faint: 157 162 171;
 
-    --up: 152 70% 36%;
-    --up-ink: 152 85% 27%;          /* #0A7F48 */
-    --down: 4 78% 55%;
-    --down-ink: 4 74% 49%;          /* #D92D20 */
-    --cold: 209 85% 52%;
-    --cold-soft: 207 80% 85%;
-    --cold-ink: 209 90% 42%;        /* #0B6FCC */
-    --hot: 28 92% 50%;
-    --hot-soft: 32 85% 82%;
-    --hot-ink: 26 90% 37%;          /* #B45309 */
-    --zone-neutral: 240 5% 86%;
-    --star: 43 100% 50%;
+    --line: rgb(20 24 32 / 0.09);
+    --line-strong: rgb(20 24 32 / 0.16);
 
-    --shadow-segment: 0 0 0 0.5px rgb(0 0 0 / 0.08), 0 1px 2px rgb(0 0 0 / 0.08);
+    --accent: 18 128 79;
+    --accent-soft: rgb(18 128 79 / 0.1);
+    --on-accent: 255 255 255;
 
-    /* ── Spacing & Sizing Tokens ─────────────────────────────
-     * Based on 4px grid. All interactive element heights and
-     * widget spacing derive from this scale.
-     *
-     * Control Heights (interactive elements):
-     *   compact  = 28px — widget-internal controls, time selectors
-     *   default  = 32px — standard filters, tabs, segmented controls
-     *   prominent = 36px — primary actions, standalone buttons
-     *
-     * Widget Header Padding:
-     *   Uses consistent vertical rhythm across all widget sizes.
-     *   Total header height = padding-top + control-height + padding-bottom
-     *   Small widget:  12px + control + 12px
-     *   Large widget:  12px + control + 12px  (same rhythm, larger px for content area)
-     *
-     * Content Padding:
-     *   sm = 16px — small widgets
-     *   md = 20px — large widgets
-     * ──────────────────────────────────────────────────────── */
+    --up: 10 127 72;
+    --down: 207 51 39;
+    --cold: 11 111 204;
+    --hot: 180 83 9;
+    --track: 227 229 233;
+    --star: 240 168 0;
 
-    /* Control heights */
-    --control-compact: 1.75rem;   /* 28px — widget internal */
-    --control-default: 2rem;      /* 32px — standard controls */
-    --control-prominent: 2.25rem; /* 36px — primary actions */
+    --shadow-seg: 0 0 0 1px var(--line), 0 1px 2px rgb(0 0 0 / 0.08);
+    --shadow-pop: 0 0 0 1px var(--line), 0 8px 24px rgb(0 0 0 / 0.12);
+    --shadow-drawer: 0 0 0 1px var(--line), 0 24px 64px rgb(0 0 0 / 0.24);
 
-    /* Widget header padding (vertical) — unified across sizes */
-    --widget-header-py: 0.75rem;  /* 12px — consistent vertical rhythm */
-
-    /* Widget header padding (horizontal) */
-    --widget-header-px-sm: 1rem;  /* 16px — small widgets */
-    --widget-header-px-lg: 1.25rem; /* 20px — large widgets */
-
-    /* Widget content padding */
-    --widget-content-sm: 1rem;    /* 16px */
-    --widget-content-lg: 1.25rem; /* 20px */
-
-    /* Gaps */
-    --gap-tight: 0.25rem;   /* 4px — between controls in a group */
-    --gap-default: 0.5rem;  /* 8px — between elements */
-    --gap-loose: 0.75rem;   /* 12px — between sections */
+    color-scheme: light;
   }
 
   .dark {
-    --background: 220 12% 5%;       /* #0B0C0E */
-    --foreground: 220 9% 93%;       /* #EDEEF0 */
-    --card: 220 9% 8%;
-    --card-foreground: 220 9% 93%;
-    --popover: 220 8% 12%;
-    --popover-foreground: 220 9% 93%;
-    --primary: 220 9% 93%;
-    --primary-foreground: 220 12% 5%;
-    --secondary: 220 8% 13%;
-    --secondary-foreground: 220 9% 93%;
-    --muted: 220 8% 14%;
-    --muted-foreground: 220 6% 57%; /* #8A8F98 */
-    --accent: 220 8% 14%;
-    --accent-foreground: 220 9% 93%;
-    --destructive: 0 100% 71%;
-    --destructive-foreground: 220 12% 5%;
-    --border: 220 7% 16%;
-    --input: 220 7% 16%;
-    --ring: 206 100% 68%;
+    --surface-0: 9 10 12;
+    --surface-1: 17 19 22;
+    --surface-2: 14 16 19;
+    --surface-pop: 28 30 35;
+    --fill: rgb(255 255 255 / 0.06);
+    --fill-strong: rgb(255 255 255 / 0.11);
 
-    --tint: 220 9% 93%;
-    --segment: 220 8% 17%;
-    --fill: 0 0% 100% / 0.06;
-    --fill-strong: 0 0% 100% / 0.11;
-    --separator: 0 0% 100% / 0.09;
-    --faint: 220 6% 40%;
+    --fg: 236 238 241;
+    --fg-muted: 139 144 154;
+    --fg-faint: 90 95 105;
 
-    --up: 154 69% 55%;              /* #3DDC97 */
-    --up-ink: 154 69% 55%;
-    --down: 0 100% 71%;             /* #FF6B6B */
-    --down-ink: 0 100% 71%;
-    --cold: 206 100% 68%;           /* #5AB8FF */
-    --cold-soft: 207 40% 28%;
-    --cold-ink: 206 100% 68%;
-    --hot: 29 100% 63%;             /* #FF9F43 */
-    --hot-soft: 32 48% 24%;
-    --hot-ink: 29 100% 63%;
-    --zone-neutral: 220 9% 18%;
-    --star: 50 100% 52%;
+    --line: rgb(255 255 255 / 0.08);
+    --line-strong: rgb(255 255 255 / 0.16);
 
-    --shadow-segment: 0 0 0 0.5px rgb(255 255 255 / 0.08);
+    --accent: 69 214 144;
+    --accent-soft: rgb(69 214 144 / 0.13);
+    --on-accent: 6 19 12;
+
+    --up: 76 214 154;
+    --down: 242 114 111;
+    --cold: 90 184 255;
+    --hot: 255 159 67;
+    --track: 40 43 49;
+    --star: 255 214 10;
+
+    --shadow-seg: 0 0 0 1px var(--line-strong);
+    --shadow-pop: 0 0 0 1px var(--line-strong), 0 8px 24px rgb(0 0 0 / 0.5);
+    --shadow-drawer: 0 0 0 1px var(--line-strong), 0 24px 64px rgb(0 0 0 / 0.6);
+
+    color-scheme: dark;
   }
-}
 
-@layer base {
   * {
-    @apply border-border;
+    @apply border-line;
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    scrollbar-width: none;
   }
-  html, body {
+  *::-webkit-scrollbar {
+    display: none;
+  }
+  html,
+  body {
     height: 100%;
   }
   body {
-    @apply bg-background text-foreground;
-    /* Geist for UI text; numbers switch to Geist Mono via .tabular-nums */
-    font-family: var(--font-sans), system-ui, -apple-system, 'Segoe UI', sans-serif;
-    font-size: 0.8125rem;
-    line-height: 1.38;
+    @apply bg-surface-0 text-fg text-body font-sans;
+    /* Inter: open digits (ss01) and the alternate 1 (cv01) — see DESIGN.md → Numbers */
+    font-feature-settings: 'ss01', 'cv01';
     letter-spacing: -0.003em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-}
-
-/* Hide all scrollbars globally */
-* {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
-}
-
-*::-webkit-scrollbar {
-  display: none; /* Chrome/Safari/Opera */
-}
-
-/* Horizontal scroll with bounce effect (iOS-like) */
-.overflow-x-auto {
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-x: contain;
-  scroll-behavior: smooth;
-}
-
-/* Bounce effect for scroll containers */
-@supports (overscroll-behavior: auto) {
-  .overflow-x-auto {
-    overscroll-behavior-x: auto;
+  button,
+  a,
+  label,
+  summary,
+  input,
+  select,
+  textarea,
+  [role='button'] {
+    touch-action: manipulation;
   }
-}
 
-/* Numbers: every numeric value in the app carries .tabular-nums, so this one
- * rule sets them all in the monospace face (prices, percentages, RSI, ranks). */
-.tabular-nums {
-  font-family: var(--font-mono), ui-monospace, 'SF Mono', Menlo, monospace;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-}
-
-/* Animation */
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.animate-spin {
-  animation: spin 0.8s linear infinite;
-}
-
-/* Native controls pick up the interactive colour */
-input[type="checkbox"] {
-  accent-color: hsl(var(--tint));
-}
-
-/* Hide number input spinners and cursor */
-input[type="number"] {
-  -moz-appearance: textfield;
-  appearance: textfield;
-  caret-color: transparent;
-}
-
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-/* Hide selection highlight for number inputs */
-input[type="number"]::selection {
-  background: transparent;
-}
-
-input[type="number"]::-moz-selection {
-  background: transparent;
+  /* Number inputs: no spinners (the RSI range fields are typed or scrolled) */
+  input[type='number'] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
 }
 
 @layer components {
-/* Translucent material: content scrolls under the toolbar and the sticky
- * table header. Fixed (left-sticky) columns stay opaque for legibility. */
-.material-bar {
-  background-color: hsl(var(--background) / 0.72);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  backdrop-filter: saturate(180%) blur(20px);
-}
-.thead-material {
-  background-color: hsl(var(--card) / 0.86);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-}
-/* Fallbacks: solid surface when blur is unsupported or the user prefers less transparency */
-@supports not ((backdrop-filter: blur(8px)) or (-webkit-backdrop-filter: blur(8px))) {
-  .material-bar { background-color: hsl(var(--background)); }
-  .thead-material { background-color: hsl(var(--card)); }
-}
-@media (prefers-reduced-transparency: reduce) {
-  .material-bar,
-  .thead-material {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
+  /* Numbers. Every numeric value carries .num (the data components add it). */
+  .num {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.011em;
   }
-  .material-bar { background-color: hsl(var(--background)); }
-  .thead-material { background-color: hsl(var(--card)); }
+  /* Insignificant characters — decimals, %, $, B/T — sit one step back. */
+  .num-dim {
+    color: rgb(var(--fg-faint));
+  }
+  /* …inside a toned value (red/green) they keep the hue, at reduced strength. */
+  .num-dim-tone {
+    opacity: 0.55;
+  }
+
+  /* Caps label: column headers, panel titles */
+  .caps {
+    @apply text-caption font-medium uppercase text-fg-muted;
+    letter-spacing: 0.05em;
+  }
+
+  /* Focus ring — one definition for every interactive element */
+  .focus-ring {
+    @apply outline-none;
+  }
+  .focus-ring:focus-visible {
+    box-shadow: 0 0 0 2px rgb(var(--surface-1)), 0 0 0 4px rgb(var(--accent));
+  }
+  .focus-ring-inset:focus-visible {
+    box-shadow: inset 0 0 0 2px rgb(var(--accent));
+  }
+
+  /* 1px rules drawn as inset shadows, so they never change a box's size */
+  .rule-b { box-shadow: inset 0 -1px 0 var(--line); }
+  .rule-t { box-shadow: inset 0 1px 0 var(--line); }
+  .rule-r { box-shadow: inset -1px 0 0 var(--line); }
+
+  /* App bar: content scrolls underneath */
+  .bar-material {
+    background-color: rgb(var(--surface-0) / 0.8);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .bar-material {
+      background-color: rgb(var(--surface-0));
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+
+  /* Table rows */
+  .data-row > td {
+    transition: background-color 0.12s ease;
+  }
+  .data-row:hover > td {
+    background-color: var(--fill);
+  }
+  /* Sticky cells must stay opaque: surface colour with the hover wash mixed in */
+  .sticky-cell {
+    background-color: rgb(var(--surface-1));
+  }
+  .data-row:hover > td.sticky-cell {
+    background-color: color-mix(in srgb, rgb(var(--surface-1)) 94.5%, rgb(var(--fg)));
+  }
+
+  /* Live status pulse */
+  .live-dot {
+    animation: live-pulse 2.4s ease-out infinite;
+  }
 }
 
-/* Surfaces are flat: a white panel with a 1px hairline, no shadow. */
-.surface-card {
-  background-color: hsl(var(--card));
-  border-radius: 10px;
-  box-shadow: inset 0 0 0 1px hsl(var(--separator));
-}
-/* Inside a flat region (the Insights column) panels lose their own chrome and
- * are simply separated by hairlines. */
-.flat-panels .surface-card {
-  background-color: transparent;
-  border-radius: 0;
-  box-shadow: inset 0 -1px 0 hsl(var(--separator));
-}
-
-/* Small caps label: column headers, panel titles, stat captions */
-.label-caps {
-  font-size: 0.6875rem;
-  line-height: 1rem;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: hsl(var(--muted-foreground));
-}
-
-/* Segmented control selected segment */
-.segment-on {
-  background-color: hsl(var(--segment));
-  box-shadow: var(--shadow-segment);
-}
-
-/* Hairline separators */
-.hairline-b { box-shadow: inset 0 -1px 0 hsl(var(--separator)); }
-.hairline-t { box-shadow: inset 0 1px 0 hsl(var(--separator)); }
-.hairline-r { box-shadow: inset -1px 0 0 hsl(var(--separator)); }
-}
-
-/* Inset-grouped list: separators start past the leading avatar */
-.inset-list > li { position: relative; }
-.inset-list > li + li::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50px;
-  right: 0;
-  border-top: 0.5px solid hsl(var(--separator));
-}
-
-/* Table rows: opaque sticky cells, subtle hover wash */
-.sticky-cell {
-  background-color: hsl(var(--card));
-}
-.data-row > td {
-  transition: background-color 0.12s ease;
-}
-.data-row:hover > td {
-  background-color: hsl(var(--foreground) / 0.028);
-}
-.data-row:hover > td.sticky-cell {
-  background-color: color-mix(in srgb, hsl(var(--card)) 97%, hsl(var(--foreground)));
-}
-
-/* RSI zone track: cold (≤25) · cool (≤40) · neutral (<60) · warm (<80) · hot */
-.rsi-track {
-  background: linear-gradient(
-    90deg,
-    hsl(var(--cold)) 0 25%,
-    hsl(var(--cold-soft)) 25% 40%,
-    hsl(var(--zone-neutral)) 40% 60%,
-    hsl(var(--hot-soft)) 60% 80%,
-    hsl(var(--hot)) 80% 100%
-  );
-}
-
-/* Live indicator pulse */
 @keyframes live-pulse {
-  0% { box-shadow: 0 0 0 0 hsl(var(--up) / 0.55); }
-  70%, 100% { box-shadow: 0 0 0 6px hsl(var(--up) / 0); }
-}
-.live-dot {
-  animation: live-pulse 2.4s ease-out infinite;
+  0% { box-shadow: 0 0 0 0 rgb(var(--accent) / 0.55); }
+  70%, 100% { box-shadow: 0 0 0 6px rgb(var(--accent) / 0); }
 }
 
-/* Drag and drop styles */
-[draggable="true"] {
-  cursor: grab;
+/* Safe areas (notch / home indicator) */
+.px-safe {
+  padding-left: max(0.875rem, env(safe-area-inset-left));
+  padding-right: max(0.875rem, env(safe-area-inset-right));
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
-[draggable="true"]:active {
-  cursor: grabbing;
-}
-
-/* Display sizes: SF Pro Display tracking */
-h1, h2, h3, .text-lg, .text-xl, .text-2xl, .text-3xl {
-  letter-spacing: -0.02em;
-}
-.large-title {
-  font-size: 1rem;
-  line-height: 1.5rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-/* ch-based max-width utility for readable text columns */
-.max-w-prose-ch {
-  max-width: 65ch;
-}
-
-/* Respect reduced-motion preference (DESIGN.md → Animation) */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -377,51 +224,4 @@ h1, h2, h3, .text-lg, .text-xl, .text-2xl, .text-3xl {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-
-  /* Keep loading spinners perceivable, just slower */
-  .animate-spin {
-    animation-duration: 1.2s !important;
-    animation-iteration-count: infinite !important;
-  }
-}
-
-/* Native UI (scrollbars, form controls) follows the theme (DESIGN.md → Dark Mode) */
-:root {
-  color-scheme: light;
-}
-.dark {
-  color-scheme: dark;
-}
-
-/* Safe-area utilities for notches / home indicator (DESIGN.md → Safe Areas) */
-.px-safe {
-  padding-left: max(1rem, env(safe-area-inset-left));
-  padding-right: max(1rem, env(safe-area-inset-right));
-}
-@media (min-width: 640px) {
-  .px-safe {
-    padding-left: max(1.5rem, env(safe-area-inset-left));
-    padding-right: max(1.5rem, env(safe-area-inset-right));
-  }
-}
-.pb-safe {
-  padding-bottom: max(1rem, env(safe-area-inset-bottom));
-}
-.pt-safe {
-  padding-top: env(safe-area-inset-top);
-}
-
-/* Touch: remove double-tap delay; intentional (no) tap highlight (DESIGN.md → Touch) */
-button,
-a,
-label,
-summary,
-input,
-select,
-textarea,
-[role="button"] {
-  touch-action: manipulation;
-}
-* {
-  -webkit-tap-highlight-color: transparent;
 }
